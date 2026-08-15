@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-cream text-ink font-sans antialiased;
+    /* Custom blue dot cursor replaces the default pointer everywhere. */
+    cursor: none;
+  }
+
+  /* Keep the native cursor hidden on every interactive element too. */
+  a,
+  button,
+  input,
+  textarea,
+  select,
+  [role='button'] {
+    cursor: none;
+  }
+
+  /* Devices without a fine pointer (touch) keep the default behaviour. */
+  @media (hover: none), (pointer: coarse) {
+    body,
+    a,
+    button,
+    input,
+    textarea,
+    select,
+    [role='button'] {
+      cursor: auto;
+    }
+  }
+
+  ::selection {
+    background-color: rgba(225, 173, 52, 0.28);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .grain {
+    background-image: radial-gradient(rgba(27, 26, 23, 0.045) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+}
