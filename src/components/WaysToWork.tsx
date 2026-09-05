@@ -74,10 +74,10 @@ function OptionCard({ option, index }: { option: Option; index: number }) {
       className="group relative flex h-full flex-col rounded-[24px] border border-white/60 p-7 transition-all duration-500 hover:-translate-y-1.5 hover:border-white/90 sm:p-9"
       style={{
         background:
-          'linear-gradient(150deg, rgba(255,255,255,0.62) 0%, rgba(250,239,210,0.36) 55%, rgba(243,221,161,0.42) 100%)',
+          'linear-gradient(150deg, rgba(255,255,255,0.62) 0%, rgba(45,109,139,0.045) 55%, rgba(45,109,139,0.06) 100%)',
         backdropFilter: 'blur(22px) saturate(170%)',
         WebkitBackdropFilter: 'blur(22px) saturate(170%)',
-        boxShadow: '0 26px 70px -34px rgba(74,54,15,0.42), inset 0 1px 0 rgba(255,255,255,0.85)',
+        boxShadow: '0 26px 70px -34px rgba(18,44,56,0.42), inset 0 1px 0 rgba(255,255,255,0.85)',
         opacity: revealed ? 1 : 0,
         filter: revealed ? 'blur(0px)' : 'blur(12px)',
         transform: revealed ? 'translateY(0)' : 'translateY(30px)',
@@ -89,14 +89,14 @@ function OptionCard({ option, index }: { option: Option; index: number }) {
         className="pointer-events-none absolute inset-0 rounded-[24px] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
         style={{
           background:
-            'radial-gradient(120% 80% at 50% 0%, rgba(225,173,52,0.16) 0%, rgba(225,173,52,0) 60%)',
+            'radial-gradient(120% 80% at 50% 0%, rgba(45,109,139,0.06) 0%, rgba(45,109,139,0) 60%)',
         }}
         aria-hidden="true"
       />
 
       <div className="relative flex flex-1 flex-col">
         <div className="flex items-center gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/70 bg-white/70 text-brand-600 shadow-[0_8px_20px_-12px_rgba(74,54,15,0.5)] transition-all duration-500 group-hover:border-brand/40 group-hover:bg-brand group-hover:text-ink">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/70 bg-white/70 text-brand-600 shadow-[0_8px_20px_-12px_rgba(18,44,56,0.5)] transition-all duration-500 group-hover:border-brand/40 group-hover:bg-brand group-hover:text-ink">
             <OptionIcon name={option.icon} />
           </span>
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-muted">
@@ -143,14 +143,14 @@ export default function WaysToWork() {
         <div
           className="absolute left-1/2 top-0 h-[520px] w-[900px] -translate-x-1/2 rounded-full blur-3xl"
           style={{
-            background: 'radial-gradient(ellipse, rgba(225,173,52,0.26) 0%, rgba(225,173,52,0) 70%)',
+            background: 'radial-gradient(ellipse, rgba(45,109,139,0.045) 0%, rgba(45,109,139,0) 70%)',
           }}
         />
         <div
           className="absolute -left-32 bottom-10 h-[460px] w-[460px] rounded-full blur-3xl"
           style={{
             background:
-              'radial-gradient(circle, rgba(235,201,109,0.34) 0%, rgba(235,201,109,0) 70%)',
+              'radial-gradient(circle, rgba(45,109,139,0.06) 0%, rgba(45,109,139,0) 70%)',
           }}
         />
       </div>

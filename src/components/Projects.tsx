@@ -4,9 +4,10 @@ import Underline from './Underline'
 import Eyebrow from './Eyebrow'
 
 /**
- * Looping robot animation. The source GIF was 21 MB; it is re-encoded as
- * VP9/WebM with an alpha channel (635 KB) and played as a muted, inline,
- * autoplaying video — same visual result, a fraction of the weight.
+ * Looping robot animation, re-encoded from the uncropped source GIF
+ * ("robot c&c.gif", 21.7 MB) to VP9/WebM with an alpha channel (~420 KB).
+ * Unlike the previous export, the robot never touches the video frame edge,
+ * so nothing gets cut off while it floats.
  */
 const ROBOT_LOOP_SRC = '/robot-working.webm'
 const ROBOT_POSTER_SRC = '/robot-working-poster.png'
@@ -29,48 +30,48 @@ export default function Projects() {
         <div
           className="absolute -left-40 top-10 h-[560px] w-[560px] rounded-full blur-3xl"
           style={{
-            background: 'radial-gradient(circle, rgba(225,173,52,0.34) 0%, rgba(225,173,52,0) 70%)',
+            background: 'radial-gradient(circle, rgba(45,109,139,0.06) 0%, rgba(45,109,139,0) 70%)',
           }}
         />
         <div
           className="absolute -right-32 bottom-0 h-[520px] w-[520px] rounded-full blur-3xl"
           style={{
             background:
-              'radial-gradient(circle, rgba(235,201,109,0.36) 0%, rgba(235,201,109,0) 70%)',
+              'radial-gradient(circle, rgba(45,109,139,0.06) 0%, rgba(45,109,139,0) 70%)',
           }}
         />
       </div>
 
       <div ref={ref} className="relative mx-auto w-full max-w-[1240px] px-5 sm:px-8">
           <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-16">
-            {/* ---------- Left: looping robot ---------- */}
+            {/* ---------- Left: floating robot (free of any clipping container) ---------- */}
             <div
-              className="relative order-1 flex justify-center"
+              className="relative order-1 flex justify-center overflow-visible"
               style={rise(0)}
             >
-              <div className="relative w-full max-w-[210px] sm:max-w-[240px] lg:max-w-[270px]">
-                {/* Soft pedestal glow */}
-                <div
-                  className="pointer-events-none absolute bottom-2 left-1/2 h-20 w-[80%] -translate-x-1/2 rounded-[50%] blur-2xl"
-                  style={{
-                    background:
-                      'radial-gradient(ellipse at center, rgba(225,173,52,0.32) 0%, rgba(225,173,52,0) 70%)',
-                  }}
-                  aria-hidden="true"
-                />
+              {/* Soft pedestal glow */}
+              <div
+                className="pointer-events-none absolute bottom-2 left-1/2 h-20 w-[240px] -translate-x-1/2 rounded-[50%] blur-2xl"
+                style={{
+                  background:
+                    'radial-gradient(ellipse at center, rgba(45,109,139,0.06) 0%, rgba(45,109,139,0) 70%)',
+                }}
+                aria-hidden="true"
+              />
 
-                <video
-                  src={ROBOT_LOOP_SRC}
-                  poster={ROBOT_POSTER_SRC}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="metadata"
-                  aria-label="The Clause & Code robot at work, building systems"
-                  className="relative block h-auto w-full animate-float object-contain drop-shadow-[0_30px_50px_rgba(74,54,15,0.18)]"
-                />
-              </div>
+              <video
+                src={ROBOT_LOOP_SRC}
+                poster={ROBOT_POSTER_SRC}
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                width={500}
+                height={600}
+                aria-label="The Clause & Code robot at work, building systems"
+                className="relative block h-auto w-full max-w-[230px] animate-float object-contain drop-shadow-[0_30px_50px_rgba(18,44,56,0.18)] sm:max-w-[260px] lg:max-w-[300px]"
+              />
             </div>
 
             {/* ---------- Right: copy ---------- */}

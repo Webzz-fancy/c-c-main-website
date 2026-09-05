@@ -77,13 +77,13 @@ export default function Footer() {
           className="absolute -left-32 -top-24 h-[420px] w-[420px] rounded-full blur-3xl"
           style={{
             background:
-              'radial-gradient(circle, rgba(225,173,52,0.20) 0%, rgba(225,173,52,0) 70%)',
+              'radial-gradient(circle, rgba(45,109,139,0.08) 0%, rgba(45,109,139,0) 70%)',
           }}
         />
         <div
           className="absolute -right-24 bottom-0 h-[380px] w-[380px] rounded-full blur-3xl"
           style={{
-            background: 'radial-gradient(circle, rgba(51,102,120,0.42) 0%, rgba(51,102,120,0) 70%)',
+            background: 'radial-gradient(circle, rgba(45,109,139,0.42) 0%, rgba(45,109,139,0) 70%)',
           }}
         />
         {/* Hairline at the very top edge */}

@@ -26,7 +26,22 @@ const NAV: NavItem[] = [
       },
     ],
   },
-  { label: 'Our Projects', href: '#projects' },
+  {
+    label: 'Our Projects',
+    href: '#projects',
+    children: [
+      {
+        label: 'Simple',
+        href: '/simple',
+        description: 'Websites & AI discoverability — our “simple” that’s never simple.',
+      },
+      {
+        label: 'Complex',
+        href: '/complex',
+        description: 'Operations & scale systems — coming next.',
+      },
+    ],
+  },
   { label: 'About Us', href: '#about' },
 ]
 

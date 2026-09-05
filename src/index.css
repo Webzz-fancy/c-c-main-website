@@ -13,31 +13,6 @@
 
   body {
     @apply bg-cream text-ink font-sans antialiased;
-    /* Custom blue dot cursor replaces the default pointer everywhere. */
-    cursor: none;
-  }
-
-  /* Keep the native cursor hidden on every interactive element too. */
-  a,
-  button,
-  input,
-  textarea,
-  select,
-  [role='button'] {
-    cursor: none;
-  }
-
-  /* Devices without a fine pointer (touch) keep the default behaviour. */
-  @media (hover: none), (pointer: coarse) {
-    body,
-    a,
-    button,
-    input,
-    textarea,
-    select,
-    [role='button'] {
-      cursor: auto;
-    }
   }
 
   ::selection {
@@ -53,5 +28,17 @@
   .grain {
     background-image: radial-gradient(rgba(27, 26, 23, 0.045) 1px, transparent 1px);
     background-size: 22px 22px;
+  }
+
+  /* Sparkles left behind by the loading-screen broom */
+  @keyframes cc-sparkle {
+    0% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(calc(-50% - 20px), calc(-50% + 16px)) scale(0.15) rotate(90deg);
+    }
   }
 }

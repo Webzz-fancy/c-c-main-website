@@ -40,3 +40,8 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Local design scratch files
+scratch/
+project.mp4
+public/frames_preview/

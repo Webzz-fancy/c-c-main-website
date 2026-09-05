@@ -12,7 +12,7 @@ import {
  * The robot's facial state.
  *  - 'idle'      normal resting smile
  *  - 'surprised' small round "o" mouth
- *  - 'happy'     big filled grin + nod (Book a Consultation hover)
+ *  - 'happy'     big filled grin (Book a Consultation hover)
  *
  * Hover always wins. When nothing is hovered the robot idles on a loop:
  * 5s resting, then 2s of the "o" mouth, repeating.
