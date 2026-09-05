@@ -6,7 +6,7 @@ import Header from '../components/Header'
 import Loader from '../components/Loader'
 import Footer from '../components/Footer'
 import ScrollRope from '../components/ScrollRope'
-import { clamp, damp } from '../hooks/usePointer'
+import { clamp } from '../hooks/usePointer'
 
 const smoothstep = (t: number) => t * t * (3 - 2 * t)
 
@@ -149,9 +149,18 @@ function pointAt(g: TrailGeom, dist: number): { x: number; y: number; ang: numbe
 const TRAIL_LAG = 34 // trail tail stays this many px behind the (bigger) arrow tip
 
 /** Robot handoff ramp: 0 in the hero → 1 once the section-2 perch is reached.
- *  Robot3D uses the same ramp for its 45° left tilt, so pose and position
+ *  Robot3D uses the same ramp for its 45° left TURN, so pose and position
  *  finish together. */
 const robotSettle = (p: number) => smoothstep(clamp((p - 0.12) / 0.33, 0, 1))
+
+/**
+ * Exponential-follower time-constant for the shared smoothed scroll scalar.
+ * Scroll arrives in steps (wheel notches / trackpad jumps); filtering it
+ * through one follower turns those steps into a single continuous glide that
+ * drives the trail, the arrow, the robot journey and the section reveals
+ * together — one shared clock, so nothing ever lags behind anything else.
+ */
+const SMOOTH_TAU = 0.16
 
 export default function SimplePage() {
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -170,6 +179,10 @@ export default function SimplePage() {
   const trailGeom = useRef<TrailGeom | null>(null)
   const [progress, setProgress] = useState(0)
   const progressRef = useRef(0)
+  // smoothed scroll scalar — the single shared input for the trail, the
+  // arrow, the robot journey and the section reveals (advanced in the
+  // journey rAF loop below)
+  const smoothRef = useRef(0)
   const [ready, setReady] = useState(false)
   const [loaderGone, setLoaderGone] = useState(false)
   const [robotReady, setRobotReady] = useState(false)
@@ -180,11 +193,13 @@ export default function SimplePage() {
   const applyTrailRef = useRef<(p: number) => void>(() => {})
   applyTrailRef.current = applyTrail
 
-  // scroll progress: 0 at the top → 1 at the very bottom of the page
-  // (arrow journey, robot settle and section reveals all finish there)
+  // scroll progress: 0 at the top → 1 at the very bottom of the page.
+  // Only the RAW value is recorded here; the journey rAF loop smooths it
+  // (smoothRef) and derives everything else — trail, arrow, robot, reveals.
   useEffect(() => {
     if (!loaderGone) return
     let raf = 0
+    let first = true
     const onScroll = () => {
       cancelAnimationFrame(raf)
       raf = requestAnimationFrame(() => {
@@ -193,8 +208,13 @@ export default function SimplePage() {
         const total = wrap.scrollHeight - window.innerHeight
         const p = Math.max(0, Math.min(1, window.scrollY / Math.max(1, total)))
         progressRef.current = p
-        applyTrailRef.current(p)
-        setProgress(p)
+        if (first) {
+          // first read — also covers a mid-page reload: start already
+          // settled so the page never does a catch-up sweep
+          first = false
+          smoothRef.current = p
+          setProgress(p)
+        }
       })
     }
     onScroll()
@@ -236,7 +256,7 @@ export default function SimplePage() {
         stop3Ref.current?.setAttribute('offset', f(g.switchY + b).toFixed(4))
         stop4Ref.current?.setAttribute('offset', '1')
       }
-      applyTrail(progressRef.current)
+      applyTrail(smoothRef.current)
     }
     build()
     window.addEventListener('resize', build)
@@ -245,15 +265,26 @@ export default function SimplePage() {
   }, [ready])
 
   /**
-   * Robot journey — hero → second section:
-   *   · in the hero it stands centred, upright (the trail emerges behind it)
+   * Robot journey — hero → second section. This rAF loop is also the
+   * master loop for the page's scroll-driven motion:
+   *
+   *   · in the hero the robot stands centred, facing the viewer (the trail
+   *     emerges behind it)
    *   · on the way down it hands off to a perch in the UPPER-RIGHT of the
-   *     second section, ~45° tilted left toward the content
+   *     second section, turned 45° LEFT (a horizontal turn — it stays
+   *     perfectly upright) so it faces the content on the left side
    *   · the perch is document-anchored, so once there the robot rides the
    *     scroll and exits the top edge with the section (no fade, no hover
    *     over the footer). The trail curve sits below the perch, so arrow
    *     and trail always pass clear of it.
-   * Damped in a rAF loop (no React round-trip) → smooth at any scroll speed.
+   *
+   * Smoothness: scroll arrives in steps (wheel notches). One exponential
+   * follower (SMOOTH_TAU) turns it into a continuous scalar `sp`, and the
+   * trail, the arrow, the robot pose/scale and the section reveals all
+   * derive from that SAME scalar — one shared clock, so nothing lags
+   * behind anything else, at any scroll speed. The perch endpoint itself
+   * uses raw scrollY, so once perched the robot moves 1:1 with the page;
+   * only the handoff blend, the gentle arc, the scale and the turn ease.
    */
   useEffect(() => {
     if (!ready) return
@@ -261,7 +292,7 @@ export default function SimplePage() {
     if (!box) return
     let raf = 0
     let last = performance.now()
-    let cur: { x: number; y: number; s: number; o: number } | null = null
+    let lastSent = smoothRef.current
 
     const tick = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05)
@@ -269,8 +300,15 @@ export default function SimplePage() {
       const w = window.innerWidth
       const h = window.innerHeight
       const desk = w >= 1024
-      const p = progressRef.current
-      const s = robotSettle(p)
+
+      // advance the shared smoothed scalar toward the raw scroll progress
+      const raw = progressRef.current
+      const sm = smoothRef.current
+      smoothRef.current =
+        Math.abs(raw - sm) < 1e-5 ? raw : sm + (raw - sm) * (1 - Math.exp(-dt / SMOOTH_TAU))
+      const sp = smoothRef.current
+
+      const s = robotSettle(sp)
       const scrollY = window.scrollY
 
       // hero anchor (viewport px) — where the robot stands at rest
@@ -296,18 +334,25 @@ export default function SimplePage() {
         tx = hx + (w * 0.62 - hx) * s
         ty = hy + (h * 0.34 - hy) * s
         ts = 1 - 0.5 * s
-        to = 1 - smoothstep(clamp((p - 0.4) / 0.16, 0, 1))
+        to = 1 - smoothstep(clamp((sp - 0.4) / 0.16, 0, 1))
       }
-
-      if (!cur) cur = { x: tx, y: ty, s: ts, o: to }
-      cur.x = damp(cur.x, tx, 5, dt)
-      cur.y = damp(cur.y, ty, 5, dt)
-      cur.s = damp(cur.s, ts, 5, dt)
-      cur.o = damp(cur.o, to, 5, dt)
+      // a gentle upward arc through the handoff (zero at both ends), so
+      // the glide reads as an organic flit rather than a straight diagonal
+      const arc = (desk ? 56 : 26) * Math.sin(Math.PI * s)
       const baseY = desk ? h * 0.48 : h * 0.5
       box.style.transform =
-        `translate(-50%, -50%) translate(${(cur.x - w / 2).toFixed(1)}px, ${(cur.y - baseY).toFixed(1)}px) scale(${cur.s.toFixed(4)})`
-      box.style.opacity = cur.o.toFixed(3)
+        `translate(-50%, -50%) translate(${(tx - w / 2).toFixed(1)}px, ${(ty - baseY - arc).toFixed(1)}px) scale(${ts.toFixed(4)})`
+      box.style.opacity = to.toFixed(3)
+
+      // trail + arrow derive from the same scalar — synced by construction
+      applyTrailRef.current(sp)
+
+      // section reveals + robot pose (Robot3D) share the same scalar too;
+      // only notify React while it's actually moving
+      if (Math.abs(sp - lastSent) > 0.0004) {
+        lastSent = sp
+        setProgress(sp)
+      }
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
