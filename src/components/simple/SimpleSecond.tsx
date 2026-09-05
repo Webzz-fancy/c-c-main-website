@@ -2,10 +2,12 @@ type Props = { progress: number }
 
 export default function SimpleSecond({ progress }: Props) {
   const c = Math.max(0, Math.min(1, progress))
-  // content comes in as arrow moves — tied to same progress so it feels like one thing
-  const in1 = Math.max(0, Math.min(1, (c - 0.22) / 0.38))
-  const in2 = Math.max(0, Math.min(1, (c - 0.32) / 0.4))
-  const in3 = Math.max(0, Math.min(1, (c - 0.4) / 0.42))
+  // content comes in as arrow moves — tied to same progress so it feels like
+  // one thing. The footer lengthened the page, so the windows run a touch
+  // earlier to finish while the section is centred in the viewport.
+  const in1 = Math.max(0, Math.min(1, (c - 0.16) / 0.2))
+  const in2 = Math.max(0, Math.min(1, (c - 0.22) / 0.2))
+  const in3 = Math.max(0, Math.min(1, (c - 0.28) / 0.2))
 
   return (
     <section id="simple-second" className="relative overflow-hidden bg-[#08080A] px-6 py-16 sm:py-20 lg:min-h-[92vh] lg:py-28">
