@@ -1,6 +1,6 @@
-import { Suspense, useRef } from 'react'
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { useGLTF, Environment } from '@react-three/drei'
+import { useGLTF, Environment, Lightformer } from '@react-three/drei'
 import * as THREE from 'three'
 import { clamp, damp, prefersReducedMotion, usePointer } from '../../hooks/usePointer'
 
@@ -12,26 +12,65 @@ useGLTF.preload('/robot.glb')
 const EYE_Y = 0.848
 const EYE_Z = 0.168 // just outside surface
 const EYE_DX = 0.074 // closer (was 0.097 too wide)
-const EYE_RIGHT_Y_DROP = 0.008 // ~1.5px lower from our view
+const EYE_RIGHT_Y_DROP = 0.005 // ~1.5-2px lower from our view (head's slight tilt)
 const MOUTH_Y = 0.725
 const MOUTH_Z = 0.168
 
-function RobotModel({ scrollProgress }: { scrollProgress: number }) {
+/**
+ * A light panel aimed at the robot (world origin). Used inside <Environment>
+ * to build a fully local, offline environment map — no remote HDR fetch.
+ */
+function EnvPanel({
+  position,
+  scale,
+  color = '#FFFFFF',
+  intensity = 1,
+  form = 'rect',
+}: {
+  position: [number, number, number]
+  scale?: number | [number, number, number]
+  color?: string
+  intensity?: number
+  form?: 'rect' | 'circle'
+}) {
+  const ref = useRef<THREE.Mesh>(null)
+  useLayoutEffect(() => {
+    // for non-camera objects, lookAt aims the +Z face at the target
+    ref.current?.lookAt(0, 0, 0)
+  }, [])
+  return <Lightformer ref={ref} form={form} position={position} scale={scale} color={color} intensity={intensity} />
+}
+
+function RobotModel({ scrollProgress, onFirstFrame }: { scrollProgress: number; onFirstFrame?: () => void }) {
   const { scene } = useGLTF('/robot.glb')
   const groupRef = useRef<THREE.Group>(null)
-  const cloned = scene.clone(true) as THREE.Group
-  cloned.traverse((obj: any) => {
-    if (obj.isMesh) {
-      obj.castShadow = true
-      obj.receiveShadow = true
-      if (obj.material) {
-        obj.material.roughness = 0.82
-        obj.material.metalness = 0.04
+  const firstFrame = useRef(false)
+
+  // Clone the exact provided GLB once (not on every scroll re-render) and
+  // tune the materials for a matte, solid body.
+  const cloned = useMemo(() => {
+    const c = scene.clone(true) as THREE.Group
+    c.traverse((obj: any) => {
+      if (obj.isMesh) {
+        obj.castShadow = true
+        obj.receiveShadow = true
+        if (obj.material) {
+          obj.material.roughness = 0.86
+          obj.material.metalness = 0.02
+          // The GLB ships with metalness 1 / envMapIntensity 1, which — combined
+          // with a bright environment — is the source of the glowy look.
+          obj.material.envMapIntensity = 0.3
+        }
       }
-    }
-  })
+    })
+    return c
+  }, [scene])
 
   useFrame((state, delta) => {
+    if (!firstFrame.current) {
+      firstFrame.current = true
+      onFirstFrame?.()
+    }
     const g = groupRef.current
     if (!g) return
     const dt = Math.min(delta, 0.05)
@@ -187,17 +226,61 @@ function FallbackBox() {
   return null
 }
 
-export default function Robot3D({ scrollProgress, className = '' }: { scrollProgress: number; className?: string }) {
+export default function Robot3D({
+  scrollProgress,
+  onReady,
+  className = '',
+}: {
+  scrollProgress: number
+  onReady?: () => void
+  className?: string
+}) {
+  const notified = useRef(false)
+  const notify = () => {
+    if (!notified.current) {
+      notified.current = true
+      onReady?.()
+    }
+  }
+  // Safety: never hold the loading screen hostage if the GLB/WebGL misbehaves.
+  useEffect(() => {
+    const t = window.setTimeout(notify, 9000)
+    return () => window.clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
     <div className={`relative h-full w-full ${className}`}>
-      <Canvas dpr={[1, 1.5]} gl={{ antialias: true, alpha: true }} camera={{ position: [0, 0.62, 2.88], fov: 33 }} shadows style={{ background: 'transparent' }}>
-        <ambientLight intensity={0.9} />
-        <directionalLight position={[2.1, 3.0, 2.0]} intensity={1.1} castShadow shadow-mapSize={[1024, 1024]} />
-        <directionalLight position={[-1.5, 1.0, -1.1]} intensity={0.38} color="#C2D9E5" />
-        <pointLight position={[0, 1.4, 1.1]} intensity={0.42} color="#FFE8A3" distance={3} />
+      <Canvas
+        dpr={[1, 1.5]}
+        gl={{ antialias: true, alpha: true, toneMappingExposure: 0.92 }}
+        camera={{ position: [0, 0.62, 2.88], fov: 33 }}
+        shadows
+        style={{ background: 'transparent' }}
+      >
+        {/*
+          Lighting tuned for a DARK, SOLID, GROUNDED body:
+          low ambient, one soft key, a faint cool rim, a whisper of warm fill.
+          The environment is a small local studio (Lightformers, rendered into
+          the env map offline) at low envMapIntensity — controlled highlights,
+          no bloom, no glow.
+        */}
+        <ambientLight intensity={0.26} />
+        <directionalLight position={[2.4, 3.2, 2.2]} intensity={1.35} castShadow shadow-mapSize={[1024, 1024]} />
+        <directionalLight position={[-1.8, 1.1, -1.5]} intensity={0.32} color="#BFD4E2" />
+        <pointLight position={[0, 1.05, 1.5]} intensity={0.16} color="#FFE8A3" distance={2.6} />
         <Suspense fallback={<FallbackBox />}>
-          <RobotModel scrollProgress={scrollProgress} />
-          <Environment preset="studio" />
+          <RobotModel scrollProgress={scrollProgress} onFirstFrame={notify} />
+          <Environment resolution={256} frames={1}>
+            {/* soft key panel, upper-left-front */}
+            <EnvPanel position={[-3, 2.6, 2.4]} scale={[4, 3.2, 1]} intensity={1.05} color="#FFFFFF" />
+            {/* faint cool fill, right */}
+            <EnvPanel position={[3.4, 0.6, 1.6]} scale={[3, 4, 1]} intensity={0.22} color="#9FB6C6" />
+            {/* warm rim from behind — keeps form readable on the dark section */}
+            <EnvPanel position={[1.1, 1.5, -3]} scale={[2.6, 1.4, 1]} intensity={0.42} color="#FFE3B0" />
+            {/* dark floor — grounds the lower body */}
+            <EnvPanel position={[0, -2.6, 0]} scale={[5, 5, 1]} intensity={0.12} color="#6B6B6B" form="circle" />
+          </Environment>
         </Suspense>
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.46, 0]}>
           <circleGeometry args={[0.42, 64]} />

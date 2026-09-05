@@ -27,9 +27,16 @@ type LoaderProps = {
   onReveal: () => void
   /** Fired once the fade is finished — unmount the loader. */
   onGone: () => void
+  /**
+   * Optional extra readiness predicate (e.g. "the 3D robot has rendered its
+   * first frame"). When provided, the loader holds at ~100% until it returns
+   * true — so no incomplete model ever flashes on screen. Pages that don't
+   * pass it behave exactly as before.
+   */
+  waitFor?: () => boolean
 }
 
-export default function Loader({ onReveal, onGone }: LoaderProps) {
+export default function Loader({ onReveal, onGone, waitFor }: LoaderProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const pctRef = useRef<HTMLSpanElement>(null)
   const barRef = useRef<HTMLDivElement>(null)
@@ -40,6 +47,8 @@ export default function Loader({ onReveal, onGone }: LoaderProps) {
   onRevealRef.current = onReveal
   const onGoneRef = useRef(onGone)
   onGoneRef.current = onGone
+  const waitForRef = useRef(waitFor)
+  waitForRef.current = waitFor
 
   useEffect(() => {
     const root = rootRef.current
@@ -86,7 +95,12 @@ export default function Loader({ onReveal, onGone }: LoaderProps) {
 
       // ---- progress ------------------------------------------------------
       const timeP = clamp(t / ramp, 0, 1)
-      const assetsDone = loadedCount >= PRELOAD.length || t > HARD_TIMEOUT_MS
+      // When a waitFor predicate is provided (Simple page: the 3D robot),
+      // readiness also requires it — with a generous safety timeout so the
+      // loader can never hold the page hostage.
+      const extraWaitMs = waitForRef.current ? 9000 : HARD_TIMEOUT_MS
+      const externalOk = waitForRef.current ? waitForRef.current() : true
+      const assetsDone = (loadedCount >= PRELOAD.length && externalOk) || t > extraWaitMs
       const target = Math.min(timeP, assetsDone ? 1 : 0.85) * 100
       display = damp(display, target, 8, dt)
       if (display > 99.4 && assetsDone) display = 100
