@@ -83,15 +83,17 @@ function RobotModel({ scrollProgress, onFirstFrame }: { scrollProgress: number; 
     g.scale.z = 1 - breathe * 0.35
     g.position.y = Math.sin(t * 0.62) * 0.006 - 0.46
     // settle into second section: same handoff ramp as the page's robot
-    // journey, so the pose finishes exactly when it reaches its perch —
-    // a full ~45° tilt left toward the content, plus a hint of a left turn.
+    // journey, so the pose lands exactly when the body reaches its perch.
+    // The page hands us an already-smoothed scroll value → apply it
+    // directly (a ~60ms damp only guards one-frame jumps, e.g. a mid-page
+    // reload). The robot stays perfectly UPRIGHT — no roll, no pitch. The
+    // 45° is a horizontal turn (yaw) to the LEFT, so it faces the content
+    // on the left side of the section in a three-quarter view (face still
+    // visible).
     const s = smoothstep(THREE.MathUtils.clamp((scrollProgress - 0.12) / 0.33, 0, 1))
-    const targetYaw = THREE.MathUtils.lerp(0, -0.09, s)
-    const targetRoll = THREE.MathUtils.lerp(0, Math.PI / 4, s) // 45° lean left
-    const targetPitch = THREE.MathUtils.lerp(0, 0.03, s)
-    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, targetYaw, 3.2, dt)
-    g.rotation.z = THREE.MathUtils.damp(g.rotation.z, targetRoll, 3.2, dt)
-    g.rotation.x = THREE.MathUtils.damp(g.rotation.x, targetPitch, 3.2, dt)
+    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, (-Math.PI / 4) * s, 16, dt)
+    g.rotation.z = THREE.MathUtils.damp(g.rotation.z, 0, 16, dt)
+    g.rotation.x = THREE.MathUtils.damp(g.rotation.x, 0, 16, dt)
   })
 
   return (
