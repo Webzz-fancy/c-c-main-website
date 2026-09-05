@@ -196,20 +196,20 @@ export default function Approach() {
           className="absolute -left-32 top-24 h-[520px] w-[520px] rounded-full blur-3xl"
           style={{
             background:
-              'radial-gradient(circle, rgba(225,173,52,0.42) 0%, rgba(225,173,52,0) 70%)',
+              'radial-gradient(circle, rgba(45,109,139,0.06) 0%, rgba(45,109,139,0) 70%)',
           }}
         />
         <div
           className="absolute -right-24 bottom-10 h-[560px] w-[560px] rounded-full blur-3xl"
           style={{
             background:
-              'radial-gradient(circle, rgba(225,173,52,0.30) 0%, rgba(225,173,52,0) 70%)',
+              'radial-gradient(circle, rgba(45,109,139,0.05) 0%, rgba(45,109,139,0) 70%)',
           }}
         />
         <div
           className="absolute left-1/3 top-1/2 h-[420px] w-[420px] rounded-full blur-3xl"
           style={{
-            background: 'radial-gradient(circle, rgba(235,201,109,0.38) 0%, rgba(235,201,109,0) 70%)',
+            background: 'radial-gradient(circle, rgba(45,109,139,0.05) 0%, rgba(45,109,139,0) 70%)',
           }}
         />
       </div>
@@ -217,10 +217,10 @@ export default function Approach() {
       <div className="relative mx-auto w-full max-w-[1240px] px-5 sm:px-8">
         {/* ---------- The glass box ---------- */}
         <div
-          className="relative isolate rounded-[28px] border border-white/70 px-5 py-12 shadow-[0_40px_100px_-40px_rgba(74,54,15,0.34),inset_0_1px_0_rgba(255,255,255,0.9)] sm:rounded-[36px] sm:px-10 md:px-14 md:py-16"
+          className="relative isolate rounded-[28px] border border-white/70 px-5 py-12 shadow-[0_40px_100px_-40px_rgba(18,44,56,0.34),inset_0_1px_0_rgba(255,255,255,0.9)] sm:rounded-[36px] sm:px-10 md:px-14 md:py-16"
           style={{
             background:
-              'linear-gradient(145deg, rgba(255,255,255,0.56) 0%, rgba(250,239,210,0.34) 45%, rgba(243,221,161,0.40) 100%)',
+              'linear-gradient(145deg, rgba(255,255,255,0.56) 0%, rgba(45,109,139,0.045) 45%, rgba(45,109,139,0.06) 100%)',
             backdropFilter: 'blur(28px) saturate(180%)',
             WebkitBackdropFilter: 'blur(28px) saturate(180%)',
           }}
@@ -412,13 +412,13 @@ function StepCard({ step, index, reached, registerRef }: StepCardProps) {
         'group relative rounded-2xl border p-6 transition-all duration-500 hover:-translate-y-0.5 sm:p-7',
         index % 2 === 1 ? 'sm:ml-5 md:ml-8' : '',
         reached
-          ? 'border-white/70 shadow-[0_24px_60px_-30px_rgba(74,54,15,0.4)]'
-          : 'border-white/40 shadow-[0_16px_40px_-30px_rgba(74,54,15,0.3)]',
+          ? 'border-white/70 shadow-[0_24px_60px_-30px_rgba(18,44,56,0.4)]'
+          : 'border-white/40 shadow-[0_16px_40px_-30px_rgba(18,44,56,0.3)]',
       ].join(' ')}
       style={{
         background: reached
-          ? 'linear-gradient(140deg, rgba(255,255,255,0.74) 0%, rgba(250,239,210,0.46) 100%)'
-          : 'linear-gradient(140deg, rgba(255,255,255,0.44) 0%, rgba(250,239,210,0.26) 100%)',
+          ? 'radial-gradient(150px 150px at 100% 0%, rgba(45,109,139,0.10) 0%, rgba(45,109,139,0) 72%), radial-gradient(150px 150px at 0% 100%, rgba(45,109,139,0.08) 0%, rgba(45,109,139,0) 72%), linear-gradient(145deg, rgba(255,255,255,0.66) 0%, rgba(255,255,255,0.50) 100%)'
+          : 'radial-gradient(150px 150px at 100% 0%, rgba(45,109,139,0.06) 0%, rgba(45,109,139,0) 72%), radial-gradient(150px 150px at 0% 100%, rgba(45,109,139,0.05) 0%, rgba(45,109,139,0) 72%), linear-gradient(145deg, rgba(255,255,255,0.44) 0%, rgba(255,255,255,0.32) 100%)',
         backdropFilter: 'blur(16px) saturate(160%)',
         WebkitBackdropFilter: 'blur(16px) saturate(160%)',
         // Reveal: blur + lift out, settling into place.

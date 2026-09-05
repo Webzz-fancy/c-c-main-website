@@ -84,31 +84,31 @@ export default function Quiz() {
 
   return (
     <section id="quiz" className="relative w-full bg-cream pb-24 pt-8 md:pb-32 md:pt-12">
-      {/* ---------- Ambient warm wash ---------- */}
+      {/* ---------- Ambient blue wash ---------- */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute inset-0 grain opacity-60" />
         <div
           className="absolute left-1/2 top-1/4 h-[520px] w-[860px] -translate-x-1/2 rounded-full blur-3xl"
           style={{
             background:
-              'radial-gradient(ellipse, rgba(225,173,52,0.30) 0%, rgba(225,173,52,0) 70%)',
+              'radial-gradient(ellipse, rgba(45,109,139,0.05) 0%, rgba(45,109,139,0) 70%)',
           }}
         />
         <div
           className="absolute -right-28 bottom-0 h-[420px] w-[420px] rounded-full blur-3xl"
           style={{
             background:
-              'radial-gradient(circle, rgba(235,201,109,0.34) 0%, rgba(235,201,109,0) 70%)',
+              'radial-gradient(circle, rgba(45,109,139,0.06) 0%, rgba(45,109,139,0) 70%)',
           }}
         />
       </div>
 
       <div ref={ref} className="relative mx-auto w-full max-w-[1240px] px-5 sm:px-8">
         <div
-          className="relative isolate overflow-hidden rounded-[28px] border border-white/70 px-6 py-16 text-center shadow-[0_40px_100px_-40px_rgba(74,54,15,0.34),inset_0_1px_0_rgba(255,255,255,0.9)] sm:rounded-[36px] sm:px-12 md:py-20"
+          className="relative isolate overflow-hidden rounded-[28px] border border-white/70 px-6 py-16 text-center shadow-[0_40px_100px_-40px_rgba(18,44,56,0.34),inset_0_1px_0_rgba(255,255,255,0.9)] sm:rounded-[36px] sm:px-12 md:py-20"
           style={{
             background:
-              'linear-gradient(145deg, rgba(255,255,255,0.60) 0%, rgba(250,239,210,0.36) 45%, rgba(243,221,161,0.42) 100%)',
+              'linear-gradient(145deg, rgba(255,255,255,0.60) 0%, rgba(45,109,139,0.045) 45%, rgba(45,109,139,0.06) 100%)',
             backdropFilter: 'blur(28px) saturate(180%)',
             WebkitBackdropFilter: 'blur(28px) saturate(180%)',
           }}

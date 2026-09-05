@@ -20,7 +20,7 @@ type UnderlineProps = {
 export default function Underline({
   active,
   delay = 0,
-  duration = 1100,
+  duration = 1600,
   className = '',
 }: UnderlineProps) {
   const pathRef = useRef<SVGPathElement>(null)
