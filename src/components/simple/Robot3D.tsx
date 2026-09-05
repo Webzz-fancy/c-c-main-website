@@ -184,12 +184,7 @@ function Face3D({ scrollProgress }: { scrollProgress: number }) {
 }
 
 function FallbackBox() {
-  return (
-    <mesh>
-      <boxGeometry args={[0.3, 0.5, 0.18]} />
-      <meshStandardMaterial color="#eee" wireframe />
-    </mesh>
-  )
+  return null
 }
 
 export default function Robot3D({ scrollProgress, className = '' }: { scrollProgress: number; className?: string }) {

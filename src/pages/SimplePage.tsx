@@ -49,7 +49,7 @@ export default function SimplePage() {
     }
   }, [loaderGone])
 
-  // dotted line is PRODUCED by the arrow — not visible before scroll
+  // dotted trail is PRODUCED by the arrow — exactly where it travels
   useEffect(() => {
     const full = pathRef.current
     const heroP = heroPathRef.current
@@ -60,35 +60,40 @@ export default function SimplePage() {
     const fullLen = full.getTotalLength()
     const heroLen = heroP.getTotalLength()
     const secondLen = secondP.getTotalLength()
-    // hero draws 0 -> 0.38, second draws 0.38 -> 1
-    const heroProg = Math.max(0, Math.min(1, progress / 0.38))
-    const secondProg = Math.max(0, Math.min(1, (progress - 0.38) / 0.62))
+    const drawn = fullLen * progress
     heroP.style.strokeDasharray = `7 11`
     secondP.style.strokeDasharray = `7 11`
-    heroP.style.strokeDashoffset = `${heroLen * (1 - heroProg)}`
-    secondP.style.strokeDashoffset = `${secondLen * (1 - secondProg)}`
-    heroP.style.opacity = progress > 0.01 ? '1' : '0'
-    secondP.style.opacity = progress > 0.38 ? '1' : progress > 0.32 ? `${(progress - 0.32) / 0.06}` : '0'
+    // hero draws first, second draws after hero is complete — tip always matches arrow
+    if (drawn <= heroLen) {
+      heroP.style.strokeDashoffset = `${heroLen - drawn}`
+      secondP.style.strokeDashoffset = `${secondLen}`
+      heroP.style.opacity = progress > 0.005 ? '1' : '0'
+      secondP.style.opacity = '0'
+    } else {
+      heroP.style.strokeDashoffset = `0`
+      secondP.style.strokeDashoffset = `${secondLen - (drawn - heroLen)}`
+      heroP.style.opacity = '1'
+      secondP.style.opacity = '1'
+    }
 
-    // dot + arrow ride the full path length
-    const p = full.getPointAtLength(fullLen * Math.min(1, progress))
-    const p2 = full.getPointAtLength(fullLen * Math.min(1, progress + 0.007))
+    const p = full.getPointAtLength(Math.min(fullLen, drawn))
+    const p2 = full.getPointAtLength(Math.min(fullLen, drawn + 8))
     const ang = Math.atan2(p2.y - p.y, p2.x - p.x) * (180 / Math.PI)
     dot.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -50%)`
-    dot.style.opacity = progress > 0.02 && progress < 0.985 ? '1' : '0'
+    dot.style.opacity = progress > 0.015 && progress < 0.985 ? '1' : '0'
 
     if (progress < 0.02) {
       arrow.style.opacity = '0'
-      arrow.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -50%) rotate(${ang}deg) scale(0.85)`
-    } else if (progress < 0.88) {
+      arrow.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -50%) rotate(${ang}deg) scale(0.88)`
+    } else if (progress < 0.90) {
       arrow.style.opacity = '1'
       arrow.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -50%) rotate(${ang}deg) scale(1)`
     } else {
-      const extra = (progress - 0.88) * 90
+      const extra = (progress - 0.90) * 80
       const rad = (ang * Math.PI) / 180
       const px = p.x + Math.cos(rad) * extra
       const py = p.y + Math.sin(rad) * extra
-      arrow.style.opacity = `${Math.max(0, 1 - (progress - 0.88) * 7)}`
+      arrow.style.opacity = `${Math.max(0, 1 - (progress - 0.90) * 8)}`
       arrow.style.transform = `translate(${px}px, ${py}px) translate(-50%, -50%) rotate(${ang}deg) scale(1)`
     }
   }, [progress])
