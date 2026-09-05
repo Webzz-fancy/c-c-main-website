@@ -6,6 +6,8 @@ import { clamp, damp, prefersReducedMotion, usePointer } from '../../hooks/usePo
 
 useGLTF.preload('/robot.glb')
 
+const smoothstep = (t: number) => t * t * (3 - 2 * t)
+
 // precise face anchor measured from GLB vertices (Y 0-1, Z ±0.214)
 // left eye ~[-0.091,0.851,0.138] right ~[0.102,0.847,0.14] mouth ~[0.0015,0.721,0.161]
 // human tweaks: a bit closer, right eye 1-2px lower, oval yellow eyes like HeroRobot
@@ -80,13 +82,16 @@ function RobotModel({ scrollProgress, onFirstFrame }: { scrollProgress: number; 
     g.scale.x = 1 - breathe * 0.35
     g.scale.z = 1 - breathe * 0.35
     g.position.y = Math.sin(t * 0.62) * 0.006 - 0.46
-    // settle into second: subtle left look — keep it believable
-    const targetYaw = THREE.MathUtils.lerp(0, -0.14, scrollProgress) // ~8deg
-    const targetRoll = THREE.MathUtils.lerp(0, -0.045, scrollProgress)
-    const targetPitch = THREE.MathUtils.lerp(0, 0.03, scrollProgress)
-    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, targetYaw, 2.8, dt)
-    g.rotation.z = THREE.MathUtils.damp(g.rotation.z, targetRoll, 2.8, dt)
-    g.rotation.x = THREE.MathUtils.damp(g.rotation.x, targetPitch, 2.8, dt)
+    // settle into second section: same handoff ramp as the page's robot
+    // journey, so the pose finishes exactly when it reaches its perch —
+    // a full ~45° tilt left toward the content, plus a hint of a left turn.
+    const s = smoothstep(THREE.MathUtils.clamp((scrollProgress - 0.12) / 0.33, 0, 1))
+    const targetYaw = THREE.MathUtils.lerp(0, -0.09, s)
+    const targetRoll = THREE.MathUtils.lerp(0, Math.PI / 4, s) // 45° lean left
+    const targetPitch = THREE.MathUtils.lerp(0, 0.03, s)
+    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, targetYaw, 3.2, dt)
+    g.rotation.z = THREE.MathUtils.damp(g.rotation.z, targetRoll, 3.2, dt)
+    g.rotation.x = THREE.MathUtils.damp(g.rotation.x, targetPitch, 3.2, dt)
   })
 
   return (
@@ -118,8 +123,23 @@ function Face3D({ scrollProgress }: { scrollProgress: number }) {
     const { x, y, active } = pointer.current
     const vw = typeof window !== 'undefined' ? window.innerWidth : 1200
     const vh = typeof window !== 'undefined' ? window.innerHeight : 800
-    const faceCX = vw * 0.5
-    const faceCY = vh * 0.405 // 3D face sits ~40% from top of viewport when robot centered
+    // gaze anchor follows the robot's journey (same handoff ramp + perch
+    // formula as SimplePage), so eye tracking stays correct while it moves
+    const desk = vw >= 1024
+    const rs = smoothstep(clamp((scrollProgress - 0.12) / 0.33, 0, 1))
+    let faceCX: number
+    let faceCY: number
+    if (desk) {
+      const heroH = vh // hero is 100svh
+      const secH = vh * 0.92
+      const perchX = vw / 2 + 0.52 * Math.min(640, Math.min(1240, vw - 48) / 2)
+      const perchFaceY = heroH + 0.2 * secH - 42 // face sits just above perch centre
+      faceCX = vw * 0.5 + (perchX - vw * 0.5) * rs
+      faceCY = vh * 0.405 + (perchFaceY - window.scrollY - vh * 0.405) * rs
+    } else {
+      faceCX = vw * 0.5 + (vw * 0.62 - vw * 0.5) * rs
+      faceCY = vh * 0.44 + (vh * 0.28 - vh * 0.44) * rs
+    }
 
     let tx: number, ty: number
     if (active && !coarse) {

@@ -4,6 +4,11 @@ import SimpleSecond from '../components/simple/SimpleSecond'
 import Robot3D from '../components/simple/Robot3D'
 import Header from '../components/Header'
 import Loader from '../components/Loader'
+import Footer from '../components/Footer'
+import ScrollRope from '../components/ScrollRope'
+import { clamp, damp } from '../hooks/usePointer'
+
+const smoothstep = (t: number) => t * t * (3 - 2 * t)
 
 /**
  * Arrow + dotted trail — behaviour reproduced from the project.mp4 reference:
@@ -20,16 +25,23 @@ import Loader from '../components/Loader'
  * input.
  */
 
-// Wavy path, normalized to the hero+second area (same concept/shape as before,
-// re-expressed so it anchors to that area exactly).
+// Travel path, normalized to the hero+second area: down through the hero,
+// then one big smooth sweep right → down → left along the bottom of the
+// second section.
 type Vec2 = [number, number]
 const PATH_SEGS: [Vec2, Vec2, Vec2, Vec2][] = [
   // hero: starts behind the robot (center), curves down-left
   [[0.5, 0.394], [0.38, 0.4143], [0.292, 0.4565], [0.252, 0.5208]],
-  // second: continues left, then the long wavy sweep to the right
+  // second: continues left, then begins the long sweep
   [[0.252, 0.5208], [0.212, 0.5869], [0.232, 0.6508], [0.312, 0.7022]],
-  [[0.312, 0.7022], [0.392, 0.754], [0.512, 0.7825], [0.642, 0.7649]],
-  [[0.642, 0.7649], [0.772, 0.7472], [0.864, 0.6954], [0.884, 0.6277]],
+  // the big smooth sweep right — flows out along the robot's waist line
+  // (control points are tangent-continuous at the joints, so the travel
+  // reads as one flowing curve — no kinks)
+  [[0.312, 0.7022], [0.4396, 0.7836], [0.6042, 0.79], [0.7014, 0.794]],
+  // curves down on the right side of the sweep
+  [[0.7014, 0.794], [0.7674, 0.7969], [0.7931, 0.8623], [0.7764, 0.9115]],
+  // settles left along the bottom
+  [[0.7764, 0.9115], [0.766, 0.9415], [0.625, 0.9838], [0.5361, 0.9792]],
 ]
 
 // The wavy divider at the bottom of the hero (viewBox 1440 x 220) — used to
@@ -134,7 +146,12 @@ function pointAt(g: TrailGeom, dist: number): { x: number; y: number; ang: numbe
   return { x, y, ang }
 }
 
-const TRAIL_LAG = 26 // trail tail stays this many px behind the arrow tip
+const TRAIL_LAG = 34 // trail tail stays this many px behind the (bigger) arrow tip
+
+/** Robot handoff ramp: 0 in the hero → 1 once the section-2 perch is reached.
+ *  Robot3D uses the same ramp for its 45° left tilt, so pose and position
+ *  finish together. */
+const robotSettle = (p: number) => smoothstep(clamp((p - 0.12) / 0.33, 0, 1))
 
 export default function SimplePage() {
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -149,6 +166,7 @@ export default function SimplePage() {
   const stop3Ref = useRef<SVGStopElement>(null)
   const stop4Ref = useRef<SVGStopElement>(null)
   const arrowRef = useRef<HTMLDivElement>(null)
+  const robotBoxRef = useRef<HTMLDivElement>(null)
   const trailGeom = useRef<TrailGeom | null>(null)
   const [progress, setProgress] = useState(0)
   const progressRef = useRef(0)
@@ -226,6 +244,77 @@ export default function SimplePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready])
 
+  /**
+   * Robot journey — hero → second section:
+   *   · in the hero it stands centred, upright (the trail emerges behind it)
+   *   · on the way down it hands off to a perch in the UPPER-RIGHT of the
+   *     second section, ~45° tilted left toward the content
+   *   · the perch is document-anchored, so once there the robot rides the
+   *     scroll and exits the top edge with the section (no fade, no hover
+   *     over the footer). The trail curve sits below the perch, so arrow
+   *     and trail always pass clear of it.
+   * Damped in a rAF loop (no React round-trip) → smooth at any scroll speed.
+   */
+  useEffect(() => {
+    if (!ready) return
+    const box = robotBoxRef.current
+    if (!box) return
+    let raf = 0
+    let last = performance.now()
+    let cur: { x: number; y: number; s: number; o: number } | null = null
+
+    const tick = (now: number) => {
+      const dt = Math.min((now - last) / 1000, 0.05)
+      last = now
+      const w = window.innerWidth
+      const h = window.innerHeight
+      const desk = w >= 1024
+      const p = progressRef.current
+      const s = robotSettle(p)
+      const scrollY = window.scrollY
+
+      // hero anchor (viewport px) — where the robot stands at rest
+      const hx = w * 0.5
+      const hy = h * (desk ? 0.48 : 0.5)
+
+      let tx: number, ty: number, ts: number, to: number
+      if (desk) {
+        // perch (doc px): upper right of the second section, clear of the
+        // trail (which runs along the section's bottom) and of the rope
+        // at the right edge
+        const heroH = heroRef.current?.offsetHeight ?? h
+        const secH = secondRef.current?.offsetHeight ?? h * 0.92
+        const px = w / 2 + 0.52 * Math.min(640, Math.min(1240, w - 48) / 2)
+        const py = heroH + 0.2 * secH
+        tx = hx + (px - hx) * s
+        ty = hy + (py - scrollY - hy) * s
+        ts = 1 - 0.38 * s
+        to = 1
+      } else {
+        // mobile: content is full-width, so no perch — drift up-right and
+        // fade out as the section takes over
+        tx = hx + (w * 0.62 - hx) * s
+        ty = hy + (h * 0.34 - hy) * s
+        ts = 1 - 0.5 * s
+        to = 1 - smoothstep(clamp((p - 0.4) / 0.16, 0, 1))
+      }
+
+      if (!cur) cur = { x: tx, y: ty, s: ts, o: to }
+      cur.x = damp(cur.x, tx, 5, dt)
+      cur.y = damp(cur.y, ty, 5, dt)
+      cur.s = damp(cur.s, ts, 5, dt)
+      cur.o = damp(cur.o, to, 5, dt)
+      const baseY = desk ? h * 0.48 : h * 0.5
+      box.style.transform =
+        `translate(-50%, -50%) translate(${(cur.x - w / 2).toFixed(1)}px, ${(cur.y - baseY).toFixed(1)}px) scale(${cur.s.toFixed(4)})`
+      box.style.opacity = cur.o.toFixed(3)
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready])
+
   // arrow position + trail reveal — both derived from the same scroll value
   function applyTrail(p: number) {
     const g = trailGeom.current
@@ -264,11 +353,13 @@ export default function SimplePage() {
       {!loaderGone && <Loader onReveal={() => setReady(true)} onGone={() => setLoaderGone(true)} waitFor={() => robotReady} />}
 
       {/* robot — mounted immediately so the GLB loads under the loader;
-          the opaque loader covers it until the model has rendered a frame */}
+          the opaque loader covers it until the model has rendered a frame.
+          Position/size are driven by the journey rAF loop (ref-based). */}
       <div className="pointer-events-none fixed inset-0 z-[6]">
         <div
-          className="absolute left-1/2 top-[50%] h-[min(60vh,520px)] w-[min(86vw,360px)] -translate-x-1/2 -translate-y-1/2 lg:top-[48%] lg:h-[min(76vh,680px)] lg:w-[min(40vw,520px)]"
-          style={{ transform: `translate(-50%, -50%) translateY(${progress * 15}vh) translateX(${progress * -8}px)` }}
+          ref={robotBoxRef}
+          className="absolute left-1/2 top-[50%] h-[min(60vh,520px)] w-[min(86vw,360px)] will-change-transform lg:top-[48%] lg:h-[min(76vh,680px)] lg:w-[min(40vw,520px)]"
+          style={{ transform: 'translate(-50%, -50%)' }}
         >
           <Robot3D scrollProgress={progress} onReady={() => setRobotReady(true)} />
         </div>
@@ -277,6 +368,8 @@ export default function SimplePage() {
       {ready && (
         <>
           <Header />
+          {/* same hanging robot + rope as the main page (rides the right edge) */}
+          <ScrollRope />
 
           <div ref={areaRef} className="relative">
             {/* dotted trail — PRODUCED by the arrow (mask band grows with scroll) */}
@@ -318,7 +411,7 @@ export default function SimplePage() {
                 className="absolute left-0 top-0 will-change-transform"
                 style={{ opacity: 0, transition: 'color 240ms linear' }}
               >
-                <svg width="26" height="26" viewBox="0 0 32 32" fill="none" className="drop-shadow-[0_6px_12px_rgba(0,0,0,0.28)]">
+                <svg width="46" height="46" viewBox="0 0 32 32" fill="none" className="drop-shadow-[0_8px_16px_rgba(0,0,0,0.32)]">
                   <path d="M28.2 4.2L4.1 14.6l8.4 4.7 3.7 9.1 12-24.2z" fill="currentColor" />
                 </svg>
               </div>
@@ -332,10 +425,8 @@ export default function SimplePage() {
             </div>
           </div>
 
-          <div className="bg-[#08080A] px-6 pb-14 pt-8 text-center">
-            <p className="mx-auto max-w-xl border-t border-white/10 pt-6 text-sm font-light text-white/40">— Next: project display for Simple.</p>
-            <a href="/" className="mt-4 inline-flex rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-ink">Back to home</a>
-          </div>
+          {/* same footer as the main page (replaces the "next project" stub) */}
+          <Footer />
         </>
       )}
     </div>
