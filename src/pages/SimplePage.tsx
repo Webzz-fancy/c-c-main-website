@@ -212,11 +212,12 @@ export default function SimplePage() {
     dist: 0,
     domeEnd: 1,
     headEnd: 2,
-    dropEnd: 3,
+    spinEnd: 3,
+    dropEnd: 4,
     pinPx: 100,
   })
   const [progress, setProgress] = useState(0)
-  const [third, setThird] = useState({ q1: 0, q2: 0, qDrop: 0, qPan: 0 })
+  const [third, setThird] = useState({ q1: 0, q2: 0, qSpin: 0, qDrop: 0, qPan: 0 })
   const progressRef = useRef(0)
   // smoothed scroll scalar (fraction of the whole page) — the single shared
   // input for the trail, the arrow, the robot journey and section 3
@@ -356,6 +357,7 @@ export default function SimplePage() {
         dist: budget.dist,
         domeEnd: budget.domeEnd,
         headEnd: budget.headEnd,
+        spinEnd: budget.spinEnd,
         dropEnd: budget.dropEnd,
         pinPx: budget.pinPx,
       }
@@ -408,7 +410,7 @@ export default function SimplePage() {
     let raf = 0
     let last = performance.now()
     let lastPA = 0
-    let lastThird = { q1: -1, q2: -1, qDrop: -1, qPan: -1 }
+    let lastThird = { q1: -1, q2: -1, qSpin: -1, qDrop: -1, qPan: -1 }
 
     const tick = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05)
@@ -480,7 +482,8 @@ export default function SimplePage() {
       // section 3 phases (linear in scroll; SimpleThird eases them)
       const q1 = clamp01(pinLocal / G.domeEnd)
       const q2 = clamp01((pinLocal - G.domeEnd) / Math.max(1, G.headEnd - G.domeEnd))
-      const qDrop = clamp01((pinLocal - G.headEnd) / Math.max(1, G.dropEnd - G.headEnd))
+      const qSpin = clamp01((pinLocal - G.headEnd) / Math.max(1, G.spinEnd - G.headEnd))
+      const qDrop = clamp01((pinLocal - G.spinEnd) / Math.max(1, G.dropEnd - G.spinEnd))
       const qPan = clamp01((pinLocal - G.dropEnd) / Math.max(1, G.dist))
 
       if (Math.abs(pA - lastPA) > 0.0004) {
@@ -490,11 +493,12 @@ export default function SimplePage() {
       if (
         Math.abs(q1 - lastThird.q1) > 0.0008 ||
         Math.abs(q2 - lastThird.q2) > 0.0008 ||
+        Math.abs(qSpin - lastThird.qSpin) > 0.0004 ||
         Math.abs(qDrop - lastThird.qDrop) > 0.0008 ||
         Math.abs(qPan - lastThird.qPan) > 0.0008
       ) {
-        lastThird = { q1, q2, qDrop, qPan }
-        setThird({ q1, q2, qDrop, qPan })
+        lastThird = { q1, q2, qSpin, qDrop, qPan }
+        setThird({ q1, q2, qSpin, qDrop, qPan })
       }
       raf = requestAnimationFrame(tick)
     }
@@ -624,8 +628,8 @@ export default function SimplePage() {
                   bottom of the stage (where the orange dome rises from) */}
               <div className="h-[8svh] w-full bg-[#08080A]" />
 
-              {/* section 3 — the orange dome, the heading, the clothesline */}
-              <SimpleThird q1={third.q1} q2={third.q2} qDrop={third.qDrop} qPan={third.qPan} />
+              {/* section 3 — the orange dome, the heading, the spinning previews, the clothesline */}
+              <SimpleThird q1={third.q1} q2={third.q2} qSpin={third.qSpin} qDrop={third.qDrop} qPan={third.qPan} />
             </div>
           </div>
 
