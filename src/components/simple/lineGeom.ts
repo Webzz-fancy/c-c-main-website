@@ -7,7 +7,7 @@
 export const LINE_COUNT = 10
 
 /** rope height, as a fraction of the viewport height */
-export const ROPE_Y = 0.36
+export const ROPE_Y = 0.56
 
 /** fixed per-card hand-hung tilt (deg), deterministic so it never shimmers */
 export const CARD_TILT = [-1.2, 0.9, -0.6, 1.3, -1.0, 0.5, -1.5, 0.8, -0.7, 1.1]
@@ -46,7 +46,8 @@ export function lineGeom(vw: number): LineGeom {
   const margin = desk ? vw * 0.08 : vw * 0.12
   const lineW = margin * 2 + (LINE_COUNT - 1) * spacing + cardW
   const distance = lineW + vw
-  const sag = Math.min(26, lineW * 0.006)
+  // a real clothesline droops — a visible mid-sag
+  const sag = Math.min(64, lineW * 0.018)
   return { cardW, cardH, spacing, margin, lineW, distance, sag }
 }
 
