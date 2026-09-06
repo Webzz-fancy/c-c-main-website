@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import SimpleHero from '../components/simple/SimpleHero'
 import SimpleSecond from '../components/simple/SimpleSecond'
+import SimpleThird from '../components/simple/SimpleThird'
 import Robot3D from '../components/simple/Robot3D'
 import Header from '../components/Header'
 import Loader from '../components/Loader'
 import Footer from '../components/Footer'
 import ScrollRope from '../components/ScrollRope'
 import { clamp } from '../hooks/usePointer'
+import { pinBudget } from '../components/simple/lineGeom'
 
 const smoothstep = (t: number) => t * t * (3 - 2 * t)
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 
 /**
  * Arrow + dotted trail — behaviour reproduced from the project.mp4 reference:
@@ -17,12 +20,16 @@ const smoothstep = (t: number) => t * t * (3 - 2 * t)
  *   The arrow travels (scroll-driven). Wherever it has already travelled,
  *   the dotted trail exists — nothing before the arrow, nothing after it.
  *
- * Implementation: one bezier path in pixel space. The dotted stroke is a
- * static pattern; a <mask> band grows from the path start exactly as far as
- * the arrow has gone (mask dash length = scroll progress × path length).
- * The arrow sits at the same arc length, so the two are synchronized by
- * construction. No timers, no independent animation — scroll is the only
- * input.
+ * One bezier path in pixel space over the hero+section-2 area. The dotted
+ * stroke is a static pattern; a <mask> band grows from the path start exactly
+ * as far as the arrow has gone. The arrow sits at the same arc length, so the
+ * two are synchronized by construction.
+ *
+ * Because section 2 lives inside the pinned stage (section 3 freezes it in
+ * place while the orange dome rises over it), the trail + arrow are split in
+ * two: part A rides the hero in normal flow, part B lives inside the stage so
+ * it stays frozen with the section. They hand the arrow over exactly at the
+ * hero/section boundary — the arrow is pixel-identical on both sides of it.
  */
 
 // Travel path, normalized to the hero+second area: down through the hero,
@@ -84,7 +91,10 @@ type TrailGeom = {
   pts: Vec2[]
   cum: number[]
   total: number
-  d: string
+  d: string // part A — hero+second area coordinates
+  dB: string // part B — same path shifted up by heroH (section-2 local)
+  /** arc length where the path crosses the hero/section boundary */
+  Lb: number
   /** document-y where cream ends (top of the wavy divider under the path) */
   switchY: number
 }
@@ -100,10 +110,12 @@ function buildTrail(areaW: number, areaH: number, heroH: number, waveH: number):
   const STEPS = 120
   const pts: Vec2[] = []
   let d = ''
+  let dB = ''
   for (let s = 0; s < segs.length; s++) {
     const [p0, c1, c2, p1] = segs[s]
     // joint points are shared between segments — emit them once
     d += `${s === 0 ? `M ${p0[0].toFixed(2)} ${p0[1].toFixed(2)}` : ''} C ${c1[0].toFixed(2)} ${c1[1].toFixed(2)}, ${c2[0].toFixed(2)} ${c2[1].toFixed(2)}, ${p1[0].toFixed(2)} ${p1[1].toFixed(2)}`
+    dB += `${s === 0 ? `M ${p0[0].toFixed(2)} ${(p0[1] - heroH).toFixed(2)}` : ''} C ${c1[0].toFixed(2)} ${(c1[1] - heroH).toFixed(2)}, ${c2[0].toFixed(2)} ${(c2[1] - heroH).toFixed(2)}, ${p1[0].toFixed(2)} ${(p1[1] - heroH).toFixed(2)}`
     const start = s === 0 ? 0 : 1
     for (let i = start; i <= STEPS; i++) pts.push(cubicAt(p0, c1, c2, p1, i / STEPS))
   }
@@ -125,7 +137,17 @@ function buildTrail(areaW: number, areaH: number, heroH: number, waveH: number):
     }
   }
 
-  return { pts, cum, total: cum[cum.length - 1], d, switchY }
+  // where does the path cross the flat hero/section boundary (y = heroH)?
+  let Lb = cum[cum.length - 1]
+  for (let i = 1; i < pts.length; i++) {
+    if (pts[i][1] >= heroH - 0.5 && pts[i - 1][1] < heroH - 0.5) {
+      const t = (heroH - pts[i - 1][1]) / (pts[i][1] - pts[i - 1][1] || 1)
+      Lb = cum[i - 1] + t * (cum[i] - cum[i - 1])
+      break
+    }
+  }
+
+  return { pts, cum, total: cum[cum.length - 1], d, dB, Lb, switchY }
 }
 
 function pointAt(g: TrailGeom, dist: number): { x: number; y: number; ang: number } {
@@ -150,52 +172,109 @@ const TRAIL_LAG = 34 // trail tail stays this many px behind the (bigger) arrow 
 
 /** Robot handoff ramp: 0 in the hero → 1 once the section-2 perch is reached.
  *  Robot3D uses the same ramp for its 45° left TURN, so pose and position
- *  finish together. */
+ *  finish together. (The domain is the pre-pin scroll: hero → section 2.) */
 const robotSettle = (p: number) => smoothstep(clamp((p - 0.12) / 0.33, 0, 1))
 
 /**
  * Exponential-follower time-constant for the shared smoothed scroll scalar.
- * Scroll arrives in steps (wheel notches / trackpad jumps); filtering it
- * through one follower turns those steps into a single continuous glide that
- * drives the trail, the arrow, the robot journey and the section reveals
- * together — one shared clock, so nothing ever lags behind anything else.
+ * Scroll arrives in steps (wheel notches); filtering it through one follower
+ * turns those steps into a single continuous glide that drives the trail, the
+ * arrow, the robot journey and the section reveals together — one shared
+ * clock, so nothing ever lags behind anything else.
  */
 const SMOOTH_TAU = 0.16
 
 export default function SimplePage() {
   const wrapperRef = useRef<HTMLDivElement>(null)
-  const areaRef = useRef<HTMLDivElement>(null)
   const heroRef = useRef<HTMLDivElement>(null)
   const secondRef = useRef<HTMLDivElement>(null)
-  const trailPathRef = useRef<SVGPathElement>(null)
-  const maskPathRef = useRef<SVGPathElement>(null)
-  const gradYRef = useRef<SVGLinearGradientElement>(null)
-  const stop1Ref = useRef<SVGStopElement>(null)
-  const stop2Ref = useRef<SVGStopElement>(null)
-  const stop3Ref = useRef<SVGStopElement>(null)
-  const stop4Ref = useRef<SVGStopElement>(null)
-  const arrowRef = useRef<HTMLDivElement>(null)
+  const pinWrapRef = useRef<HTMLDivElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const pathARef = useRef<SVGPathElement>(null)
+  const maskARef = useRef<SVGPathElement>(null)
+  const gradARef = useRef<SVGLinearGradientElement>(null)
+  const aStop1 = useRef<SVGStopElement>(null)
+  const aStop2 = useRef<SVGStopElement>(null)
+  const aStop3 = useRef<SVGStopElement>(null)
+  const aStop4 = useRef<SVGStopElement>(null)
+  const arrowARef = useRef<HTMLDivElement>(null)
+  const pathBRef = useRef<SVGPathElement>(null)
+  const maskBRef = useRef<SVGPathElement>(null)
+  const arrowBRef = useRef<HTMLDivElement>(null)
   const robotBoxRef = useRef<HTMLDivElement>(null)
   const trailGeom = useRef<TrailGeom | null>(null)
+  const geom = useRef({
+    heroH: 0,
+    secH: 0,
+    total: 0,
+    Lb: 0,
+    switchY: 0,
+    dist: 0,
+    domeEnd: 1,
+    headEnd: 2,
+    dropEnd: 3,
+    pinPx: 100,
+  })
   const [progress, setProgress] = useState(0)
+  const [third, setThird] = useState({ q1: 0, q2: 0, qDrop: 0, qPan: 0 })
   const progressRef = useRef(0)
-  // smoothed scroll scalar — the single shared input for the trail, the
-  // arrow, the robot journey and the section reveals (advanced in the
-  // journey rAF loop below)
+  // smoothed scroll scalar (fraction of the whole page) — the single shared
+  // input for the trail, the arrow, the robot journey and section 3
   const smoothRef = useRef(0)
   const [ready, setReady] = useState(false)
   const [loaderGone, setLoaderGone] = useState(false)
   const [robotReady, setRobotReady] = useState(false)
 
-  // arrow position + trail reveal — both derived from the same scroll value.
-  // Written directly to the DOM inside the scroll rAF (no React round-trip),
-  // so the trail is frame-accurate with the arrow.
-  const applyTrailRef = useRef<(p: number) => void>(() => {})
-  applyTrailRef.current = applyTrail
+  // trail part A (over the hero) + part B (over the frozen section 2) — both
+  // derived from the same smoothed value, written directly to the DOM.
+  const applyARef = useRef<(drawn: number) => void>(() => {})
+  applyARef.current = (drawn) => {
+    const g = trailGeom.current
+    const arrow = arrowARef.current
+    const mask = maskARef.current
+    if (!g || !arrow) return
+    const reveal = Math.max(0, Math.min(g.Lb, drawn - TRAIL_LAG))
+    if (mask) mask.style.strokeDasharray = `${reveal.toFixed(1)} ${(g.total + 64).toFixed(1)}`
+    const { x, y, ang } = pointAt(g, drawn)
+    // arrow fades in from behind the robot, then hands over to part B at the
+    // hero/section boundary
+    let op = drawn <= 0.02 * g.total ? 0 : Math.min(1, (drawn - 0.02 * g.total) / (0.08 * g.total))
+    if (drawn >= g.Lb) op = 0
+    arrow.style.opacity = op.toFixed(3)
+    const grow = 0.9 + 0.1 * Math.min(1, (drawn / g.total) * 20)
+    arrow.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -50%) rotate(${ang.toFixed(2)}deg) scale(${grow.toFixed(3)})`
+    const desktop = window.matchMedia('(min-width: 1024px)').matches
+    arrow.style.color = y < g.switchY ? '#1B1A17' : desktop ? '#F2AFA0' : '#FFFFFF'
+  }
+
+  const applyBRef = useRef<(pA: number, drawn: number) => void>(() => {})
+  applyBRef.current = (pA, drawn) => {
+    const g = trailGeom.current
+    const hero = heroRef.current
+    const arrow = arrowBRef.current
+    const mask = maskBRef.current
+    if (!g || !arrow || !hero) return
+    const heroH = hero.offsetHeight
+    const reveal = Math.max(0, Math.min(g.total - g.Lb, drawn - g.Lb - TRAIL_LAG))
+    if (mask) mask.style.strokeDasharray = `${reveal.toFixed(1)} ${(g.total + 64).toFixed(1)}`
+    const { x, y, ang } = pointAt(g, drawn)
+    const ay = y - heroH
+    let op = drawn < g.Lb ? 0 : 1
+    if (pA > 0.9) {
+      // flies out along its tangent while fading, as the journey completes
+      const e = (pA - 0.9) / 0.1
+      op *= 1 - e
+    }
+    arrow.style.opacity = op.toFixed(3)
+    const grow = 0.9 + 0.1 * Math.min(1, (drawn / g.total) * 20)
+    arrow.style.transform = `translate(${x.toFixed(1)}px, ${ay.toFixed(1)}px) translate(-50%, -50%) rotate(${ang.toFixed(2)}deg) scale(${grow.toFixed(3)})`
+    const desktop = window.matchMedia('(min-width: 1024px)').matches
+    arrow.style.color = desktop ? '#F2AFA0' : '#FFFFFF'
+  }
 
   // scroll progress: 0 at the top → 1 at the very bottom of the page.
   // Only the RAW value is recorded here; the journey rAF loop smooths it
-  // (smoothRef) and derives everything else — trail, arrow, robot, reveals.
+  // (smoothRef) and derives everything else.
   useEffect(() => {
     if (!loaderGone) return
     let raf = 0
@@ -228,63 +307,99 @@ export default function SimplePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaderGone])
 
-  // build the pixel-space path + install the growing mask
+  // build the pixel-space path (both parts) + pin budget + install the masks
   useEffect(() => {
     if (!ready) return
     const build = () => {
-      const area = areaRef.current
       const hero = heroRef.current
-      const dotted = trailPathRef.current
-      const mask = maskPathRef.current
-      if (!area || !hero || !dotted || !mask) return
-      const w = area.clientWidth
-      const h = area.clientHeight
+      const sec = secondRef.current
+      const pathA = pathARef.current
+      const maskA = maskARef.current
+      const pathB = pathBRef.current
+      const maskB = maskBRef.current
+      if (!hero || !sec || !pathA || !maskA || !pathB || !maskB) return
+      const w = window.innerWidth
+      const h = window.innerHeight
       const heroH = hero.offsetHeight
+      const secH = sec.offsetHeight
+      const areaH = heroH + secH
       // the wavy divider container is the hero's last child
       const waveH = (hero.lastElementChild as HTMLElement | null)?.offsetHeight || 146
-      const g = buildTrail(w, h, heroH, waveH)
+      const g = buildTrail(w, areaH, heroH, waveH)
       trailGeom.current = g
-      dotted.setAttribute('d', g.d)
-      mask.setAttribute('d', g.d)
-      const grad = gradYRef.current
+      pathA.setAttribute('d', g.d)
+      maskA.setAttribute('d', g.d)
+      pathB.setAttribute('d', g.dB)
+      maskB.setAttribute('d', g.dB)
+      // part A gradient: ink → (salmon/white) across the wavy divider
+      const grad = gradARef.current
       if (grad) {
-        grad.setAttribute('y2', String(h))
-        const b = Math.max(14, h * 0.012)
-        const f = (v: number) => Math.max(0, Math.min(1, v / h))
-        stop1Ref.current?.setAttribute('offset', '0')
-        stop2Ref.current?.setAttribute('offset', f(g.switchY - b).toFixed(4))
-        stop3Ref.current?.setAttribute('offset', f(g.switchY + b).toFixed(4))
-        stop4Ref.current?.setAttribute('offset', '1')
+        grad.setAttribute('y2', String(heroH))
+        const b = Math.max(14, heroH * 0.015)
+        const f = (v: number) => Math.max(0, Math.min(1, v / heroH))
+        aStop1.current?.setAttribute('offset', '0')
+        aStop2.current?.setAttribute('offset', f(g.switchY - b).toFixed(4))
+        aStop3.current?.setAttribute('offset', f(g.switchY + b).toFixed(4))
+        aStop4.current?.setAttribute('offset', '1')
       }
-      applyTrail(smoothRef.current)
+      // part B lives below the divider — a single solid colour
+      const desktop = w >= 1024
+      pathB.setAttribute('stroke', desktop ? '#F2AFA0' : '#FFFFFF')
+
+      const budget = pinBudget(w, h)
+      geom.current = {
+        heroH,
+        secH,
+        total: g.total,
+        Lb: g.Lb,
+        switchY: g.switchY,
+        dist: budget.dist,
+        domeEnd: budget.domeEnd,
+        headEnd: budget.headEnd,
+        dropEnd: budget.dropEnd,
+        pinPx: budget.pinPx,
+      }
+      // the pin wrapper = the sticky stage + its scroll budget
+      requestAnimationFrame(() => {
+        const wrap = pinWrapRef.current
+        const stage = stageRef.current
+        if (wrap && stage) wrap.style.height = stage.offsetHeight + budget.pinPx + 'px'
+      })
+      applyARef.current(0)
+      applyBRef.current(0, 0)
     }
     build()
     window.addEventListener('resize', build)
-    return () => window.removeEventListener('resize', build)
+    let alive = true
+    document.fonts?.ready?.then(() => {
+      if (alive) build()
+    })
+    return () => {
+      alive = false
+      window.removeEventListener('resize', build)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready])
 
   /**
-   * Robot journey — hero → second section. This rAF loop is also the
-   * master loop for the page's scroll-driven motion:
+   * Master scroll loop — robot journey + trail + section 3.
    *
-   *   · in the hero the robot stands centred, facing the viewer (the trail
+   *   · the hero stands with the robot centred, facing the viewer (the trail
    *     emerges behind it)
-   *   · on the way down it hands off to a perch in the UPPER-RIGHT of the
-   *     second section, turned 45° LEFT (a horizontal turn — it stays
-   *     perfectly upright) so it faces the content on the left side
-   *   · the perch is document-anchored, so once there the robot rides the
-   *     scroll and exits the top edge with the section (no fade, no hover
-   *     over the footer). The trail curve sits below the perch, so arrow
-   *     and trail always pass clear of it.
+   *   · on the way down the robot hands off to its perch in the UPPER-RIGHT
+   *     of the second section (inside the rectangle of the empty right
+   *     column), turned 45° LEFT — a horizontal turn, it stays perfectly
+   *     upright — so it faces the content on the left. It is NEVER scaled
+   *     down. The perch is document-anchored.
+   *   · once section 2 is fully in view, the pin starts: section 2 freezes in
+   *     place, and the orange dome of section 3 rises over it. The robot is
+   *     stage-aware, so it freezes with the section and exits the top with
+   *     it when the pin ends.
    *
    * Smoothness: scroll arrives in steps (wheel notches). One exponential
-   * follower (SMOOTH_TAU) turns it into a continuous scalar `sp`, and the
-   * trail, the arrow, the robot pose/scale and the section reveals all
-   * derive from that SAME scalar — one shared clock, so nothing lags
-   * behind anything else, at any scroll speed. The perch endpoint itself
-   * uses raw scrollY, so once perched the robot moves 1:1 with the page;
-   * only the handoff blend, the gentle arc, the scale and the turn ease.
+   * follower (SMOOTH_TAU) turns it into a continuous scalar, and the trail,
+   * the arrow, the robot pose, the section-2 reveals and the section-3
+   * phases all derive from that SAME scalar — one shared clock.
    */
   useEffect(() => {
     if (!ready) return
@@ -292,66 +407,94 @@ export default function SimplePage() {
     if (!box) return
     let raf = 0
     let last = performance.now()
-    let lastSent = smoothRef.current
+    let lastPA = 0
+    let lastThird = { q1: -1, q2: -1, qDrop: -1, qPan: -1 }
 
     const tick = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05)
       last = now
+      const wrap = wrapperRef.current
+      if (!wrap) {
+        raf = requestAnimationFrame(tick)
+        return
+      }
       const w = window.innerWidth
       const h = window.innerHeight
       const desk = w >= 1024
+      const G = geom.current
+      const maxScroll = Math.max(1, wrap.scrollHeight - h)
 
-      // advance the shared smoothed scalar toward the raw scroll progress
+      // advance the shared smoothed scalar toward the raw scroll fraction
       const raw = progressRef.current
       const sm = smoothRef.current
       smoothRef.current =
         Math.abs(raw - sm) < 1e-5 ? raw : sm + (raw - sm) * (1 - Math.exp(-dt / SMOOTH_TAU))
       const sp = smoothRef.current
+      const px = sp * maxScroll
 
-      const s = robotSettle(sp)
-      const scrollY = window.scrollY
+      // pre-pin scroll (hero → section 2) drives the trail, the robot and
+      // the section-2 reveals — all of it completes exactly when the pin
+      // starts, so nothing is mid-motion while the section freezes
+      const pA = Math.max(0, Math.min(1, px / Math.max(1, G.heroH)))
+      const s = robotSettle(pA)
+      const pinLocal = Math.max(0, px - G.heroH)
 
       // hero anchor (viewport px) — where the robot stands at rest
       const hx = w * 0.5
       const hy = h * (desk ? 0.48 : 0.5)
 
-      let tx: number, ty: number, ts: number, to: number
+      let tx: number, ty: number, to: number
       if (desk) {
-        // perch (doc px): upper right of the second section, clear of the
-        // trail (which runs along the section's bottom) and of the rope
-        // at the right edge
-        const heroH = heroRef.current?.offsetHeight ?? h
-        const secH = secondRef.current?.offsetHeight ?? h * 0.92
-        const px = w / 2 + 0.52 * Math.min(640, Math.min(1240, w - 48) / 2)
-        const py = heroH + 0.2 * secH
-        tx = hx + (px - hx) * s
-        ty = hy + (py - scrollY - hy) * s
-        ts = 1 - 0.38 * s
+        // perch: centre of the empty right column of section 2 (the drawn
+        // rectangle), doc px. Stays full size — no shrinking, at all.
+        const prx = w * 0.773
+        const pry = G.heroH + 0.42 * G.secH
+        tx = hx + (prx - hx) * s
+        // stage-aware doc anchor: 1:1 with the page before the pin, frozen
+        // while the stage is pinned, exits with the stage after the pin
+        const effScroll = Math.min(Math.max(px, G.heroH), G.heroH + G.pinPx)
+        const stageOff = effScroll - px
+        const perchViewY = (pry - G.heroH) + stageOff
+        ty = hy + (perchViewY - hy) * s
         to = 1
       } else {
         // mobile: content is full-width, so no perch — drift up-right and
-        // fade out as the section takes over
+        // fade out as the section takes over (before the pin starts)
         tx = hx + (w * 0.62 - hx) * s
         ty = hy + (h * 0.34 - hy) * s
-        ts = 1 - 0.5 * s
-        to = 1 - smoothstep(clamp((sp - 0.4) / 0.16, 0, 1))
+        to = 1 - smoothstep(clamp((pA - 0.4) / 0.16, 0, 1))
       }
-      // a gentle upward arc through the handoff (zero at both ends), so
-      // the glide reads as an organic flit rather than a straight diagonal
+      // a gentle upward arc through the handoff (zero at both ends), so the
+      // glide reads as an organic flit rather than a straight diagonal
       const arc = (desk ? 56 : 26) * Math.sin(Math.PI * s)
       const baseY = desk ? h * 0.48 : h * 0.5
       box.style.transform =
-        `translate(-50%, -50%) translate(${(tx - w / 2).toFixed(1)}px, ${(ty - baseY - arc).toFixed(1)}px) scale(${ts.toFixed(4)})`
+        `translate(-50%, -50%) translate(${(tx - w / 2).toFixed(1)}px, ${(ty - baseY - arc).toFixed(1)}px)`
       box.style.opacity = to.toFixed(3)
 
       // trail + arrow derive from the same scalar — synced by construction
-      applyTrailRef.current(sp)
+      const drawn = pA * G.total
+      applyARef.current(drawn)
+      applyBRef.current(pA, drawn)
 
-      // section reveals + robot pose (Robot3D) share the same scalar too;
-      // only notify React while it's actually moving
-      if (Math.abs(sp - lastSent) > 0.0004) {
-        lastSent = sp
-        setProgress(sp)
+      // section 3 phases (linear in scroll; SimpleThird eases them)
+      const q1 = clamp01(pinLocal / G.domeEnd)
+      const q2 = clamp01((pinLocal - G.domeEnd) / Math.max(1, G.headEnd - G.domeEnd))
+      const qDrop = clamp01((pinLocal - G.headEnd) / Math.max(1, G.dropEnd - G.headEnd))
+      const qPan = clamp01((pinLocal - G.dropEnd) / Math.max(1, G.dist))
+
+      if (Math.abs(pA - lastPA) > 0.0004) {
+        lastPA = pA
+        setProgress(pA)
+      }
+      if (
+        Math.abs(q1 - lastThird.q1) > 0.0008 ||
+        Math.abs(q2 - lastThird.q2) > 0.0008 ||
+        Math.abs(qDrop - lastThird.qDrop) > 0.0008 ||
+        Math.abs(qPan - lastThird.qPan) > 0.0008
+      ) {
+        lastThird = { q1, q2, qDrop, qPan }
+        setThird({ q1, q2, qDrop, qPan })
       }
       raf = requestAnimationFrame(tick)
     }
@@ -360,55 +503,15 @@ export default function SimplePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready])
 
-  // arrow position + trail reveal — both derived from the same scroll value
-  function applyTrail(p: number) {
-    const g = trailGeom.current
-    const arrow = arrowRef.current
-    const mask = maskPathRef.current
-    if (!g || !arrow) return
-    const drawn = p * g.total
-    const { x, y, ang } = pointAt(g, drawn)
-
-    // arrow fades in from behind the robot as it slides out from behind it
-    let op = p <= 0.02 ? 0 : Math.min(1, (p - 0.02) / 0.08)
-    let ax = x
-    let ay = y
-    if (p > 0.9) {
-      // flies out along its tangent while fading, as the journey completes
-      const e = (p - 0.9) / 0.1
-      op *= 1 - e
-      ax += Math.cos((ang * Math.PI) / 180) * e * 80
-      ay += Math.sin((ang * Math.PI) / 180) * e * 80
-    }
-    arrow.style.opacity = op.toFixed(3)
-    const grow = 0.9 + 0.1 * Math.min(1, p * 20)
-    arrow.style.transform = `translate(${ax.toFixed(1)}px, ${ay.toFixed(1)}px) translate(-50%, -50%) rotate(${ang.toFixed(2)}deg) scale(${grow.toFixed(3)})`
-    const desktop = window.matchMedia('(min-width: 1024px)').matches
-    arrow.style.color = y < g.switchY ? '#1B1A17' : desktop ? '#F2AFA0' : '#FFFFFF'
-
-    // the trail exists exactly where the arrow has already travelled
-    if (mask) {
-      const reveal = Math.max(0, Math.min(g.total, drawn - TRAIL_LAG))
-      mask.style.strokeDasharray = `${reveal.toFixed(1)} ${(g.total + 64).toFixed(1)}`
-    }
-  }
+  const arrowSvg = (
+    <svg width="46" height="46" viewBox="0 0 32 32" fill="none" className="drop-shadow-[0_8px_16px_rgba(0,0,0,0.32)]">
+      <path d="M28.2 4.2L4.1 14.6l8.4 4.7 3.7 9.1 12-24.2z" fill="currentColor" />
+    </svg>
+  )
 
   return (
     <div ref={wrapperRef} className="relative min-h-screen bg-cream">
       {!loaderGone && <Loader onReveal={() => setReady(true)} onGone={() => setLoaderGone(true)} waitFor={() => robotReady} />}
-
-      {/* robot — mounted immediately so the GLB loads under the loader;
-          the opaque loader covers it until the model has rendered a frame.
-          Position/size are driven by the journey rAF loop (ref-based). */}
-      <div className="pointer-events-none fixed inset-0 z-[6]">
-        <div
-          ref={robotBoxRef}
-          className="absolute left-1/2 top-[50%] h-[min(60vh,520px)] w-[min(86vw,360px)] will-change-transform lg:top-[48%] lg:h-[min(76vh,680px)] lg:w-[min(40vw,520px)]"
-          style={{ transform: 'translate(-50%, -50%)' }}
-        >
-          <Robot3D scrollProgress={progress} onReady={() => setRobotReady(true)} />
-        </div>
-      </div>
 
       {ready && (
         <>
@@ -416,61 +519,117 @@ export default function SimplePage() {
           {/* same hanging robot + rope as the main page (rides the right edge) */}
           <ScrollRope />
 
-          <div ref={areaRef} className="relative">
-            {/* dotted trail — PRODUCED by the arrow (mask band grows with scroll) */}
+          {/* ——— hero (in normal flow) + trail part A over it ——— */}
+          <div className="relative">
+            <div ref={heroRef}>
+              <SimpleHero />
+            </div>
             <div className="pointer-events-none absolute inset-0 z-[5]" aria-hidden>
-              <svg className="absolute inset-0 block h-full w-full" style={{ overflow: 'visible' }}>
+              <svg className="absolute inset-0 block h-full w-full">
                 <defs>
-                  <linearGradient id="cc-trail-grad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="100" ref={gradYRef}>
-                    <stop ref={stop1Ref} offset="0" stopColor="#111111" stopOpacity="0.22" />
-                    <stop ref={stop2Ref} offset="0.5" stopColor="#111111" stopOpacity="0.22" />
-                    <stop ref={stop3Ref} offset="0.5" stopColor="#FFFFFF" stopOpacity="0.88" />
-                    <stop ref={stop4Ref} offset="1" stopColor="#FFFFFF" stopOpacity="0.88" />
+                  <linearGradient id="cc-trail-grad-a" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="100" ref={gradARef}>
+                    <stop ref={aStop1} offset="0" stopColor="#111111" stopOpacity="0.22" />
+                    <stop ref={aStop2} offset="0.5" stopColor="#111111" stopOpacity="0.22" />
+                    <stop ref={aStop3} offset="0.5" stopColor="#FFFFFF" stopOpacity="0.88" />
+                    <stop ref={aStop4} offset="1" stopColor="#FFFFFF" stopOpacity="0.88" />
                   </linearGradient>
-                  <mask id="cc-trail-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
+                  <mask id="cc-trail-mask-a" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
                     <path
-                      ref={maskPathRef}
+                      ref={maskARef}
                       d="M 0 0"
                       fill="none"
                       stroke="#FFFFFF"
                       strokeWidth="9"
-                      // butt caps: a zero-length dash must not render a dot at the path start
                       strokeLinecap="butt"
                       style={{ strokeDasharray: '0 999999' }}
                     />
                   </mask>
                 </defs>
                 <path
-                  ref={trailPathRef}
+                  ref={pathARef}
                   d="M 0 0"
                   fill="none"
-                  stroke="url(#cc-trail-grad)"
+                  stroke="url(#cc-trail-grad-a)"
                   strokeWidth="1.4"
                   strokeLinecap="round"
                   strokeDasharray="12 11"
-                  mask="url(#cc-trail-mask)"
+                  mask="url(#cc-trail-mask-a)"
                 />
               </svg>
               <div
-                ref={arrowRef}
+                ref={arrowARef}
                 className="absolute left-0 top-0 will-change-transform"
                 style={{ opacity: 0, transition: 'color 240ms linear' }}
               >
-                <svg width="46" height="46" viewBox="0 0 32 32" fill="none" className="drop-shadow-[0_8px_16px_rgba(0,0,0,0.32)]">
-                  <path d="M28.2 4.2L4.1 14.6l8.4 4.7 3.7 9.1 12-24.2z" fill="currentColor" />
-                </svg>
+                {arrowSvg}
               </div>
-            </div>
-
-            <div ref={heroRef}>
-              <SimpleHero />
-            </div>
-            <div ref={secondRef}>
-              <SimpleSecond progress={progress} />
             </div>
           </div>
 
-          {/* same footer as the main page (replaces the "next project" stub) */}
+          {/* ——— the pin: section 2 freezes here while section 3 rises ——— */}
+          <div ref={pinWrapRef} className="relative">
+            <div ref={stageRef} className="sticky top-0 z-0 min-h-[100svh] overflow-hidden">
+              {/* robot — inside the stage so it freezes with the section and
+                  gets covered by the orange dome (above section-2 content,
+                  below the orange). Still viewport-fixed + doc-anchored. */}
+              <div className="pointer-events-none fixed inset-0 z-[6]">
+                <div
+                  ref={robotBoxRef}
+                  className="absolute left-1/2 top-[50%] h-[min(60vh,520px)] w-[min(86vw,360px)] will-change-transform lg:top-[48%] lg:h-[min(76vh,680px)] lg:w-[min(40vw,520px)]"
+                  style={{ transform: 'translate(-50%, -50%)' }}
+                >
+                  <Robot3D scrollProgress={progress} onReady={() => setRobotReady(true)} />
+                </div>
+              </div>
+
+              {/* section 2 (frozen while the pin holds) + trail part B */}
+              <div ref={secondRef} className="relative">
+                <SimpleSecond progress={progress} />
+                <div className="pointer-events-none absolute inset-0 z-[5]" aria-hidden>
+                  <svg className="absolute inset-0 block h-full w-full">
+                    <defs>
+                      <mask id="cc-trail-mask-b" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
+                        <path
+                          ref={maskBRef}
+                          d="M 0 0"
+                          fill="none"
+                          stroke="#FFFFFF"
+                          strokeWidth="9"
+                          strokeLinecap="butt"
+                          style={{ strokeDasharray: '0 999999' }}
+                        />
+                      </mask>
+                    </defs>
+                    <path
+                      ref={pathBRef}
+                      d="M 0 0"
+                      fill="none"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                      strokeDasharray="12 11"
+                      mask="url(#cc-trail-mask-b)"
+                    />
+                  </svg>
+                  <div
+                    ref={arrowBRef}
+                    className="absolute left-0 top-0 will-change-transform"
+                    style={{ opacity: 0, transition: 'color 240ms linear' }}
+                  >
+                    {arrowSvg}
+                  </div>
+                </div>
+              </div>
+
+              {/* dark bridge so section 2's dark background carries to the
+                  bottom of the stage (where the orange dome rises from) */}
+              <div className="h-[8svh] w-full bg-[#08080A]" />
+
+              {/* section 3 — the orange dome, the heading, the clothesline */}
+              <SimpleThird q1={third.q1} q2={third.q2} qDrop={third.qDrop} qPan={third.qPan} />
+            </div>
+          </div>
+
+          {/* same footer as the main page — arrives when the line ends */}
           <Footer />
         </>
       )}
