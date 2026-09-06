@@ -1,36 +1,80 @@
 import { useEffect, useState } from 'react'
-import { CARD_TILT, LINE_COUNT, PROJECTS, ROPE_Y, lineGeom } from './lineGeom'
+import {
+  CARD_TILT,
+  MOBILE_RING_SCALE,
+  PROJECTS,
+  RING_ANGLE,
+  RING_SIZE,
+  RING_Y,
+  ROPE_Y,
+  lineGeom,
+  ringGeom,
+} from './lineGeom'
 
 /**
  * Section 3 — the orange "work" section. Everything here is driven by the
- * page's shared smoothed scroll (four phase values, all 0→1, linear in
+ * page's shared smoothed scroll (five phase values, all 0→1, linear in
  * scroll; easing happens here):
  *
  *   q1    — the plain brand-orange dome rises from the bottom of the frozen
  *           section above and takes over the whole screen (no text on it)
- *   q2    — the heading + subline letters appear, on the orange
- *   qDrop — the rope spins in, then each project hangs on it one by one
- *           (white placeholder cards, clipped to the line)
+ *   q2    — the heading + subline letters appear, upper-left, on the orange
+ *   qSpin — the presentation: the ten previews stand on a ring around a
+ *           vertical axis (different heights, facing the viewer) and the
+ *           ring turns exactly ONCE, decelerating into its rest pose. As it
+ *           settles, the clothesline draws in underneath.
+ *   qDrop — each preview leaves its ring position and hangs on the line with
+ *           its clip, one by one (white placeholder cards, clipped to the line)
  *   qPan  — the whole line moves horizontally (1:1 with scroll) until the
  *           last project has passed, then the footer arrives
+ *
+ * One DOM element per project carries it through ALL phases (ring → hop →
+ * hanging), so the spin → hang handoff is a pure interpolation, never a swap.
  */
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 const smooth = (t: number) => t * t * (3 - 2 * t)
 const outCubic = (t: number) => 1 - Math.pow(1 - t, 3)
+const inCubic = (t: number) => t * t * t
+const inOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
 const outBack = (t: number) => {
   const c1 = 1.70158
   const c3 = c1 + 1
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2)
 }
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
 const HEAD_LINES = ['Work that', 'works.']
 const SUB =
   'Ten recent builds, one line. Each one made to be found — by people and by AI — and fast enough to feel instant.'
 
-type Props = { q1: number; q2: number; qDrop: number; qPan: number }
+/**
+ * The turn itself: one full revolution. The reference ring is front-loaded —
+ * it turns fast and coasts to a stop (a power-out with exponent ≈2.4 fits
+ * its tracked angle to within a few degrees). Here the same coast is given a
+ * soft start as well, so the ring also comes to rest gently when the scroll
+ * runs backwards. Monotonic in scroll: scrolling back simply runs the turn
+ * in reverse — it can never replay on its own.
+ */
+const SPIN_EASE = (t: number) => 1 - Math.pow(1 - Math.pow(t, 1.25), 2.6)
 
-export default function SimpleThird({ q1, q2, qDrop, qPan }: Props) {
+/** the previews fade up over this first part of the turn */
+const RING_IN = 0.1
+
+/** the line draws in as the turn is settling, and is complete before any
+ *  preview lets go of the ring */
+const LINE_IN_START = 0.62
+const LINE_IN_END = 0.96
+
+/** the hop onto the line: card i lifts off at i × HOP_STEP and takes HOP_DUR
+ *  (in qDrop units). Long enough that the previews whose slot is off the
+ *  right edge glide out of view instead of streaking. */
+const HOP_DUR = 0.42
+const HOP_STEP = 0.062
+
+type Props = { q1: number; q2: number; qSpin: number; qDrop: number; qPan: number }
+
+export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
   const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }))
   useEffect(() => {
     const onResize = () => setVp({ w: window.innerWidth, h: window.innerHeight })
@@ -41,13 +85,17 @@ export default function SimpleThird({ q1, q2, qDrop, qPan }: Props) {
 
   const { w, h } = vp
   const g = lineGeom(w)
+  const ring = ringGeom(w, h)
+  const ringScale = w >= 1024 ? 1 : MOBILE_RING_SCALE
 
   /* ---- 1 · the plain orange dome (no text) ------------------------------ */
   const domeQ = smooth(clamp01(q1))
   const R = w * 2.1
   const domeTop = h * 1.02 + (-w * 0.1 - h * 1.02) * domeQ
 
-  /* ---- 2 · heading letters + subline (upper LEFT, out of the line's way) - */
+  /* ---- 2 · heading letters + subline (upper LEFT, out of the ring's way) - */
+  // the heading holds its corner through the whole turn and only slips away
+  // once the previews start hanging on
   const headExit = smooth(clamp01(qDrop / 0.3))
   const subQ = smooth(clamp01((q2 - 0.62) / 0.38))
   const offsets = HEAD_LINES.reduce<number[]>((a, line, i) => {
@@ -55,16 +103,22 @@ export default function SimpleThird({ q1, q2, qDrop, qPan }: Props) {
     return a
   }, [])
 
-  /* ---- 3 · the clothesline ---------------------------------------------- */
-  // the "one spin": the rope whips in (rotate + stretch) first — only AFTER
-  // it has landed do the projects start hanging on
-  const SPIN_END = 0.22
-  const ropeQ = outBack(clamp01(qDrop / SPIN_END))
+  /* ---- 3 · the presentation ring: one turn ------------------------------ */
+  // 0 → 1 over the spin budget; the ring's remaining angle is (1 - turn) × 360°
+  const turn = SPIN_EASE(clamp01(qSpin))
+  // the previews surface during the first stretch of the turn — by the time
+  // they are fully there the ring has already swung ~40°, so, as in the
+  // reference, it is never seen standing still
+  const ringIn = smooth(clamp01(qSpin / RING_IN))
+
+  /* ---- 4 · the clothesline ---------------------------------------------- */
+  // draws in (rotate + stretch, same whip as before) while the ring is
+  // coasting to a stop — landed and still before the first preview lets go
+  const ropeQ = outBack(clamp01((qSpin - LINE_IN_START) / (LINE_IN_END - LINE_IN_START)))
   const pan = clamp01(qPan)
   const lineX = -pan * g.distance
   const L0 = w / 2 - g.margin - g.cardW / 2 // card 1 hangs dead-centre
   const ropeYpx = ROPE_Y * h
-  const dropStep = (0.99 - SPIN_END) / LINE_COUNT
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-[100svh] overflow-hidden" aria-hidden>
@@ -113,7 +167,8 @@ export default function SimpleThird({ q1, q2, qDrop, qPan }: Props) {
         </p>
       </div>
 
-      {/* the clothesline — rope spins in, projects clip on one by one, then the line pans */}
+      {/* the clothesline — draws in under the settling ring, projects clip on
+          one by one, then the line pans. Viewport-anchored. */}
       <div
         className="absolute"
         style={{ left: L0, top: ropeYpx, width: g.lineW, transform: `translateX(${lineX.toFixed(1)}px)`, willChange: 'transform' }}
@@ -146,55 +201,110 @@ export default function SimpleThird({ q1, q2, qDrop, qPan }: Props) {
             <circle cx="12" cy="12" r="3.5" fill="#9A7A61" />
             <circle cx={g.lineW - 12} cy="12" r="3.5" fill="#9A7A61" />
           </svg>
-
-          {/* the hanging projects */}
-          {PROJECTS.map((p, i) => {
-            const x = g.margin + g.cardW / 2 + i * g.spacing
-            const t = x / g.lineW
-            const ropeAt = 12 + 2 * t * (1 - t) * g.sag
-            const d = clamp01((qDrop - (SPIN_END + i * dropStep)) / 0.14)
-            const e = outCubic(d)
-            const clipQ = clamp01(d / 0.5)
-            const dropY = (1 - e) * -h * 0.3
-            const rest = CARD_TILT[i]
-            const tilt = rest + (rest * 3 - rest) * (1 - e)
-            if (d <= 0) return null
-            return (
-              <div
-                key={p.name}
-                className="absolute will-change-transform"
-                style={{
-                  left: x - g.cardW / 2,
-                  top: ropeAt,
-                  width: g.cardW,
-                  transform: `translateY(${dropY.toFixed(1)}px) rotate(${tilt.toFixed(2)}deg)`,
-                  transformOrigin: 'top center',
-                  opacity: Math.min(1, d * 2.2),
-                }}
-              >
-                {/* the clip, straddling the rope */}
-                <div
-                  className="absolute left-1/2 top-[-9px] z-10 h-[18px] w-[10px] rounded-[3px] bg-ink/80"
-                  style={{ transform: `translateX(-50%) scaleY(${(0.4 + 0.6 * clipQ).toFixed(3)})` }}
-                >
-                  <div className="absolute left-1/2 top-[5px] h-[8px] w-[2px] -translate-x-1/2 rounded bg-white/25" />
-                </div>
-                {/* the card — plain white for now; becomes the site's hero screenshot */}
-                <div className="relative mt-[10px] overflow-hidden rounded-[10px] bg-white shadow-[0_18px_40px_-18px_rgba(27,26,23,0.38)]">
-                  <div className="aspect-[5/4] w-full bg-white" />
-                </div>
-                {/* the label tag */}
-                <div className="mt-2 flex items-baseline justify-center gap-2 whitespace-nowrap text-ink/70">
-                  <span className="text-[11px] font-semibold tracking-[0.18em]">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="text-[12px] font-medium">
-                    {p.name} <span className="font-light text-ink/45">· {p.tag}</span>
-                  </span>
-                </div>
-              </div>
-            )
-          })}
         </div>
       </div>
+
+      {/* the ten projects — one element each, carried through every phase:
+          on the ring → hopping to the line → hanging (and panning with it).
+          Stacked by depth so previews at the front of the ring paint on top. */}
+      {PROJECTS.map((p, i) => {
+        /* ---- ring pose (viewport px) ---- */
+        // angle: rest angle minus the remaining part of the one turn; the
+        // ring turns clockwise seen from above (front moves right → back
+        // moves left), like the reference
+        const a = ((RING_ANGLE[i] - (1 - turn) * 360) * Math.PI) / 180
+        const depth = ring.f / (ring.f - ring.R * Math.cos(a)) // > 1 in front, < 1 at the back
+        const rx = ring.cx + ring.R * Math.sin(a) * depth
+        const ry = ring.cy + RING_Y[i] * ring.ampY * depth
+        const rw = RING_SIZE[i] * ringScale * g.cardW * depth
+        const rz = Math.cos(a) // -1 back … +1 front
+
+        /* ---- hanging pose: its slot on the line (line-local px) ---- */
+        const x = g.margin + g.cardW / 2 + i * g.spacing
+        const t = x / g.lineW
+        const ropeAt = 12 + 2 * t * (1 - t) * g.sag
+        const rest = CARD_TILT[i]
+
+        /* ---- the hop: ring → clip on the line, one by one ---- */
+        const d = clamp01((qDrop - i * HOP_STEP) / HOP_DUR)
+        // a slot inside the viewport is approached gently (in-out); a slot
+        // further down the line, past the right edge, is reached with a slow
+        // start that keeps accelerating — the card is pulled out of frame
+        // along the line rather than streaking across it
+        const off = clamp01((L0 + x - (w - g.cardW / 2)) / (w * 0.6))
+        const e = lerp(inOutCubic(d), inCubic(d), off)
+        const hung = outCubic(d)
+        // arc up and over, like a card lifted off and pegged on (the ones
+        // heading out of frame keep their arc low, they're already leaving)
+        const lift = -Math.sin(Math.PI * e) * h * 0.08 * (1 - 0.6 * off)
+        // the clip closes once the card is on the line
+        const clipQ = clamp01((d - 0.55) / 0.45)
+
+        // continuous pose — ring pose (viewport-fixed) → slot on the line
+        // (which pans with the line). The ring pose is measured relative to
+        // the same moving frame so the interpolation is a pure lerp: no
+        // switch of parent, no re-anchoring, ever.
+        const rxL = rx - L0 - lineX
+        const cx = lerp(rxL, x, e)
+        const cy = lerp(ry, ropeYpx + ropeAt, e) + lift
+        const cw = lerp(rw, g.cardW, e)
+        // hand-hung tilt: swings in a touch wide, settles to its rest tilt
+        const tilt = rest * (3 - 2 * hung) * hung
+        // arrival on the ring: rise from a touch below while fading in
+        const inY = (1 - ringIn) * h * 0.06
+        // depth-based darkening on the far side keeps the turn legible
+        // (an overlay's opacity — composited, no per-frame filter repaint)
+        const far = clamp01((1 - rz) / 2) // 0 front … 1 back
+        const shade = far * 0.16 * (1 - e)
+        // paint order: on the ring, nearer previews over farther ones; a
+        // hung preview (on the line, in front) over the ring; one in flight
+        // over everything
+        const z = d >= 1 ? 250 : d > 0 ? 300 : 100 + Math.round((rz + 1) * 50)
+
+        return (
+          <div
+            key={p.name}
+            className="absolute left-0 top-0 will-change-transform"
+            style={{
+              width: cw,
+              transform: `translate(${(L0 + lineX + cx - cw / 2).toFixed(1)}px, ${(cy + inY).toFixed(1)}px) rotate(${tilt.toFixed(2)}deg)`,
+              transformOrigin: 'top center',
+              opacity: ringIn.toFixed(3),
+              zIndex: z,
+            }}
+          >
+            {/* the clip, straddling the rope — closes as the card lands */}
+            <div
+              className="absolute left-1/2 top-[-9px] z-10 h-[18px] w-[10px] rounded-[3px] bg-ink/80"
+              style={{
+                transform: `translateX(-50%) scaleY(${(0.4 + 0.6 * clipQ).toFixed(3)})`,
+                opacity: clamp01((d - 0.45) / 0.15),
+              }}
+            >
+              <div className="absolute left-1/2 top-[5px] h-[8px] w-[2px] -translate-x-1/2 rounded bg-white/25" />
+            </div>
+            {/* the card — plain white for now; becomes the site's hero screenshot */}
+            <div
+              className="relative overflow-hidden rounded-[10px] bg-white shadow-[0_18px_40px_-18px_rgba(27,26,23,0.38)]"
+              style={{ marginTop: (10 * e).toFixed(2) + 'px' }}
+            >
+              <div className="aspect-[5/4] w-full bg-white" />
+              {/* far-side shade while on the ring */}
+              <div className="absolute inset-0 bg-ink" style={{ opacity: shade.toFixed(3) }} />
+            </div>
+            {/* the label tag — appears once the card is on the line */}
+            <div
+              className="mt-2 flex items-baseline justify-center gap-2 whitespace-nowrap text-ink/70"
+              style={{ opacity: clamp01((d - 0.7) / 0.3) }}
+            >
+              <span className="text-[11px] font-semibold tracking-[0.18em]">{String(i + 1).padStart(2, '0')}</span>
+              <span className="text-[12px] font-medium">
+                {p.name} <span className="font-light text-ink/45">· {p.tag}</span>
+              </span>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
