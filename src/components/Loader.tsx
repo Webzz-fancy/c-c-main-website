@@ -34,9 +34,17 @@ type LoaderProps = {
    * pass it behave exactly as before.
    */
   waitFor?: () => boolean
+  /**
+   * Optional heavy asset to load behind the loading screen (the Simple
+   * page's 3D robot). Called once on mount with a byte-progress callback;
+   * the bar tracks the real download, and the loader holds until the
+   * returned promise settles — the asset is fully loaded before the page is
+   * revealed.
+   */
+  preload?: (onProgress: (loaded: number, total: number) => void) => Promise<void>
 }
 
-export default function Loader({ onReveal, onGone, waitFor }: LoaderProps) {
+export default function Loader({ onReveal, onGone, waitFor, preload }: LoaderProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const pctRef = useRef<HTMLSpanElement>(null)
   const barRef = useRef<HTMLDivElement>(null)
@@ -49,6 +57,8 @@ export default function Loader({ onReveal, onGone, waitFor }: LoaderProps) {
   onGoneRef.current = onGone
   const waitForRef = useRef(waitFor)
   waitForRef.current = waitFor
+  const preloadRef = useRef(preload)
+  preloadRef.current = preload
 
   useEffect(() => {
     const root = rootRef.current
@@ -72,6 +82,21 @@ export default function Loader({ onReveal, onGone, waitFor }: LoaderProps) {
       }
       img.src = src
     }
+    // the page's heavy asset (if any): its byte progress feeds the bar
+    const heavy = preloadRef.current
+    let heavyP = heavy ? 0 : 1
+    let heavyDone = !heavy
+    heavy?.((loaded, total) => {
+      if (total > 0) heavyP = Math.max(heavyP, Math.min(1, loaded / total))
+    }).then(
+      () => {
+        heavyP = 1
+        heavyDone = true
+      },
+      () => {
+        heavyDone = true
+      },
+    )
 
     let raf = 0
     let display = 0
@@ -98,10 +123,13 @@ export default function Loader({ onReveal, onGone, waitFor }: LoaderProps) {
       // When a waitFor predicate is provided (Simple page: the 3D robot),
       // readiness also requires it — with a generous safety timeout so the
       // loader can never hold the page hostage.
-      const extraWaitMs = waitForRef.current ? 9000 : HARD_TIMEOUT_MS
+      const extraWaitMs = waitForRef.current || heavy ? 30000 : HARD_TIMEOUT_MS
       const externalOk = waitForRef.current ? waitForRef.current() : true
-      const assetsDone = (loadedCount >= PRELOAD.length && externalOk) || t > extraWaitMs
-      const target = Math.min(timeP, assetsDone ? 1 : 0.85) * 100
+      const assetsDone = (loadedCount >= PRELOAD.length && heavyDone && externalOk) || t > extraWaitMs
+      // with a heavy asset the bar is the real download (blended with the
+      // time ramp so it always moves); it can't complete before the asset
+      const cap = assetsDone ? 1 : heavy ? Math.min(0.85, 0.12 + 0.73 * heavyP) : 0.85
+      const target = Math.min(heavy ? Math.max(timeP, heavyP) : timeP, cap) * 100
       display = damp(display, target, 8, dt)
       if (display > 99.4 && assetsDone) display = 100
 

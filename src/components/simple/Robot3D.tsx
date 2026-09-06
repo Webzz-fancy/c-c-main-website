@@ -1,12 +1,62 @@
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { useGLTF, Environment, Lightformer } from '@react-three/drei'
 import * as THREE from 'three'
 import { clamp, damp, prefersReducedMotion, usePointer } from '../../hooks/usePointer'
+import { handoff } from './journey'
 
-useGLTF.preload('/robot.glb')
+/** the model — downloaded behind the loading screen (see preloadRobot) */
+const ROBOT_URL = '/robot.glb'
 
-const smoothstep = (t: number) => t * t * (3 - 2 * t)
+type Progress = (loaded: number, total: number) => void
+let robotPreload: Promise<void> | null = null
+let robotSrc: string | null = null
+const progressListeners: Progress[] = []
+
+/**
+ * Download the robot GLB up front, streaming, so the loading screen can show
+ * the real download on its bar and hold until the model is here. The bytes
+ * are handed to drei's cache under a blob URL, so the Canvas never fetches
+ * the model again; parsing happens while the loading screen is still up,
+ * and the loader also waits for the robot's first drawn frame. Idempotent —
+ * every caller shares one download; each may add a progress listener.
+ */
+export function preloadRobot(onProgress?: Progress): Promise<void> {
+  if (onProgress) progressListeners.push(onProgress)
+  if (!robotPreload) {
+    robotPreload = fetch(ROBOT_URL)
+      .then(async (res) => {
+        if (!res.ok || !res.body) throw new Error(String(res.status))
+        const total = Number(res.headers.get('content-length')) || 0
+        const reader = res.body.getReader()
+        const chunks: Uint8Array[] = []
+        let loaded = 0
+        for (;;) {
+          const { done, value } = await reader.read()
+          if (done) break
+          chunks.push(value)
+          loaded += value.byteLength
+          for (const l of progressListeners) l(loaded, total)
+        }
+        const buf = new Uint8Array(loaded)
+        let off = 0
+        for (const c of chunks) {
+          buf.set(c, off)
+          off += c.byteLength
+        }
+        robotSrc = URL.createObjectURL(new Blob([buf], { type: 'model/gltf-binary' }))
+      })
+      .catch(() => {
+        // network trouble: let the Canvas load the plain path itself
+        robotSrc = ROBOT_URL
+      })
+      .then(() => {
+        for (const l of progressListeners) l(1, 1)
+        useGLTF.preload(robotSrc as string)
+      })
+  }
+  return robotPreload
+}
 
 // precise face anchor measured from GLB vertices (Y 0-1, Z ±0.214)
 // left eye ~[-0.091,0.851,0.138] right ~[0.102,0.847,0.14] mouth ~[0.0015,0.721,0.161]
@@ -43,8 +93,8 @@ function EnvPanel({
   return <Lightformer ref={ref} form={form} position={position} scale={scale} color={color} intensity={intensity} />
 }
 
-function RobotModel({ scrollProgress, onFirstFrame }: { scrollProgress: number; onFirstFrame?: () => void }) {
-  const { scene } = useGLTF('/robot.glb')
+function RobotModel({ src, scrollProgress, onFirstFrame }: { src: string; scrollProgress: number; onFirstFrame?: () => void }) {
+  const { scene } = useGLTF(src)
   const groupRef = useRef<THREE.Group>(null)
   const firstFrame = useRef(false)
 
@@ -90,7 +140,7 @@ function RobotModel({ scrollProgress, onFirstFrame }: { scrollProgress: number; 
     // 45° is a horizontal turn (yaw) to the LEFT, so it faces the content
     // on the left side of the section in a three-quarter view (face still
     // visible).
-    const s = smoothstep(THREE.MathUtils.clamp((scrollProgress - 0.12) / 0.33, 0, 1))
+    const s = handoff(scrollProgress)
     g.rotation.y = THREE.MathUtils.damp(g.rotation.y, (-Math.PI / 4) * s, 16, dt)
     g.rotation.z = THREE.MathUtils.damp(g.rotation.z, 0, 16, dt)
     g.rotation.x = THREE.MathUtils.damp(g.rotation.x, 0, 16, dt)
@@ -128,16 +178,15 @@ function Face3D({ scrollProgress }: { scrollProgress: number }) {
     // gaze anchor follows the robot's journey (same handoff ramp + perch
     // formula as SimplePage), so eye tracking stays correct while it moves
     const desk = vw >= 1024
-    const rs = smoothstep(clamp((scrollProgress - 0.12) / 0.33, 0, 1))
+    const rs = handoff(scrollProgress)
     let faceCX: number
     let faceCY: number
     if (desk) {
-      const heroH = vh // hero is 100svh
       const secH = vh * 0.92
-      const perchX = vw / 2 + 0.52 * Math.min(640, Math.min(1240, vw - 48) / 2)
-      const perchFaceY = heroH + 0.2 * secH - 42 // face sits just above perch centre
+      const perchX = vw * 0.773
+      const perchFaceY = 0.42 * secH - 0.075 * vh // face sits above the body's centre
       faceCX = vw * 0.5 + (perchX - vw * 0.5) * rs
-      faceCY = vh * 0.405 + (perchFaceY - window.scrollY - vh * 0.405) * rs
+      faceCY = vh * 0.405 + (perchFaceY - vh * 0.405) * rs
     } else {
       faceCX = vw * 0.5 + (vw * 0.62 - vw * 0.5) * rs
       faceCY = vh * 0.44 + (vh * 0.28 - vh * 0.44) * rs
@@ -264,10 +313,22 @@ export default function Robot3D({
       onReady?.()
     }
   }
-  // Safety: never hold the loading screen hostage if the GLB/WebGL misbehaves.
+  // the model mounts once its bytes are here (one shared download, started
+  // by the loading screen); its first drawn frame is what `onReady` reports
+  const [src, setSrc] = useState<string | null>(robotSrc)
   useEffect(() => {
-    const t = window.setTimeout(notify, 9000)
-    return () => window.clearTimeout(t)
+    let alive = true
+    let t = 0
+    preloadRobot().then(() => {
+      if (!alive) return
+      setSrc(robotSrc)
+      // Safety: never hold the loading screen hostage if WebGL misbehaves.
+      t = window.setTimeout(notify, 9000)
+    })
+    return () => {
+      alive = false
+      window.clearTimeout(t)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -292,7 +353,7 @@ export default function Robot3D({
         <directionalLight position={[-1.8, 1.1, -1.5]} intensity={0.32} color="#BFD4E2" />
         <pointLight position={[0, 1.05, 1.5]} intensity={0.16} color="#FFE8A3" distance={2.6} />
         <Suspense fallback={<FallbackBox />}>
-          <RobotModel scrollProgress={scrollProgress} onFirstFrame={notify} />
+          {src && <RobotModel src={src} scrollProgress={scrollProgress} onFirstFrame={notify} />}
           <Environment resolution={256} frames={1}>
             {/* soft key panel, upper-left-front */}
             <EnvPanel position={[-3, 2.6, 2.4]} scale={[4, 3.2, 1]} intensity={1.05} color="#FFFFFF" />

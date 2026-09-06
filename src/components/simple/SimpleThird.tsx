@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import {
   CARD_TILT,
-  MOBILE_RING_SCALE,
   PROJECTS,
   RING_ANGLE,
   RING_SIZE,
   RING_Y,
-  ROPE_Y,
   lineGeom,
   ringGeom,
+  ringScale,
+  ropeY,
 } from './lineGeom'
 
 /**
@@ -19,10 +19,11 @@ import {
  *   q1    — the plain brand-orange dome rises from the bottom of the frozen
  *           section above and takes over the whole screen (no text on it)
  *   q2    — the heading + subline letters appear, upper-left, on the orange
- *   qSpin — the presentation: the ten previews stand on a ring around a
- *           vertical axis (different heights, facing the viewer) and the
- *           ring turns exactly ONCE, decelerating into its rest pose. As it
- *           settles, the clothesline draws in underneath.
+ *   qSpin — the presentation: the heading fades out as the ten previews
+ *           surface on a ring around a vertical axis (different heights,
+ *           facing the viewer); the ring turns exactly ONCE, decelerating
+ *           into its rest pose. As it settles, the clothesline fades in
+ *           underneath.
  *   qDrop — each preview leaves its ring position and hangs on the line with
  *           its clip, one by one (white placeholder cards, clipped to the line)
  *   qPan  — the whole line moves horizontally (1:1 with scroll) until the
@@ -37,11 +38,6 @@ const smooth = (t: number) => t * t * (3 - 2 * t)
 const outCubic = (t: number) => 1 - Math.pow(1 - t, 3)
 const inCubic = (t: number) => t * t * t
 const inOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
-const outBack = (t: number) => {
-  const c1 = 1.70158
-  const c3 = c1 + 1
-  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2)
-}
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
 const HEAD_LINES = ['Work that', 'works.']
@@ -58,13 +54,14 @@ const SUB =
  */
 const SPIN_EASE = (t: number) => 1 - Math.pow(1 - Math.pow(t, 1.25), 2.6)
 
-/** the previews fade up over this first part of the turn */
-const RING_IN = 0.1
+/** the previews fade up over this first part of the turn — and the heading
+ *  fades out over the same stretch, so the text is gone as the cards arrive */
+const RING_IN = 0.14
 
-/** the line draws in as the turn is settling, and is complete before any
+/** the line fades in as the turn is settling, and is fully there before any
  *  preview lets go of the ring */
-const LINE_IN_START = 0.62
-const LINE_IN_END = 0.96
+const LINE_IN_START = 0.6
+const LINE_IN_END = 0.9
 
 /** the hop onto the line: card i lifts off at i × HOP_STEP and takes HOP_DUR
  *  (in qDrop units). Long enough that the previews whose slot is off the
@@ -86,17 +83,17 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
   const { w, h } = vp
   const g = lineGeom(w)
   const ring = ringGeom(w, h)
-  const ringScale = w >= 1024 ? 1 : MOBILE_RING_SCALE
+  const rScale = ringScale(w)
 
   /* ---- 1 · the plain orange dome (no text) ------------------------------ */
   const domeQ = smooth(clamp01(q1))
   const R = w * 2.1
   const domeTop = h * 1.02 + (-w * 0.1 - h * 1.02) * domeQ
 
-  /* ---- 2 · heading letters + subline (upper LEFT, out of the ring's way) - */
-  // the heading holds its corner through the whole turn and only slips away
-  // once the previews start hanging on
-  const headExit = smooth(clamp01(qDrop / 0.3))
+  /* ---- 2 · heading letters + subline (upper LEFT) ----------------------- */
+  // the heading fades away as the previews surface for the turn, so the
+  // ring has the screen to itself (reverse scroll brings it back the same way)
+  const headExit = smooth(clamp01(qSpin / RING_IN))
   const subQ = smooth(clamp01((q2 - 0.62) / 0.38))
   const offsets = HEAD_LINES.reduce<number[]>((a, line, i) => {
     a.push(i ? a[i - 1] + line.length : 0)
@@ -112,13 +109,13 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
   const ringIn = smooth(clamp01(qSpin / RING_IN))
 
   /* ---- 4 · the clothesline ---------------------------------------------- */
-  // draws in (rotate + stretch, same whip as before) while the ring is
-  // coasting to a stop — landed and still before the first preview lets go
-  const ropeQ = outBack(clamp01((qSpin - LINE_IN_START) / (LINE_IN_END - LINE_IN_START)))
+  // fades in — already in place, under the whole cloud — while the ring is
+  // coasting to a stop, and is fully there before the first preview lets go
+  const ropeQ = smooth(clamp01((qSpin - LINE_IN_START) / (LINE_IN_END - LINE_IN_START)))
   const pan = clamp01(qPan)
   const lineX = -pan * g.distance
   const L0 = w / 2 - g.margin - g.cardW / 2 // card 1 hangs dead-centre
-  const ropeYpx = ROPE_Y * h
+  const ropeYpx = ropeY(w, h)
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-[100svh] overflow-hidden" aria-hidden>
@@ -128,16 +125,16 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
         style={{ width: R * 2, height: R * 2, left: w / 2 - R, top: domeTop }}
       />
 
-      {/* heading — upper-left corner (the spinning/hanging projects keep the
-          rest of the screen); letters slide up as we scroll */}
+      {/* heading — upper-left corner; letters rise in, then the block fades
+          (with a slight lift) as the previews arrive for their turn */}
       <div
         className="absolute text-ink"
         style={{
           left: '7%',
           top: '17svh',
           maxWidth: 'min(680px, 78vw)',
-          transform: `translate(${(-headExit * w * 0.08).toFixed(1)}px, ${(-headExit * h * 0.12).toFixed(1)}px)`,
-          opacity: clamp01(1 - headExit * 1.5),
+          transform: `translateY(${(-headExit * 18).toFixed(1)}px)`,
+          opacity: 1 - headExit,
         }}
       >
         <h2 className="font-display text-[clamp(2.6rem,7vw,6.5rem)] leading-[0.95] tracking-[-0.02em]">
@@ -167,19 +164,13 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
         </p>
       </div>
 
-      {/* the clothesline — draws in under the settling ring, projects clip on
+      {/* the clothesline — fades in under the settling ring, projects clip on
           one by one, then the line pans. Viewport-anchored. */}
       <div
         className="absolute"
         style={{ left: L0, top: ropeYpx, width: g.lineW, transform: `translateX(${lineX.toFixed(1)}px)`, willChange: 'transform' }}
       >
-        <div
-          className="absolute inset-0"
-          style={{
-            transform: `scaleX(${Math.max(0.0001, ropeQ).toFixed(4)}) rotate(${((1 - ropeQ) * -30).toFixed(2)}deg)`,
-            transformOrigin: '0 12px',
-          }}
-        >
+        <div className="absolute inset-0" style={{ opacity: ropeQ.toFixed(3) }}>
           {/* the rope — the same brown twill as the one the robot hangs from
               on the right; a real clothesline, so it droops in the middle */}
           <svg width={g.lineW} height={g.sag + 24} className="block" style={{ overflow: 'visible' }}>
@@ -216,7 +207,7 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
         const depth = ring.f / (ring.f - ring.R * Math.cos(a)) // > 1 in front, < 1 at the back
         const rx = ring.cx + ring.R * Math.sin(a) * depth
         const ry = ring.cy + RING_Y[i] * ring.ampY * depth
-        const rw = RING_SIZE[i] * ringScale * g.cardW * depth
+        const rw = RING_SIZE[i] * rScale * g.cardW * depth
         const rz = Math.cos(a) // -1 back … +1 front
 
         /* ---- hanging pose: its slot on the line (line-local px) ---- */
