@@ -47,7 +47,7 @@ export default function SimpleThird({ q1, q2, qDrop, qPan }: Props) {
   const R = w * 2.1
   const domeTop = h * 1.02 + (-w * 0.1 - h * 1.02) * domeQ
 
-  /* ---- 2 · heading letters + subline ------------------------------------ */
+  /* ---- 2 · heading letters + subline (upper LEFT, out of the line's way) - */
   const headExit = smooth(clamp01(qDrop / 0.3))
   const subQ = smooth(clamp01((q2 - 0.62) / 0.38))
   const offsets = HEAD_LINES.reduce<number[]>((a, line, i) => {
@@ -56,12 +56,15 @@ export default function SimpleThird({ q1, q2, qDrop, qPan }: Props) {
   }, [])
 
   /* ---- 3 · the clothesline ---------------------------------------------- */
-  const ropeQ = outBack(clamp01(qDrop / 0.12)) // the "one spin" whip-in
+  // the "one spin": the rope whips in (rotate + stretch) first — only AFTER
+  // it has landed do the projects start hanging on
+  const SPIN_END = 0.22
+  const ropeQ = outBack(clamp01(qDrop / SPIN_END))
   const pan = clamp01(qPan)
   const lineX = -pan * g.distance
   const L0 = w / 2 - g.margin - g.cardW / 2 // card 1 hangs dead-centre
   const ropeYpx = ROPE_Y * h
-  const dropStep = (0.99 - 0.12) / LINE_COUNT
+  const dropStep = (0.99 - SPIN_END) / LINE_COUNT
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-[100svh] overflow-hidden" aria-hidden>
@@ -71,16 +74,19 @@ export default function SimpleThird({ q1, q2, qDrop, qPan }: Props) {
         style={{ width: R * 2, height: R * 2, left: w / 2 - R, top: domeTop }}
       />
 
-      {/* heading — letters slide up as we scroll (after the orange has taken over) */}
+      {/* heading — upper-left corner (the spinning/hanging projects keep the
+          rest of the screen); letters slide up as we scroll */}
       <div
-        className="absolute inset-x-0 px-6 text-center text-ink"
+        className="absolute text-ink"
         style={{
-          top: '31svh',
-          transform: `translateY(${(-headExit * h * 0.45).toFixed(1)}px)`,
+          left: '7%',
+          top: '17svh',
+          maxWidth: 'min(680px, 78vw)',
+          transform: `translate(${(-headExit * w * 0.08).toFixed(1)}px, ${(-headExit * h * 0.12).toFixed(1)}px)`,
           opacity: clamp01(1 - headExit * 1.5),
         }}
       >
-        <h2 className="font-display text-[clamp(3rem,9vw,8rem)] leading-[0.95] tracking-[-0.02em]">
+        <h2 className="font-display text-[clamp(2.6rem,7vw,6.5rem)] leading-[0.95] tracking-[-0.02em]">
           {HEAD_LINES.map((line, li) => (
             <div key={li} className="overflow-hidden pb-[0.06em]">
               {line.split('').map((ch, ci) => {
@@ -100,7 +106,7 @@ export default function SimpleThird({ q1, q2, qDrop, qPan }: Props) {
           ))}
         </h2>
         <p
-          className="mx-auto mt-6 max-w-[620px] text-[clamp(0.95rem,1.35vw,1.2rem)] font-light leading-relaxed text-ink/70"
+          className="mt-6 max-w-[560px] text-[clamp(0.95rem,1.35vw,1.2rem)] font-light leading-relaxed text-ink/70"
           style={{ opacity: subQ, transform: `translateY(${((1 - subQ) * 26).toFixed(1)}px)` }}
         >
           {SUB}
@@ -115,21 +121,30 @@ export default function SimpleThird({ q1, q2, qDrop, qPan }: Props) {
         <div
           className="absolute inset-0"
           style={{
-            transform: `scaleX(${Math.max(0.0001, ropeQ).toFixed(4)}) rotate(${((1 - ropeQ) * -8).toFixed(2)}deg)`,
+            transform: `scaleX(${Math.max(0.0001, ropeQ).toFixed(4)}) rotate(${((1 - ropeQ) * -30).toFixed(2)}deg)`,
             transformOrigin: '0 12px',
           }}
         >
-          {/* the rope (a real line has a whisper of sag) */}
+          {/* the rope — the same brown twill as the one the robot hangs from
+              on the right; a real clothesline, so it droops in the middle */}
           <svg width={g.lineW} height={g.sag + 24} className="block" style={{ overflow: 'visible' }}>
             <path
               d={`M 12 12 Q ${g.lineW / 2} ${12 + g.sag}, ${g.lineW - 12} 12`}
               fill="none"
-              stroke="#1B1A17"
+              stroke="#B49075"
               strokeWidth="2.5"
-              strokeOpacity="0.85"
+              strokeDasharray="3.2 2.8"
             />
-            <circle cx="12" cy="12" r="4" fill="#1B1A17" fillOpacity="0.85" />
-            <circle cx={g.lineW - 12} cy="12" r="4" fill="#1B1A17" fillOpacity="0.85" />
+            <path
+              d={`M 12 12 Q ${g.lineW / 2} ${12 + g.sag}, ${g.lineW - 12} 12`}
+              fill="none"
+              stroke="#9A7A61"
+              strokeWidth="2.5"
+              strokeDasharray="3.2 2.8"
+              strokeDashoffset="3.2"
+            />
+            <circle cx="12" cy="12" r="3.5" fill="#9A7A61" />
+            <circle cx={g.lineW - 12} cy="12" r="3.5" fill="#9A7A61" />
           </svg>
 
           {/* the hanging projects */}
@@ -137,7 +152,7 @@ export default function SimpleThird({ q1, q2, qDrop, qPan }: Props) {
             const x = g.margin + g.cardW / 2 + i * g.spacing
             const t = x / g.lineW
             const ropeAt = 12 + 2 * t * (1 - t) * g.sag
-            const d = clamp01((qDrop - (0.12 + i * dropStep)) / 0.14)
+            const d = clamp01((qDrop - (SPIN_END + i * dropStep)) / 0.14)
             const e = outCubic(d)
             const clipQ = clamp01(d / 0.5)
             const dropY = (1 - e) * -h * 0.3
