@@ -127,14 +127,20 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
   const ropeYpx = ropeY(w, h)
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-[100svh] overflow-hidden" aria-hidden>
+    // covers the WHOLE stage (not just one viewport height): when section 2's
+    // content is taller than the viewport the stage grows with it, and any
+    // strip left uncovered here would slide out between the orange and the
+    // footer once the pin releases. Every position inside is still measured
+    // against the viewport (w, h), so the choreography is unchanged.
+    <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden" aria-hidden>
       {/* plain brand orange, rising from the bottom: the arched crown … */}
       <div
         className="absolute rounded-[50%] bg-brand"
         style={{ width: R * 2, height: R * 2, left: w / 2 - R, top: domeTop }}
       />
-      {/* … and the body under it (starts at the crown's widest point) */}
-      <div className="absolute inset-x-0 bg-brand" style={{ top: domeTop + R, height: h * 2 }} />
+      {/* … and the body under it (starts at the crown's widest point and
+          runs past the bottom of the stage on any aspect ratio) */}
+      <div className="absolute inset-x-0 bg-brand" style={{ top: domeTop + R, height: h * 3 }} />
 
       {/* heading — upper-left corner; letters rise in, then the block fades
           (with a slight lift) as the previews arrive for their turn */}
