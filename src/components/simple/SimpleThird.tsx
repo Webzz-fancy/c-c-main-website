@@ -40,9 +40,9 @@ const inCubic = (t: number) => t * t * t
 const inOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
-const HEAD_LINES = ['Work that', 'works.']
+const HEAD_LINES = ['Made to', 'be found.']
 const SUB =
-  'Ten recent builds, one line. Each one made to be found — by people and by AI — and fast enough to feel instant.'
+  'A line of recent Simple builds. Each one mapped before it was designed, built to load fast, and structured so people and AI can find it and understand it.'
 
 /**
  * The turn itself: one full revolution. The reference ring is front-loaded —
@@ -86,9 +86,18 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
   const rScale = ringScale(w)
 
   /* ---- 1 · the plain orange dome (no text) ------------------------------ */
+  // An arch rising from below the frame: a circular crown (its radius sets
+  // how arched the leading edge looks — at 0.78 × viewport width the crown
+  // leads the corners by ~30 % of the viewport height on a desktop screen, a
+  // real arch rather than a near-flat wave) on top of a full-width body that
+  // carries the colour down past the bottom of the frame on any aspect
+  // ratio. It rises until the crown clears the top of the frame by the
+  // sagitta plus a margin, so the corners are covered too and the whole
+  // frame is orange when the heading arrives.
   const domeQ = smooth(clamp01(q1))
-  const R = w * 2.1
-  const domeTop = h * 1.02 + (-w * 0.1 - h * 1.02) * domeQ
+  const R = w * 0.78
+  const sagitta = R - Math.sqrt(Math.max(0, R * R - (w / 2) * (w / 2)))
+  const domeTop = h * 1.02 + (-(sagitta + h * 0.06) - h * 1.02) * domeQ
 
   /* ---- 2 · heading letters + subline (upper LEFT) ----------------------- */
   // the heading fades away as the previews surface for the turn, so the
@@ -119,11 +128,13 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-[100svh] overflow-hidden" aria-hidden>
-      {/* plain brand orange, rising from the bottom */}
+      {/* plain brand orange, rising from the bottom: the arched crown … */}
       <div
         className="absolute rounded-[50%] bg-brand"
         style={{ width: R * 2, height: R * 2, left: w / 2 - R, top: domeTop }}
       />
+      {/* … and the body under it (starts at the crown's widest point) */}
+      <div className="absolute inset-x-0 bg-brand" style={{ top: domeTop + R, height: h * 2 }} />
 
       {/* heading — upper-left corner; letters rise in, then the block fades
           (with a slight lift) as the previews arrive for their turn */}

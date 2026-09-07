@@ -58,15 +58,148 @@ export function preloadRobot(onProgress?: Progress): Promise<void> {
   return robotPreload
 }
 
-// precise face anchor measured from GLB vertices (Y 0-1, Z ±0.214)
-// left eye ~[-0.091,0.851,0.138] right ~[0.102,0.847,0.14] mouth ~[0.0015,0.721,0.161]
-// human tweaks: a bit closer, right eye 1-2px lower, oval yellow eyes like HeroRobot
-const EYE_Y = 0.848
-const EYE_Z = 0.168 // just outside surface
-const EYE_DX = 0.074 // closer (was 0.097 too wide)
-const EYE_RIGHT_Y_DROP = 0.005 // ~1.5-2px lower from our view (head's slight tilt)
-const MOUTH_Y = 0.725
-const MOUTH_Z = 0.168
+/*
+ * The face is the HeroRobot face (src/components/HeroRobot.tsx), drawn onto
+ * the 3D head's screen plate. Same artwork, same colours, same proportions:
+ *
+ *   hero screen 442 × 359 art units — eyes at ±82 from the centre, 42 % down
+ *   the screen, rx 33 / ry 44; mouth centreline 97 units under the eyes,
+ *   116 wide, stroke 11, colour #E1AD34; pupil #221F1A with a #FFFDF6 glint.
+ *
+ * The GLB's screen plate (front face, measured from its vertices and from
+ * the rendered frame at the page camera) spans model x −0.16 … 0.145 and
+ * y 0.67 … 0.915. Projecting the hero layout onto that plate gives one scale
+ * factor: 1 hero art unit = 0.000705 model units (the same value falls out
+ * of the eye spacing and of the eye→mouth drop, so the layout is not
+ * stretched). The plate is not perfectly centred on x = 0 — its visual
+ * centre in the rendered frame sits at x ≈ −0.004.
+ */
+const ART_UNIT = 0.000705
+const FACE_CX = -0.004
+const EYE_Y = 0.817 // 42 % down the plate
+const EYE_DX = 82 * ART_UNIT // 0.0578 — hero eye offset
+const MOUTH_Y = EYE_Y - 97 * ART_UNIT // hero MOUTH_Y (top of the smile curve)
+// depth of the plate under each feature, and its surface tilt there
+// (measured on the mesh), so the flat decals sit flush like screen graphics
+const EYE_L: [number, number, number] = [FACE_CX - EYE_DX, EYE_Y, 0.1593]
+const EYE_R: [number, number, number] = [FACE_CX + EYE_DX, EYE_Y, 0.1626]
+const MOUTH_C: [number, number, number] = [FACE_CX, MOUTH_Y - 18 * ART_UNIT, 0.1674]
+const EYE_L_N = new THREE.Vector3(-0.256, 0.116, 0.96).normalize()
+const EYE_R_N = new THREE.Vector3(0.187, 0.106, 0.977).normalize()
+const MOUTH_N = new THREE.Vector3(-0.01, -0.114, 0.993).normalize()
+const LIFT = 0.0012 // decal sits a hair above the plate (no z-fighting)
+
+/** the hero's soft eye glow (feGaussianBlur 8 under the graphic), as a canvas shadow */
+function glowPass(ctx: CanvasRenderingContext2D, k: number, draw: () => void) {
+  ctx.save()
+  ctx.shadowColor = 'rgba(225, 173, 52, 0.75)'
+  ctx.shadowBlur = 16 * k // shadowBlur ≈ 2σ, in canvas pixels
+  ctx.shadowOffsetX = 0
+  ctx.shadowOffsetY = 0
+  draw()
+  ctx.restore()
+}
+
+/** the hero eye, drawn 1:1 from the SVG (glow, gradient, pupil, glint) into a texture */
+function paintEye(canvas: HTMLCanvasElement, pupilDx: number, pupilDy: number) {
+  const S = canvas.width
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+  // art units → canvas: eye ellipse rx 33, ry 44 inside a 140 × 140 box
+  const k = S / 140
+  const cx = S / 2
+  const cy = S / 2
+  ctx.clearRect(0, 0, S, S)
+  ctx.save()
+  ctx.translate(cx, cy)
+  ctx.scale(k, k)
+  const eyePath = () => {
+    ctx.beginPath()
+    ctx.ellipse(0, 0, 33, 44, 0, 0, Math.PI * 2)
+  }
+  glowPass(ctx, k, () => {
+    eyePath()
+    ctx.fillStyle = '#E1AD34'
+    ctx.fill()
+  })
+  // radialGradient cx 42 % cy 34 % r 78 % of the ellipse box → the three hero stops
+  const gx = -33 + 66 * 0.42
+  const gy = -44 + 88 * 0.34
+  const grad = ctx.createRadialGradient(gx, gy, 0, gx, gy, 66 * 0.78)
+  grad.addColorStop(0, '#FFE28A')
+  grad.addColorStop(0.55, '#F3C24A')
+  grad.addColorStop(1, '#E1AD34')
+  eyePath()
+  ctx.fillStyle = grad
+  ctx.globalAlpha = 0.97
+  ctx.fill()
+  // pupil + glint (both carried by the gaze offset, as in the SVG)
+  ctx.globalAlpha = 0.92
+  ctx.beginPath()
+  ctx.ellipse(pupilDx, pupilDy, 13, 16.5, 0, 0, Math.PI * 2)
+  ctx.fillStyle = '#221F1A'
+  ctx.fill()
+  ctx.globalAlpha = 0.85
+  ctx.beginPath()
+  ctx.arc(pupilDx - 4.4, pupilDy - 6.3, 4, 0, Math.PI * 2)
+  ctx.fillStyle = '#FFFDF6'
+  ctx.fill()
+  ctx.restore()
+}
+
+/** the hero resting smile: M −58 5 Q 0 57 58 5, stroke #E1AD34 width 11, round caps */
+function paintMouth(canvas: HTMLCanvasElement) {
+  const W = canvas.width
+  const H = canvas.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+  const k = W / 176 // 176 × 96 art units (116 wide curve + caps + glow margin)
+  ctx.clearRect(0, 0, W, H)
+  ctx.save()
+  ctx.translate(W / 2, H / 2)
+  ctx.scale(k, k)
+  ctx.translate(0, -18) // curve spans y 5 … 31 → centre the stroke in the plane
+  const smile = () => {
+    ctx.beginPath()
+    ctx.moveTo(-58, 5)
+    ctx.quadraticCurveTo(0, 57, 58, 5)
+    ctx.lineWidth = 11
+    ctx.lineCap = 'round'
+    ctx.strokeStyle = '#E1AD34'
+    ctx.stroke()
+  }
+  glowPass(ctx, k, smile)
+  smile()
+  ctx.restore()
+}
+
+/** a flat decal on the screen plate — position on the surface, facing its normal */
+function FaceDecal({
+  at,
+  normal,
+  size,
+  map,
+  meshRef,
+}: {
+  at: [number, number, number]
+  normal: THREE.Vector3
+  size: [number, number]
+  map: THREE.Texture
+  meshRef?: React.RefObject<THREE.Mesh>
+}) {
+  const q = useMemo(() => new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal), [normal])
+  const pos = useMemo<[number, number, number]>(
+    () => [at[0] + normal.x * LIFT, at[1] + normal.y * LIFT, at[2] + normal.z * LIFT],
+    [at, normal],
+  )
+  return (
+    <mesh ref={meshRef} position={pos} quaternion={q} renderOrder={2}>
+      <planeGeometry args={size} />
+      {/* unlit, like the SVG: the screen graphic is its own light source */}
+      <meshBasicMaterial map={map} transparent depthWrite={false} toneMapped={false} />
+    </mesh>
+  )
+}
 
 /**
  * A light panel aimed at the robot (world origin). Used inside <Environment>
@@ -156,13 +289,37 @@ function RobotModel({ src, scrollProgress, onFirstFrame }: { src: string; scroll
 
 function Face3D({ scrollProgress }: { scrollProgress: number }) {
   const pointer = usePointer()
-  const leftWhiteRef = useRef<THREE.Mesh>(null)
-  const rightWhiteRef = useRef<THREE.Mesh>(null)
-  const leftPupilRef = useRef<THREE.Group>(null)
-  const rightPupilRef = useRef<THREE.Group>(null)
+  const leftEyeRef = useRef<THREE.Mesh>(null)
+  const rightEyeRef = useRef<THREE.Mesh>(null)
 
   const blinkRef = useRef({ v: 0, start: -1, nextAt: performance.now() + 2400 })
   const smooth = useRef({ px: 0, py: 0, lookX: 0, lookY: 0, wanderX: 0, wanderY: 0, nextWander: performance.now() + 2000 })
+
+  // the hero eye + smile, painted once into textures (repainted only when the
+  // gaze moves — the pupil is part of the eye graphic, exactly as in the SVG)
+  const art = useMemo(() => {
+    const eye = document.createElement('canvas')
+    eye.width = eye.height = 280 // 140 art units × 2
+    const mouth = document.createElement('canvas')
+    mouth.width = 528 // 176 art units × 3
+    mouth.height = 288 // 96 art units × 3
+    paintEye(eye, 0, 0)
+    paintMouth(mouth)
+    const eyeTex = new THREE.CanvasTexture(eye)
+    const mouthTex = new THREE.CanvasTexture(mouth)
+    for (const t of [eyeTex, mouthTex]) {
+      t.colorSpace = THREE.SRGBColorSpace
+      t.anisotropy = 4
+    }
+    return { eye, eyeTex, mouthTex, lastDx: 0, lastDy: 0 }
+  }, [])
+  useEffect(
+    () => () => {
+      art.eyeTex.dispose()
+      art.mouthTex.dispose()
+    },
+    [art],
+  )
 
   useFrame((_, delta) => {
     if (prefersReducedMotion()) return
@@ -210,20 +367,16 @@ function Face3D({ scrollProgress }: { scrollProgress: number }) {
     s.lookX = damp(s.lookX, tx, 3.0, dt)
     s.lookY = damp(s.lookY, ty, 3.0, dt)
 
-    const pupilRangeX = 0.011
-    const pupilRangeY = 0.009
-    const targetPx = clamp(s.lookX, -1, 1) * pupilRangeX
-    const targetPy = clamp(s.lookY, -1, 1) * pupilRangeY
-    s.px = damp(s.px, targetPx, 9, dt)
-    s.py = damp(s.py, targetPy, 9, dt)
-
-    if (leftPupilRef.current) {
-      leftPupilRef.current.position.x = s.px
-      leftPupilRef.current.position.y = s.py
-    }
-    if (rightPupilRef.current) {
-      rightPupilRef.current.position.x = s.px
-      rightPupilRef.current.position.y = s.py
+    // hero PUPIL_RANGE = { x: 11.5, y: 10 } art units (SVG y axis points down)
+    const targetPx = clamp(s.lookX, -1, 1) * 11.5
+    const targetPy = clamp(s.lookY, -1, 1) * 10
+    s.px = damp(s.px, targetPx, 10, dt)
+    s.py = damp(s.py, targetPy, 10, dt)
+    if (Math.abs(s.px - art.lastDx) > 0.05 || Math.abs(s.py - art.lastDy) > 0.05) {
+      art.lastDx = s.px
+      art.lastDy = s.py
+      paintEye(art.eye, s.px, s.py)
+      art.eyeTex.needsUpdate = true
     }
 
     if (b.start < 0 && now >= b.nextAt) {
@@ -237,58 +390,22 @@ function Face3D({ scrollProgress }: { scrollProgress: number }) {
         b.start = -1
       } else b.v = Math.sin(t * Math.PI)
     }
-    // keep oval y 1.34 * blink
-    const blinkScale = 1 - b.v * 0.92
-    if (leftWhiteRef.current) leftWhiteRef.current.scale.y = 1.34 * blinkScale
-    if (rightWhiteRef.current) rightWhiteRef.current.scale.y = 1.34 * blinkScale
+    // blink: the eye graphic squashes vertically, as the hero's does
+    const blinkScale = 1 - b.v * 0.88
+    if (leftEyeRef.current) leftEyeRef.current.scale.y = blinkScale
+    if (rightEyeRef.current) rightEyeRef.current.scale.y = blinkScale
   })
 
-  // oval yellow eyes like HeroRobot (white was wrong) — yellow + vertical oval 1.32
-  const mouthCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-0.032, MOUTH_Y, MOUTH_Z + 0.003),
-    new THREE.Vector3(0, MOUTH_Y - 0.012, MOUTH_Z + 0.004),
-    new THREE.Vector3(0.032, MOUTH_Y, MOUTH_Z + 0.003),
-  ])
+  // decal sizes in model units: the eye canvas is 140 art units square, the
+  // mouth canvas 176 × 96
+  const eyeSize: [number, number] = [140 * ART_UNIT, 140 * ART_UNIT]
+  const mouthSize: [number, number] = [176 * ART_UNIT, 96 * ART_UNIT]
 
   return (
     <group>
-      {/* left eye — yellow oval */}
-      <mesh ref={leftWhiteRef} position={[-EYE_DX, EYE_Y, EYE_Z]} scale={[1, 1.34, 1]}>
-        <sphereGeometry args={[0.021, 28, 28]} />
-        <meshStandardMaterial color="#EAC24A" roughness={0.55} metalness={0.02} emissive="#E1AD34" emissiveIntensity={0.18} />
-      </mesh>
-      <group ref={leftPupilRef} position={[-EYE_DX, EYE_Y, EYE_Z]}>
-        <mesh position={[0, 0, 0.014]}>
-          <sphereGeometry args={[0.0092, 20, 20]} />
-          <meshStandardMaterial color="#1A1816" roughness={0.9} />
-        </mesh>
-        <mesh position={[-0.0026, 0.0032, 0.018]}>
-          <sphereGeometry args={[0.0024, 10, 10]} />
-          <meshStandardMaterial color="#FFFEF7" emissive="#FFFEF7" emissiveIntensity={0.85} />
-        </mesh>
-      </group>
-
-      {/* right eye — a bit lower (head tiny tilt right) */}
-      <mesh ref={rightWhiteRef} position={[EYE_DX, EYE_Y - EYE_RIGHT_Y_DROP, EYE_Z]} scale={[1, 1.34, 1]}>
-        <sphereGeometry args={[0.021, 28, 28]} />
-        <meshStandardMaterial color="#EAC24A" roughness={0.55} metalness={0.02} emissive="#E1AD34" emissiveIntensity={0.18} />
-      </mesh>
-      <group ref={rightPupilRef} position={[EYE_DX, EYE_Y - EYE_RIGHT_Y_DROP, EYE_Z]}>
-        <mesh position={[0, 0, 0.014]}>
-          <sphereGeometry args={[0.0092, 20, 20]} />
-          <meshStandardMaterial color="#1A1816" roughness={0.9} />
-        </mesh>
-        <mesh position={[-0.0026, 0.0032, 0.018]}>
-          <sphereGeometry args={[0.0024, 10, 10]} />
-          <meshStandardMaterial color="#FFFEF7" emissive="#FFFEF7" emissiveIntensity={0.85} />
-        </mesh>
-      </group>
-
-      {/* smile — yellow like other robot */}
-      <mesh>
-        <tubeGeometry args={[mouthCurve, 18, 0.0024, 8, false]} />
-        <meshStandardMaterial color="#E1AD34" roughness={0.65} />
-      </mesh>
+      <FaceDecal at={EYE_L} normal={EYE_L_N} size={eyeSize} map={art.eyeTex} meshRef={leftEyeRef} />
+      <FaceDecal at={EYE_R} normal={EYE_R_N} size={eyeSize} map={art.eyeTex} meshRef={rightEyeRef} />
+      <FaceDecal at={MOUTH_C} normal={MOUTH_N} size={mouthSize} map={art.mouthTex} />
     </group>
   )
 }

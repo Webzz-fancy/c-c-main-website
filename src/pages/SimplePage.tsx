@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import SimpleHero from '../components/simple/SimpleHero'
-import SimpleSecond from '../components/simple/SimpleSecond'
+import SimpleSecond, { SECOND_BG } from '../components/simple/SimpleSecond'
 import SimpleThird from '../components/simple/SimpleThird'
 import Robot3D, { preloadRobot } from '../components/simple/Robot3D'
 import Header from '../components/Header'
@@ -311,8 +311,7 @@ export default function SimplePage() {
     arrow.style.opacity = op.toFixed(3)
     const grow = 0.9 + 0.1 * Math.min(1, (drawn / g.total) * 20)
     arrow.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -50%) rotate(${ang.toFixed(2)}deg) scale(${grow.toFixed(3)})`
-    const desktop = window.matchMedia('(min-width: 1024px)').matches
-    arrow.style.color = y < g.switchY ? '#1B1A17' : desktop ? '#F2AFA0' : '#FFFFFF'
+    arrow.style.color = y < g.switchY ? '#1B1A17' : '#FFFFFF'
   }
 
   const applyBRef = useRef<(pA: number, drawn: number) => void>(() => {})
@@ -340,8 +339,7 @@ export default function SimplePage() {
     arrow.style.opacity = op.toFixed(3)
     const grow = 0.9 + 0.1 * Math.min(1, (drawn / g.total) * 20)
     arrow.style.transform = `translate(${x.toFixed(1)}px, ${ay.toFixed(1)}px) translate(-50%, -50%) rotate(${ang.toFixed(2)}deg) scale(${grow.toFixed(3)})`
-    const desktop = window.matchMedia('(min-width: 1024px)').matches
-    arrow.style.color = desktop ? '#F2AFA0' : '#FFFFFF'
+    arrow.style.color = '#FFFFFF'
   }
 
   // scroll progress: 0 at the top → 1 at the very bottom of the page.
@@ -402,7 +400,7 @@ export default function SimplePage() {
       // part B starts mid-pattern so its dots continue part A's rhythm
       // seamlessly across the boundary
       pathB.style.strokeDashoffset = (g.Lb % DASH_PERIOD).toFixed(2)
-      // part A gradient: ink → (salmon/white) across the wavy divider
+      // part A gradient: ink → white across the wavy divider
       const grad = gradARef.current
       if (grad) {
         grad.setAttribute('y2', String(heroH))
@@ -414,8 +412,7 @@ export default function SimplePage() {
         aStop4.current?.setAttribute('offset', '1')
       }
       // part B lives below the divider — a single solid colour
-      const desktop = w >= 1024
-      pathB.setAttribute('stroke', desktop ? '#F2AFA0' : '#FFFFFF')
+      pathB.setAttribute('stroke', '#FFFFFF')
 
       const budget = pinBudget(w, h)
       geom.current = {
@@ -700,9 +697,9 @@ export default function SimplePage() {
               </div>
             </div>
 
-            {/* dark bridge so section 2's dark background carries to the
-                bottom of the stage (where the orange dome rises from) */}
-            <div className="h-[8svh] w-full bg-[#08080A]" />
+            {/* bridge so section 2's background carries to the bottom of
+                the stage (where the orange dome rises from) */}
+            <div className="h-[8svh] w-full" style={{ backgroundColor: SECOND_BG }} />
 
             {/* section 3 — the orange dome, the heading, the spinning previews, the clothesline */}
             <MemoThird q1={third.q1} q2={third.q2} qSpin={third.qSpin} qDrop={third.qDrop} qPan={third.qPan} />
