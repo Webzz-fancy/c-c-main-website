@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useScrolled } from '../hooks/useScrolled'
+import { useHomeLinks } from '../hooks/useHomeLinks'
 import { useRobotMood } from '../context/RobotMood'
 
 type NavItem = {
@@ -45,10 +46,10 @@ const NAV: NavItem[] = [
   { label: 'About Us', href: '#about' },
 ]
 
-function Logo() {
+function Logo({ href }: { href: string }) {
   return (
     <a
-      href="#home"
+      href={href}
       className="group flex shrink-0 items-center"
       aria-label="Clause & Code — home"
     >
@@ -87,6 +88,7 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mobileSub, setMobileSub] = useState<string | null>(null)
   const closeTimer = useRef<number | null>(null)
+  const link = useHomeLinks()
 
   useEffect(() => () => {
     if (closeTimer.current) window.clearTimeout(closeTimer.current)
@@ -129,7 +131,7 @@ export default function Header() {
             : 'max-w-[min(1440px,calc(100%-80px))] rounded-full border border-transparent bg-transparent px-2 py-3 shadow-none',
         ].join(' ')}
       >
-        <Logo />
+        <Logo href={link('#home')} />
 
         {/* Desktop navigation */}
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
@@ -162,7 +164,7 @@ export default function Header() {
                   </button>
                 ) : (
                   <a
-                    href={item.href}
+                    href={link(item.href)}
                     className="group relative flex items-center gap-1.5 rounded-full px-4 py-2 text-[14px] font-medium text-ink-soft transition-colors duration-300 hover:text-ink"
                   >
                     {item.label}
@@ -186,7 +188,7 @@ export default function Header() {
                       {item.children.map((child) => (
                         <a
                           key={child.label}
-                          href={child.href}
+                          href={link(child.href)}
                           className="group/item flex flex-col gap-0.5 rounded-xl px-3.5 py-3 transition-colors duration-200 hover:bg-brand-50"
                         >
                           <span className="flex items-center justify-between text-[14px] font-semibold text-ink">
@@ -210,7 +212,7 @@ export default function Header() {
 
         <div className="flex items-center gap-2">
           <a
-            href="#contact"
+            href={link('#contact')}
             {...moodHandlers('surprised')}
             className="hidden items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-[14px] font-semibold text-ink shadow-brand transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-300 hover:shadow-[0_18px_34px_-12px_rgba(225,173,52,0.8)] active:translate-y-0 sm:flex"
           >
@@ -268,7 +270,7 @@ export default function Header() {
                 </button>
               ) : (
                 <a
-                  href={item.href}
+                  href={link(item.href)}
                   onClick={() => setMobileOpen(false)}
                   className="block px-3 py-3 text-[15px] font-medium text-ink"
                 >
@@ -287,7 +289,7 @@ export default function Header() {
                       {item.children.map((child) => (
                         <a
                           key={child.label}
-                          href={child.href}
+                          href={link(child.href)}
                           onClick={() => setMobileOpen(false)}
                           className="block py-2 text-[14px] text-ink-muted"
                         >
@@ -301,7 +303,7 @@ export default function Header() {
             </div>
           ))}
           <a
-            href="#contact"
+            href={link('#contact')}
             onClick={() => setMobileOpen(false)}
             className="mt-3 rounded-full bg-brand px-5 py-3 text-center text-[15px] font-semibold text-ink"
           >

@@ -1,3 +1,5 @@
+import Underline from '../Underline'
+
 type Props = { progress: number }
 
 /**
@@ -80,7 +82,13 @@ export default function SimpleSecond({ progress }: Props) {
             What Simple covers
           </div>
           <h2 className="mt-4 font-display text-[clamp(1.65rem,3.2vw,2.6rem)] font-normal leading-[1.02] tracking-[-0.02em] text-white" style={{ opacity: in1, transform: `translateY(${(1 - in1) * 10}px)`, transition: 'opacity 560ms ease 60ms, transform 720ms cubic-bezier(0.16,1,0.3,1) 60ms' }}>
-            Your website is a system too.
+            Your website is{' '}
+            <span className="relative inline-block">
+              <span className="relative z-10 italic">a system too.</span>
+              {/* the home page's hand drawn line: it draws once the heading has
+                  settled and undraws if the visitor scrolls back up */}
+              <Underline active={in1 > 0.6} delay={260} duration={1500} opacity={0.85} />
+            </span>
             <br />
             <span className="text-white/85">We build it like one.</span>
           </h2>

@@ -2,11 +2,20 @@ import { useEffect, useRef, useState } from 'react'
 
 type UnderlineProps = {
   /** Draw the stroke. Drive this from a reveal/in-view flag. */
-  active: boolean
+  active?: boolean
+  /**
+   * Scrubbed draw, 0→1. When given, the stroke follows this value directly
+   * (no transition), so a scroll-driven timeline can draw and undraw it.
+   */
+  progress?: number
   /** Delay before the draw starts, in ms. */
   delay?: number
   /** Draw duration, in ms. */
   duration?: number
+  /** Stroke opacity. */
+  opacity?: number
+  /** Stroke colour (any CSS colour). Defaults to the brand yellow. */
+  color?: string
   className?: string
 }
 
@@ -18,9 +27,12 @@ type UnderlineProps = {
  * preserveAspectRatio="none" the on-screen length changes with the container.
  */
 export default function Underline({
-  active,
+  active = false,
+  progress,
   delay = 0,
   duration = 1600,
+  opacity = 0.6,
+  color,
   className = '',
 }: UnderlineProps) {
   const pathRef = useRef<SVGPathElement>(null)
@@ -39,11 +51,16 @@ export default function Underline({
     return () => ro.disconnect()
   }, [])
 
+  const scrub = progress !== undefined
+  const drawn = scrub ? Math.max(0, Math.min(1, progress)) : active ? 1 : 0
+  const total = length || 1
+
   return (
     <svg
       viewBox="0 0 300 14"
       preserveAspectRatio="none"
       className={`pointer-events-none absolute -bottom-1 left-0 h-[10px] w-full text-brand ${className}`}
+      style={color ? { color } : undefined}
       fill="none"
       aria-hidden="true"
     >
@@ -53,11 +70,13 @@ export default function Underline({
         stroke="currentColor"
         strokeWidth="3.5"
         strokeLinecap="round"
-        opacity="0.6"
+        opacity={opacity}
         style={{
-          strokeDasharray: length || 1,
-          strokeDashoffset: active ? 0 : length || 1,
-          transition: `stroke-dashoffset ${duration}ms cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`,
+          strokeDasharray: total,
+          strokeDashoffset: total * (1 - drawn),
+          transition: scrub
+            ? 'none'
+            : `stroke-dashoffset ${duration}ms cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`,
         }}
       />
     </svg>

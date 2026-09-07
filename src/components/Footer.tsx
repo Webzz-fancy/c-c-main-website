@@ -1,4 +1,5 @@
 import { site } from '../config/site'
+import { useHomeLinks } from '../hooks/useHomeLinks'
 
 type LinkGroup = {
   title: string
@@ -60,6 +61,7 @@ function InstagramIcon() {
 }
 
 export default function Footer() {
+  const link = useHomeLinks()
   const year = new Date().getFullYear()
 
   return (
@@ -143,14 +145,14 @@ export default function Footer() {
                   {group.title}
                 </h3>
                 <ul className="mt-4 space-y-2.5">
-                  {group.links.map((link) => (
-                    <li key={link.label}>
+                  {group.links.map((item) => (
+                    <li key={item.label}>
                       <a
-                        href={link.href}
+                        href={link(item.href)}
                         className="group inline-flex items-center text-[14.5px] text-white/70 transition-colors duration-300 hover:text-white"
                       >
                         <span className="mr-0 h-px w-0 bg-brand transition-all duration-300 group-hover:mr-2 group-hover:w-3" />
-                        {link.label}
+                        {item.label}
                       </a>
                     </li>
                   ))}

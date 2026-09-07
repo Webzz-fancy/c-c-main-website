@@ -621,7 +621,7 @@ export default function SimplePage() {
         {/* ——— hero (in normal flow) + trail part A over it ——— */}
         <div className="relative">
           <div ref={heroRef}>
-            <MemoHero />
+            <MemoHero revealed={loaderGone} />
           </div>
           {/* own compositor layer: the trail repaints every frame while the
               arrow travels, and must not drag the hero's blurred glows into

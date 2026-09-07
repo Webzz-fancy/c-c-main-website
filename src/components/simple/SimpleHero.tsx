@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import Underline from '../Underline'
 import { SECOND_BG } from './SimpleSecond'
 
 /**
@@ -6,7 +8,21 @@ import { SECOND_BG } from './SimpleSecond'
  * lower left (opposite diagonals), a glass plate under the heading and a
  * glass plate under the supporting copy, both with the specular top edge.
  */
-export default function SimpleHero() {
+type Props = {
+  /** true once the loading screen has cleared: the underline draws after that */
+  revealed: boolean
+}
+
+export default function SimpleHero({ revealed }: Props) {
+  // as on the home hero: the heading is already standing there when the page
+  // is revealed, and the underline draws itself a beat later
+  const [drawn, setDrawn] = useState(false)
+  useEffect(() => {
+    if (!revealed) return
+    const t = window.setTimeout(() => setDrawn(true), 160)
+    return () => window.clearTimeout(t)
+  }, [revealed])
+
   return (
     <section id="simple-hero" className="relative flex h-[100svh] min-h-[640px] w-full flex-col overflow-hidden bg-cream">
       {/* ---------- ambient: warm / cool opposite diagonals (as on the home hero) ---------- */}
@@ -63,7 +79,10 @@ export default function SimpleHero() {
           <h1 className="mt-4 font-display text-[clamp(2.5rem,4.6vw,4.7rem)] font-normal leading-[0.92] tracking-[-0.03em] text-ink">
             Simple on the
             <br />
-            <span className="italic font-normal text-brand-600">outside.</span>
+            <span className="relative inline-block">
+              <span className="relative z-10 italic font-normal text-brand-600">outside.</span>
+              <Underline active={drawn} />
+            </span>
           </h1>
         </div>
       </div>

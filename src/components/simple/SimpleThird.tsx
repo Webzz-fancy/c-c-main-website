@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Underline from '../Underline'
 import {
   CARD_TILT,
   PROJECTS,
@@ -111,6 +112,10 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
   // to show, so its backdrop blur never touches the section below
   const plateIn = smooth(clamp01(q2 / 0.28))
   const plateAlpha = plateIn * (1 - headExit)
+  // the line under the second line of the heading: scrubbed by the same
+  // scroll as the letters, its pen trailing the last letters as they rise,
+  // so it is complete exactly when the heading is
+  const lineQ = smooth(clamp01((q2 - 0.5) / 0.5))
   const offsets = HEAD_LINES.reduce<number[]>((a, line, i) => {
     a.push(i ? a[i - 1] + line.length : 0)
     return a
@@ -193,23 +198,36 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
           <div className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.95) 45%, transparent)' }} />
         </div>
         <h2 className="font-display text-[clamp(2.6rem,7vw,6.5rem)] leading-[0.95] tracking-[-0.02em]">
-          {HEAD_LINES.map((line, li) => (
-            <div key={li} className="overflow-hidden pb-[0.06em]">
-              {line.split('').map((ch, ci) => {
-                const i = offsets[li] + ci
-                const lp = smooth(clamp01((q2 - i * 0.035) / 0.45))
-                return (
-                  <span
-                    key={ci}
-                    className="inline-block will-change-transform"
-                    style={{ transform: `translateY(${((1 - lp) * 112).toFixed(2)}%)` }}
-                  >
-                    {ch === ' ' ? '\u00A0' : ch}
+          {HEAD_LINES.map((line, li) => {
+            const last = li === HEAD_LINES.length - 1
+            const letters = line.split('').map((ch, ci) => {
+              const i = offsets[li] + ci
+              const lp = smooth(clamp01((q2 - i * 0.035) / 0.45))
+              return (
+                <span
+                  key={ci}
+                  className="inline-block will-change-transform"
+                  style={{ transform: `translateY(${((1 - lp) * 112).toFixed(2)}%)` }}
+                >
+                  {ch === ' ' ? '\u00A0' : ch}
+                </span>
+              )
+            })
+            return (
+              <div key={li} className="overflow-hidden pb-[0.06em]">
+                {last ? (
+                  // the accent line, as on the home headings: italic, with the
+                  // hand drawn underline (ink here, the ground is the brand yellow)
+                  <span className="relative inline-block italic">
+                    <span className="relative z-10">{letters}</span>
+                    <Underline progress={lineQ} color="#221F1A" opacity={0.55} />
                   </span>
-                )
-              })}
-            </div>
-          ))}
+                ) : (
+                  letters
+                )}
+              </div>
+            )
+          })}
         </h2>
         <p
           className="mt-6 max-w-[560px] text-[clamp(0.95rem,1.35vw,1.2rem)] font-light leading-relaxed text-ink/75"
