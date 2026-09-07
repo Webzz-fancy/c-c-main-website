@@ -41,6 +41,14 @@ const inCubic = (t: number) => t * t * t
 const inOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
+/**
+ * Section 3 sits on a faded, quieter version of the brand orange #E1AD34 —
+ * the same treatment section 2 gives the brand blue (same hue, lifted and
+ * desaturated). Ink copy on it keeps a 7.8:1 contrast; the white preview
+ * cards read as paper on it rather than glare.
+ */
+export const THIRD_BG = '#D1AE5D'
+
 const HEAD_LINES = ['Made to', 'be found.']
 const SUB =
   'A line of recent Simple builds. Each one mapped before it was designed, built to load fast, and structured so people and AI can find it and understand it.'
@@ -88,15 +96,16 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
 
   /* ---- 1 · the plain orange dome (no text) ------------------------------ */
   // An arch rising from below the frame: a circular crown (its radius sets
-  // how arched the leading edge looks — at 0.78 × viewport width the crown
-  // leads the corners by ~30 % of the viewport height on a desktop screen, a
-  // real arch rather than a near-flat wave) on top of a full-width body that
+  // how arched the leading edge looks, see R below) on top of a full-width body that
   // carries the colour down past the bottom of the frame on any aspect
   // ratio. It rises until the crown clears the top of the frame by the
   // sagitta plus a margin, so the corners are covered too and the whole
   // frame is orange when the heading arrives.
   const domeQ = smooth(clamp01(q1))
-  const R = w * 0.78
+  // 0.62 × viewport width: the crown leads the corners by ~42 % of the
+  // viewport height on a desktop screen — 40 % deeper than the previous
+  // 0.78 arch, a clear dome rather than a shallow bow
+  const R = w * 0.62
   const sagitta = R - Math.sqrt(Math.max(0, R * R - (w / 2) * (w / 2)))
   const domeTop = h * 1.02 + (-(sagitta + h * 0.06) - h * 1.02) * domeQ
 
@@ -145,14 +154,14 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
     // footer once the pin releases. Every position inside is still measured
     // against the viewport (w, h), so the choreography is unchanged.
     <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden" aria-hidden>
-      {/* plain brand orange, rising from the bottom: the arched crown … */}
+      {/* the faded orange, rising from the bottom: the arched crown … */}
       <div
-        className="absolute rounded-[50%] bg-brand"
-        style={{ width: R * 2, height: R * 2, left: w / 2 - R, top: domeTop }}
+        className="absolute rounded-[50%]"
+        style={{ width: R * 2, height: R * 2, left: w / 2 - R, top: domeTop, backgroundColor: THIRD_BG }}
       />
       {/* … and the body under it (starts at the crown's widest point and
           runs past the bottom of the stage on any aspect ratio) */}
-      <div className="absolute inset-x-0 bg-brand" style={{ top: domeTop + R, height: h * 3 }} />
+      <div className="absolute inset-x-0" style={{ top: domeTop + R, height: h * 3, backgroundColor: THIRD_BG }} />
 
       {/* ambient light on the orange — the home page's grain and blooms, so
           the glass plates here have depth to catch. Rides with the dome (its
