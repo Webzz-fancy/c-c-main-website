@@ -45,3 +45,6 @@ Thumbs.db
 scratch/
 project.mp4
 public/frames_preview/
+
+# credentials backup: never commit (see HOSTINGER_ENV_BACKUP.md)
+HOSTINGER_ENV_BACKUP.md
