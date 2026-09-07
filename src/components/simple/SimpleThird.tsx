@@ -104,6 +104,13 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
   // ring has the screen to itself (reverse scroll brings it back the same way)
   const headExit = smooth(clamp01(qSpin / RING_IN))
   const subQ = smooth(clamp01((q2 - 0.62) / 0.38))
+  // the glass plate under the heading surfaces just ahead of the first
+  // letters (the letters were always hidden until q2 by their line clips, but
+  // a frosted plate would otherwise sit visibly over section 2 the whole way
+  // up — it is an overlay), and it is fully switched off when it has nothing
+  // to show, so its backdrop blur never touches the section below
+  const plateIn = smooth(clamp01(q2 / 0.28))
+  const plateAlpha = plateIn * (1 - headExit)
   const offsets = HEAD_LINES.reduce<number[]>((a, line, i) => {
     a.push(i ? a[i - 1] + line.length : 0)
     return a
@@ -142,18 +149,49 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
           runs past the bottom of the stage on any aspect ratio) */}
       <div className="absolute inset-x-0 bg-brand" style={{ top: domeTop + R, height: h * 3 }} />
 
+      {/* ambient light on the orange — the home page's grain and blooms, so
+          the glass plates here have depth to catch. Rides with the dome (its
+          top follows the crown) so it never shows on the section above. */}
+      <div className="absolute inset-x-0" style={{ top: domeTop + sagitta, height: h * 1.4 }}>
+        <div className="absolute inset-0 grain opacity-50" />
+        {/* light from the upper left, over the heading */}
+        <div
+          className="absolute -left-40 -top-24 h-[680px] w-[820px] rounded-full blur-3xl"
+          style={{ background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 68%)' }}
+        />
+        {/* the cool corner, lower right, mirroring the hero's diagonal */}
+        <div
+          className="absolute -bottom-24 -right-32 h-[620px] w-[760px] rounded-full blur-3xl"
+          style={{ background: 'radial-gradient(ellipse at center, rgba(45,109,139,0.14) 0%, rgba(45,109,139,0) 68%)' }}
+        />
+        {/* a deeper amber pool, upper right, behind the ring */}
+        <div
+          className="absolute -right-20 top-[6%] h-[520px] w-[640px] rounded-full blur-3xl"
+          style={{ background: 'radial-gradient(ellipse at center, rgba(166,120,33,0.16) 0%, rgba(166,120,33,0) 70%)' }}
+        />
+      </div>
+
       {/* heading — upper-left corner; letters rise in, then the block fades
           (with a slight lift) as the previews arrive for their turn */}
       <div
-        className="absolute text-ink"
+        className="absolute isolate rounded-[28px] border border-white/50 px-7 py-7 text-ink shadow-[0_40px_100px_-40px_rgba(90,60,10,0.4),inset_0_1px_0_rgba(255,255,255,0.75)] sm:rounded-[34px] sm:px-10 sm:py-9"
         style={{
           left: '7%',
-          top: '17svh',
-          maxWidth: 'min(680px, 78vw)',
-          transform: `translateY(${(-headExit * 18).toFixed(1)}px)`,
-          opacity: 1 - headExit,
+          top: '15svh',
+          maxWidth: 'min(720px, 84vw)',
+          // thin frost on the orange: light from the top left, the ground shows through
+          background: 'linear-gradient(145deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.08) 100%)',
+          backdropFilter: 'blur(14px) saturate(140%)',
+          WebkitBackdropFilter: 'blur(14px) saturate(140%)',
+          transform: `translateY(${((1 - plateIn) * 16 - headExit * 18).toFixed(1)}px)`,
+          opacity: plateAlpha,
+          visibility: plateAlpha < 0.005 ? 'hidden' : 'visible',
         }}
       >
+        {/* specular highlight along the top edge */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px] sm:rounded-[34px]">
+          <div className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.95) 45%, transparent)' }} />
+        </div>
         <h2 className="font-display text-[clamp(2.6rem,7vw,6.5rem)] leading-[0.95] tracking-[-0.02em]">
           {HEAD_LINES.map((line, li) => (
             <div key={li} className="overflow-hidden pb-[0.06em]">
@@ -174,7 +212,7 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
           ))}
         </h2>
         <p
-          className="mt-6 max-w-[560px] text-[clamp(0.95rem,1.35vw,1.2rem)] font-light leading-relaxed text-ink/70"
+          className="mt-6 max-w-[560px] text-[clamp(0.95rem,1.35vw,1.2rem)] font-light leading-relaxed text-ink/75"
           style={{ opacity: subQ, transform: `translateY(${((1 - subQ) * 26).toFixed(1)}px)` }}
         >
           {SUB}
@@ -291,12 +329,23 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
             >
               <div className="absolute left-1/2 top-[5px] h-[8px] w-[2px] -translate-x-1/2 rounded bg-white/25" />
             </div>
-            {/* the card — plain white for now; becomes the site's hero screenshot */}
+            {/* the card — a frosted glass plate for now; becomes the site's
+                hero screenshot. The glass is a gradient + border + specular
+                edge only (no per-card backdrop blur: ten of them turning
+                would be a compositing cost for no visible gain on orange). */}
             <div
-              className="relative overflow-hidden rounded-[10px] bg-white shadow-[0_18px_40px_-18px_rgba(27,26,23,0.38)]"
-              style={{ marginTop: (10 * e).toFixed(2) + 'px' }}
+              className="relative overflow-hidden rounded-[12px] border border-white/80 shadow-[0_18px_40px_-18px_rgba(90,60,10,0.45),inset_0_1px_0_rgba(255,255,255,0.95)]"
+              style={{
+                marginTop: (10 * e).toFixed(2) + 'px',
+                background: 'linear-gradient(150deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.86) 55%, rgba(253,248,236,0.92) 100%)',
+              }}
             >
-              <div className="aspect-[5/4] w-full bg-white" />
+              <div className="aspect-[5/4] w-full" />
+              {/* a faint inner sheen, top left, like the plates above */}
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 45%)' }}
+              />
               {/* far-side shade while on the ring */}
               <div className="absolute inset-0 bg-ink" style={{ opacity: shade.toFixed(3) }} />
             </div>
