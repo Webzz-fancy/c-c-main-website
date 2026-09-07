@@ -57,6 +57,19 @@ export default function App() {
     }
   }, [page])
 
+  // a home-section link followed from a project page ("/#projects"): the
+  // home page mounts fresh behind its loader, so the section is scrolled to
+  // once the loader has released the page
+  useEffect(() => {
+    if (page !== 'home' || !loaderGone) return
+    const hash = window.location.hash
+    if (!hash || hash === '#home') return
+    const target = document.getElementById(hash.slice(1))
+    if (!target) return
+    const id = window.setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60)
+    return () => window.clearTimeout(id)
+  }, [page, loaderGone])
+
   if (page === 'simple') {
     return (
       <RobotMoodProvider>
