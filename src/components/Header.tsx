@@ -34,12 +34,12 @@ const NAV: NavItem[] = [
       {
         label: 'Simple',
         href: '/simple',
-        description: 'Websites & AI discoverability — our “simple” that’s never simple.',
+        description: 'Websites and AI discoverability. Simple on the outside, built like a system underneath.',
       },
       {
         label: 'Complex',
         href: '/complex',
-        description: 'Operations & scale systems — coming next.',
+        description: 'Operations and scale systems. The next chapter, coming soon.',
       },
     ],
   },

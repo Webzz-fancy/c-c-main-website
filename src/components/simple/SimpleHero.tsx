@@ -5,8 +5,9 @@ import { SECOND_BG } from './SimpleSecond'
 /**
  * Hero of the Simple page — the home hero's glass language, one to one:
  * dotted grain, the warm bloom on the upper right and the cool bloom on the
- * lower left (opposite diagonals), a glass plate under the heading and a
- * glass plate under the supporting copy, both with the specular top edge.
+ * lower left (opposite diagonals), the heading bare on the cream (as on the
+ * home hero) and a glass plate under the supporting copy, with the specular
+ * top edge.
  */
 type Props = {
   /** true once the loading screen has cleared: the underline draws after that */
@@ -50,41 +51,28 @@ export default function SimpleHero({ revealed }: Props) {
         <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-black/[0.07] to-transparent" />
       </div>
 
-      {/* ---------- heading on glass, upper left ----------
+      {/* ---------- heading, upper left (bare, as on the home hero) ----------
           No z-index on purpose: the robot (in the pinned stage, later in the
-          DOM) renders in front of this plate, so where the two meet the robot
-          stands before the glass, never behind a frosted corner. From lg up
-          the plate hugs its text (w-fit) and is nudged left of the home
-          hero's text column, so the robot's head clears it on every desktop
-          width down to 1024. */}
-      <div className="pointer-events-none absolute left-[5%] top-[11%] max-w-[560px] max-sm:right-[5%] max-sm:max-w-none sm:top-[12%] lg:left-[4%] lg:top-[13%] lg:max-w-[600px] xl:left-[6%]">
-        <div
-          className="relative isolate rounded-[26px] border border-white/70 px-6 py-6 shadow-[0_40px_100px_-40px_rgba(18,44,56,0.34),inset_0_1px_0_rgba(255,255,255,0.9)] sm:rounded-[30px] sm:px-7 sm:py-7 lg:w-fit lg:pr-9"
-          style={{
-            background: 'linear-gradient(145deg, rgba(255,255,255,0.56) 0%, rgba(45,109,139,0.045) 45%, rgba(45,109,139,0.06) 100%)',
-            backdropFilter: 'blur(28px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-          }}
-        >
-          <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[26px] sm:rounded-[30px]" aria-hidden>
-            <div className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.95) 45%, transparent)' }} />
-          </div>
-          <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-muted">
-            <span className="flex items-center gap-2" aria-hidden>
-              <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-              <span className="h-px w-7 bg-gradient-to-r from-brand/70 to-transparent" />
-            </span>
-            Our Projects · Simple
-          </div>
-          <h1 className="mt-4 font-display text-[clamp(2.5rem,4.6vw,4.7rem)] font-normal leading-[0.92] tracking-[-0.03em] text-ink">
-            Simple on the
-            <br />
-            <span className="relative inline-block">
-              <span className="relative z-10 italic font-normal text-brand-600">outside.</span>
-              <Underline active={drawn} />
-            </span>
-          </h1>
+          DOM) renders in front of the text where the two meet. From lg up
+          the block is nudged left of the home hero's text column so the
+          robot's head clears it on every desktop width down to 1024. */}
+      <div className="pointer-events-none absolute left-[6%] top-[13%] max-w-[560px] max-sm:right-[5%] max-sm:max-w-none sm:top-[14%] lg:left-[6%] lg:max-w-[600px] xl:left-[8%]">
+        <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-muted">
+          <span className="flex items-center gap-2" aria-hidden>
+            <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+            <span className="h-px w-7 bg-gradient-to-r from-brand/70 to-transparent" />
+          </span>
+          Our Projects · Simple
         </div>
+        <h1 className="mt-4 font-display text-[clamp(2.5rem,4.6vw,4.7rem)] font-normal leading-[0.92] tracking-[-0.03em] text-ink">
+          Simple on the
+          <br />
+          <span className="relative inline-block">
+            <span className="relative z-10 italic font-normal text-brand-600">outside.</span>
+            <Underline active={drawn} />
+          </span>
+        </h1>
+        <div className="mt-4 h-px w-12 bg-ink/15" />
       </div>
 
       {/* ---------- supporting copy on glass, lower right ---------- */}
