@@ -85,11 +85,29 @@ export default function Header() {
   const { moodHandlers } = useRobotMood()
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [mobileSub, setMobileSub] = useState<string | null>(null)
   const closeTimer = useRef<number | null>(null)
 
   useEffect(() => () => {
     if (closeTimer.current) window.clearTimeout(closeTimer.current)
   }, [])
+
+  // a menu opened by click closes on Escape or on a click anywhere outside it
+  useEffect(() => {
+    if (!openDropdown) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenDropdown(null)
+    }
+    const onDown = (e: PointerEvent) => {
+      if (!(e.target as HTMLElement).closest('[data-nav-menu]')) setOpenDropdown(null)
+    }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('pointerdown', onDown)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('pointerdown', onDown)
+    }
+  }, [openDropdown])
 
   const openMenu = (label: string) => {
     if (closeTimer.current) window.clearTimeout(closeTimer.current)
@@ -120,23 +138,40 @@ export default function Header() {
             return (
               <div
                 key={item.label}
+                data-nav-menu={item.children ? '' : undefined}
                 className="relative"
                 onMouseEnter={() => item.children && openMenu(item.label)}
                 onMouseLeave={() => item.children && scheduleClose()}
               >
-                <a
-                  href={item.href}
-                  aria-haspopup={item.children ? 'true' : undefined}
-                  aria-expanded={item.children ? isOpen : undefined}
-                  className="group relative flex items-center gap-1.5 rounded-full px-4 py-2 text-[14px] font-medium text-ink-soft transition-colors duration-300 hover:text-ink"
-                >
-                  {item.label}
-                  {item.children && <ChevronIcon open={isOpen} />}
-                  <span
-                    className="pointer-events-none absolute inset-x-4 bottom-1 h-px origin-left scale-x-0 bg-brand transition-transform duration-300 group-hover:scale-x-100"
-                    aria-hidden="true"
-                  />
-                </a>
+                {item.children ? (
+                  // a parent item is a menu trigger, not a link: clicking it
+                  // opens (or closes) the menu and never scrolls the page
+                  <button
+                    type="button"
+                    aria-haspopup="true"
+                    aria-expanded={isOpen}
+                    onClick={() => (isOpen ? setOpenDropdown(null) : openMenu(item.label))}
+                    className="group relative flex items-center gap-1.5 rounded-full px-4 py-2 text-[14px] font-medium text-ink-soft transition-colors duration-300 hover:text-ink"
+                  >
+                    {item.label}
+                    <ChevronIcon open={isOpen} />
+                    <span
+                      className="pointer-events-none absolute inset-x-4 bottom-1 h-px origin-left scale-x-0 bg-brand transition-transform duration-300 group-hover:scale-x-100"
+                      aria-hidden="true"
+                    />
+                  </button>
+                ) : (
+                  <a
+                    href={item.href}
+                    className="group relative flex items-center gap-1.5 rounded-full px-4 py-2 text-[14px] font-medium text-ink-soft transition-colors duration-300 hover:text-ink"
+                  >
+                    {item.label}
+                    <span
+                      className="pointer-events-none absolute inset-x-4 bottom-1 h-px origin-left scale-x-0 bg-brand transition-transform duration-300 group-hover:scale-x-100"
+                      aria-hidden="true"
+                    />
+                  </a>
+                )}
 
                 {item.children && (
                   <div
@@ -215,31 +250,52 @@ export default function Header() {
       <div
         className={[
           'mx-auto mt-3 max-w-[calc(100%-32px)] overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-soft transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] lg:hidden',
-          mobileOpen ? 'max-h-[520px] opacity-100' : 'pointer-events-none max-h-0 border-transparent opacity-0 shadow-none',
+          mobileOpen ? 'max-h-[640px] opacity-100' : 'pointer-events-none max-h-0 border-transparent opacity-0 shadow-none',
         ].join(' ')}
       >
         <nav className="flex flex-col p-3" aria-label="Mobile">
           {NAV.map((item) => (
             <div key={item.label} className="border-b border-black/[0.05] last:border-0">
-              <a
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className="block px-3 py-3 text-[15px] font-medium text-ink"
-              >
-                {item.label}
-              </a>
+              {item.children ? (
+                <button
+                  type="button"
+                  aria-expanded={mobileSub === item.label}
+                  onClick={() => setMobileSub((v) => (v === item.label ? null : item.label))}
+                  className="flex w-full items-center justify-between px-3 py-3 text-left text-[15px] font-medium text-ink"
+                >
+                  {item.label}
+                  <ChevronIcon open={mobileSub === item.label} />
+                </button>
+              ) : (
+                <a
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-3 py-3 text-[15px] font-medium text-ink"
+                >
+                  {item.label}
+                </a>
+              )}
               {item.children && (
-                <div className="pb-2 pl-5">
-                  {item.children.map((child) => (
-                    <a
-                      key={child.label}
-                      href={child.href}
-                      onClick={() => setMobileOpen(false)}
-                      className="block py-2 text-[14px] text-ink-muted"
-                    >
-                      {child.label}
-                    </a>
-                  ))}
+                <div
+                  className={[
+                    'grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                    mobileSub === item.label ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                  ].join(' ')}
+                >
+                  <div className="overflow-hidden">
+                    <div className="pb-2 pl-5">
+                      {item.children.map((child) => (
+                        <a
+                          key={child.label}
+                          href={child.href}
+                          onClick={() => setMobileOpen(false)}
+                          className="block py-2 text-[14px] text-ink-muted"
+                        >
+                          {child.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

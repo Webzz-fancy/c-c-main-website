@@ -1,3 +1,5 @@
+import { SECOND_BG } from './SimpleSecond'
+
 export default function SimpleHero() {
   return (
     <section id="simple-hero" className="relative flex h-[100svh] min-h-[640px] w-full flex-col overflow-hidden bg-cream">
@@ -10,11 +12,11 @@ export default function SimpleHero() {
 
       {/* Heading — upper left of robot, intentionally off-center */}
       <div className="pointer-events-none absolute left-[6%] top-[13%] z-10 max-w-[520px] lg:left-[8%] lg:top-[14%] lg:max-w-[560px]">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink/35">01 — Simple</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink/35">Our Projects · Simple</div>
         <h1 className="mt-3 font-display text-[clamp(2.5rem,5vw,4.7rem)] font-normal leading-[0.9] tracking-[-0.03em] text-ink">
-          We call it
+          Simple on the
           <br />
-          <span className="italic font-normal text-ink">Simple.</span>
+          <span className="italic font-normal text-brand-600">outside.</span>
         </h1>
         <div className="mt-3 h-px w-12 bg-ink/15" />
       </div>
@@ -22,15 +24,15 @@ export default function SimpleHero() {
       {/* Supporting text — lower right of robot, slightly offset, human tone */}
       <div className="pointer-events-none absolute bottom-[17%] right-[6%] z-10 max-w-[360px] lg:bottom-[18%] lg:right-[8%] lg:max-w-[400px]">
         <p className="text-[14.5px] font-light leading-relaxed text-ink-soft">
-          Not because it’s basic. Because it <em className="font-normal not-italic text-ink">feels</em> that way when it’s done right.
+          Websites and AI discoverability, built with the same discipline we bring to <em className="font-normal not-italic text-ink">backend systems</em>.
         </p>
         <p className="mt-2 text-[13.8px] font-light leading-relaxed text-ink/60">
-          Websites and discoverability — the two places where clarity quietly decides if you’re chosen, by people and by AI.
+          Clear for the people who visit. Readable for the AI that recommends. Structured underneath so it keeps working as you grow.
         </p>
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0">
-        <svg viewBox="0 0 1440 220" preserveAspectRatio="none" className="block h-[96px] w-full text-[#08080A] sm:h-[122px] lg:h-[146px]">
+        <svg viewBox="0 0 1440 220" preserveAspectRatio="none" className="block h-[96px] w-full sm:h-[122px] lg:h-[146px]" style={{ color: SECOND_BG }}>
           <path d="M0 120 C 180 92, 320 42, 520 86 C 680 118, 840 158, 1040 96 C 1180 48, 1320 36, 1440 78 L 1440 220 L 0 220 Z" fill="currentColor" />
         </svg>
       </div>
