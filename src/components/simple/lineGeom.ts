@@ -6,8 +6,10 @@
 
 export const LINE_COUNT = 10
 
-/** the header capsule's bottom edge, px — the ring keeps clear of it */
-const HEADER_CLEAR = 100
+/** the chapter rule's line (under the header capsule), px from the top of
+ *  the viewport — the ring keeps clear of it, so the previews turn in the
+ *  band between the rule and the clothesline */
+const HEADER_CLEAR = 176
 
 /** how far a hung card (rope offset, mid-line sag, card, label) reaches
  *  below the rope's anchor, px */
@@ -137,17 +139,18 @@ export function ringGeom(vw: number, vh: number): RingGeom {
 
 /**
  * Scroll budget for the pinned section-3 experience, in px of scroll:
- *   dome cover → heading letters → the ring's single turn (the line draws in
- *   as it settles) → previews hop onto the line one by one → rope pan (1:1)
- *   → a short clean-orange beat before the footer arrives.
+ *   the entrance (section 2's copy leaves, the light rises and the line
+ *   draws across) → heading letters → the ring's single turn (the line
+ *   takes its sag as it settles) → previews hop onto the line one by one →
+ *   rope pan (1:1) → a short clean-orange beat before the footer arrives.
  */
 export function pinBudget(vw: number, vh: number) {
   const dist = lineGeom(vw).distance
-  const domeEnd = 1.4 * vh
-  const headEnd = domeEnd + 1.8 * vh
+  const enterEnd = 1.6 * vh
+  const headEnd = enterEnd + 1.8 * vh
   const spinEnd = headEnd + SPIN_VH * vh
   const dropEnd = spinEnd + 2.0 * vh
   const panEnd = dropEnd + dist
   const pinPx = panEnd + 0.35 * vh
-  return { dist, domeEnd, headEnd, spinEnd, dropEnd, pinPx }
+  return { dist, enterEnd, headEnd, spinEnd, dropEnd, pinPx }
 }

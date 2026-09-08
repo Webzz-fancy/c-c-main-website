@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Underline from '../Underline'
+import ChapterRule from './ChapterRule'
 import {
   CARD_TILT,
+  LINE_COUNT,
   PROJECTS,
   RING_ANGLE,
   RING_SIZE,
@@ -13,20 +15,25 @@ import {
 } from './lineGeom'
 
 /**
- * Section 3 — the orange "work" section. Everything here is driven by the
- * page's shared smoothed scroll (five phase values, all 0→1, linear in
- * scroll; easing happens here):
+ * Section 3 — chapter 03, the work. Everything here is driven by the page's
+ * shared smoothed scroll (five phase values, all 0→1, linear in scroll;
+ * easing happens here):
  *
- *   q1    — the plain brand-orange dome rises from the bottom of the frozen
- *           section above and takes over the whole screen (no text on it)
- *   q2    — the heading + subline letters appear, upper-left, on the orange
+ *   q1    — the entrance. Nothing slides over section 2 and no shape rises:
+ *           section 2's copy leaves, the ground changes tone IN PLACE (the
+ *           faded blue dissolves into the faded orange, edge to edge), and
+ *           chapter 03's rule draws itself across the top — the same rule,
+ *           in the same place, that opened chapter 02.
+ *   q2    — the heading rises out of its line clips, letter by letter,
+ *           under the rule; the subline settles with it
  *   qSpin — the presentation: the heading fades out as the ten previews
  *           surface on a ring around a vertical axis (different heights,
  *           facing the viewer); the ring turns exactly ONCE, decelerating
- *           into its rest pose. As it settles, the clothesline fades in
- *           underneath.
+ *           into its rest pose. As it settles, the rule itself descends
+ *           from the top of the section to the rope's height and takes its
+ *           sag — the chapter rule and the clothesline are one line.
  *   qDrop — each preview leaves its ring position and hangs on the line with
- *           its clip, one by one (white placeholder cards, clipped to the line)
+ *           its clip, one by one
  *   qPan  — the whole line moves horizontally (1:1 with scroll) until the
  *           last project has passed, then the footer arrives
  *
@@ -39,6 +46,7 @@ const smooth = (t: number) => t * t * (3 - 2 * t)
 const outCubic = (t: number) => 1 - Math.pow(1 - t, 3)
 const inCubic = (t: number) => t * t * t
 const inOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+const outExpo = (t: number) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t))
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
 /**
@@ -54,6 +62,37 @@ const SUB =
   'A line of recent Simple builds. Each one mapped before it was designed, built to load fast, and structured so people and AI can find it and understand it.'
 
 /**
+ * The entrance, inside q1:
+ *   · the section-2 copy leaves first (SimplePage hands its exit to
+ *     SimpleSecond over the first LEAVE part of q1)
+ *   · the light comes up: the blue lifts to the page's own cream (a straight
+ *     blue → orange dissolve would pass through a muddy khaki; lifting
+ *     through the cream keeps every intermediate tone clean and on brand —
+ *     for a moment the robot stands on the hero's ground again)
+ *   · the faded orange settles onto the cream
+ *   · chapter 03's rule draws across the top over the second half, and is
+ *     complete before the heading starts rising under it
+ */
+const LEAVE = 0.34
+const LIFT_START = 0.2
+const LIFT_END = 0.52
+const TONE_START = 0.44
+const TONE_END = 0.86
+const RULE_START = 0.5
+const RULE_END = 1.0
+
+/** the section-2 exit share of q1, read by SimplePage */
+export const LEAVE_SHARE = LEAVE
+
+/**
+ * The robot stands on the ground while it changes tone and the line draws
+ * past its feet — it is the one thing that stays through the transition —
+ * and leaves together with the heading as the previews arrive for their
+ * turn (over this first share of the spin). Read by SimplePage.
+ */
+export const ROBOT_EXIT_SHARE = 0.14
+
+/**
  * The turn itself: one full revolution. The reference ring is front-loaded —
  * it turns fast and coasts to a stop (a power-out with exponent ≈2.4 fits
  * its tracked angle to within a few degrees). Here the same coast is given a
@@ -67,9 +106,9 @@ const SPIN_EASE = (t: number) => 1 - Math.pow(1 - Math.pow(t, 1.25), 2.6)
  *  fades out over the same stretch, so the text is gone as the cards arrive */
 const RING_IN = 0.14
 
-/** the line fades in as the turn is settling, and is fully there before any
- *  preview lets go of the ring */
-const LINE_IN_START = 0.6
+/** the rule descends and takes its sag (rule → clothesline) while the turn
+ *  is settling, and is fully a clothesline before any preview lets go */
+const LINE_IN_START = 0.5
 const LINE_IN_END = 0.9
 
 /** the hop onto the line: card i lifts off at i × HOP_STEP and takes HOP_DUR
@@ -88,39 +127,60 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+  // the chapter rule's line width depends on the index and label glyphs
+  const [fontsReady, setFontsReady] = useState(false)
+  useEffect(() => {
+    let alive = true
+    document.fonts?.ready?.then(() => {
+      if (alive) setFontsReady(true)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
 
   const { w, h } = vp
   const g = lineGeom(w)
   const ring = ringGeom(w, h)
   const rScale = ringScale(w)
+  const desk = w >= 1024
 
-  /* ---- 1 · the plain orange dome (no text) ------------------------------ */
-  // An arch rising from below the frame: a circular crown (its radius sets
-  // how arched the leading edge looks, see R below) on top of a full-width body that
-  // carries the colour down past the bottom of the frame on any aspect
-  // ratio. It rises until the crown clears the top of the frame by the
-  // sagitta plus a margin, so the corners are covered too and the whole
-  // frame is orange when the heading arrives.
-  const domeQ = smooth(clamp01(q1))
-  // 0.62 × viewport width: the crown leads the corners by ~42 % of the
-  // viewport height on a desktop screen — 40 % deeper than the previous
-  // 0.78 arch, a clear dome rather than a shallow bow
-  const R = w * 0.62
-  const sagitta = R - Math.sqrt(Math.max(0, R * R - (w / 2) * (w / 2)))
-  const domeTop = h * 1.02 + (-(sagitta + h * 0.06) - h * 1.02) * domeQ
+  // where the chapter rule's line sits (viewport px) — measured from the
+  // laid-out rule, so the clothesline can take over from exactly there
+  const ruleLineRef = useRef<HTMLSpanElement>(null)
+  const [ruleBox, setRuleBox] = useState({ left: 0, top: 0, width: 0 })
+  useLayoutEffect(() => {
+    const el = ruleLineRef.current
+    if (!el) return
+    // the stage is the offset parent of the overlay; the overlay is at 0,0
+    // of the stage and the stage is at the top of the viewport while pinned,
+    // so offsets against the overlay are viewport coordinates here
+    let x = 0
+    let y = 0
+    let n: HTMLElement | null = el
+    const stop = el.closest('[data-third-overlay]') as HTMLElement | null
+    while (n && n !== stop) {
+      x += n.offsetLeft
+      y += n.offsetTop
+      n = n.offsetParent as HTMLElement | null
+    }
+    setRuleBox({ left: x, top: y, width: el.offsetWidth })
+  }, [w, h, fontsReady])
+
+  /* ---- 1 · the entrance: the light comes up, the tone settles, the rule draws ---- */
+  const lift = smooth(clamp01((q1 - LIFT_START) / (LIFT_END - LIFT_START)))
+  const tone = smooth(clamp01((q1 - TONE_START) / (TONE_END - TONE_START)))
+  // the rule draws left → right; an expo-out so the pen leaves fast and
+  // settles into the right edge without a stop
+  const rule = outExpo(clamp01((q1 - RULE_START) / (RULE_END - RULE_START)))
+  // ambient light on the orange comes up with the tone
+  const ambient = tone
 
   /* ---- 2 · heading letters + subline (upper LEFT) ----------------------- */
   // the heading fades away as the previews surface for the turn, so the
   // ring has the screen to itself (reverse scroll brings it back the same way)
   const headExit = smooth(clamp01(qSpin / RING_IN))
-  const subQ = smooth(clamp01((q2 - 0.62) / 0.38))
-  // the glass plate under the heading surfaces just ahead of the first
-  // letters (the letters were always hidden until q2 by their line clips, but
-  // a frosted plate would otherwise sit visibly over section 2 the whole way
-  // up — it is an overlay), and it is fully switched off when it has nothing
-  // to show, so its backdrop blur never touches the section below
-  const plateIn = smooth(clamp01(q2 / 0.28))
-  const plateAlpha = plateIn * (1 - headExit)
+  const subQ = smooth(clamp01((q2 - 0.58) / 0.42))
   // the line under the second line of the heading: scrubbed by the same
   // scroll as the letters, its pen trailing the last letters as they rise,
   // so it is complete exactly when the heading is
@@ -129,6 +189,8 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
     a.push(i ? a[i - 1] + line.length : 0)
     return a
   }, [])
+  const headAlpha = 1 - headExit
+  const headVisible = q2 > 0.001 && headAlpha > 0.005
 
   /* ---- 3 · the presentation ring: one turn ------------------------------ */
   // 0 → 1 over the spin budget; the ring's remaining angle is (1 - turn) × 360°
@@ -139,74 +201,110 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
   const ringIn = smooth(clamp01(qSpin / RING_IN))
 
   /* ---- 4 · the clothesline ---------------------------------------------- */
-  // fades in — already in place, under the whole cloud — while the ring is
-  // coasting to a stop, and is fully there before the first preview lets go
+  // the chapter rule is a straight hairline at the top of the section; as
+  // the turn settles the very same line lets go of its index and label,
+  // descends to the rope's height, stretches to the rope's length, takes
+  // its droop and its two pegs — and it is the clothesline, in place under
+  // the whole cloud, fully there before the first preview lets go
   const ropeQ = smooth(clamp01((qSpin - LINE_IN_START) / (LINE_IN_END - LINE_IN_START)))
   const pan = clamp01(qPan)
   const lineX = -pan * g.distance
   const L0 = w / 2 - g.margin - g.cardW / 2 // card 1 hangs dead-centre
   const ropeYpx = ropeY(w, h)
+  const sag = g.sag * ropeQ
+  // the descent: eased so the line leaves the rule slot gently and settles
+  // into the rope height (the same in-out the cards use for the hop)
+  const drop = inOutCubic(ropeQ)
+  const ruleLeft = lerp(ruleBox.left, L0 + 12, drop)
+  const ruleRight = lerp(ruleBox.left + ruleBox.width, L0 + g.lineW - 12, drop)
+  const lineTop = lerp(ruleBox.top, ropeYpx, drop)
+  const ropeW = Math.max(1, ruleRight - ruleLeft)
+  const ropePath = `M 0 12 Q ${(ropeW / 2).toFixed(1)} ${(12 + 2 * sag).toFixed(2)}, ${ropeW.toFixed(1)} 12`
+  // the rule's ink hairline stays solid all the way down, and the rope's
+  // brown twill builds up over it during the descent — so the line is never
+  // thinner or fainter than a hairline at any point of the handover
+  const ropeInk = smooth(clamp01((ropeQ - 0.35) / 0.65))
+  // the rule row itself is drawn by the SVG (one element, no seam between
+  // the two forms) once the rule has been measured
+  const svgOwnsLine = ruleBox.width > 0
 
   return (
-    // covers the WHOLE stage (not just one viewport height): when section 2's
-    // content is taller than the viewport the stage grows with it, and any
-    // strip left uncovered here would slide out between the orange and the
-    // footer once the pin releases. Every position inside is still measured
-    // against the viewport (w, h), so the choreography is unchanged.
-    <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden" aria-hidden>
-      {/* the faded orange, rising from the bottom: the arched crown … */}
-      <div
-        className="absolute rounded-[50%]"
-        style={{ width: R * 2, height: R * 2, left: w / 2 - R, top: domeTop, backgroundColor: THIRD_BG }}
-      />
-      {/* … and the body under it (starts at the crown's widest point and
-          runs past the bottom of the stage on any aspect ratio) */}
-      <div className="absolute inset-x-0" style={{ top: domeTop + R, height: h * 3, backgroundColor: THIRD_BG }} />
+    // Both layers cover the WHOLE stage (not just one viewport height): when
+    // section 2's content is taller than the viewport the stage grows with
+    // it, and any strip left uncovered would slide out between the orange
+    // and the footer once the pin releases. Every position inside is still
+    // measured against the viewport (w, h), so the choreography is unchanged.
+    <>
+      {/* ---- the ground — UNDER the robot (it stands on it while the tone
+          changes), over section 2's plane ---- */}
+      <div className="pointer-events-none absolute inset-0 z-[4] overflow-hidden" aria-hidden>
+        {/* the light comes up first: the blue plane lifts to the cream … */}
+        <div className="absolute inset-0 bg-cream" style={{ opacity: lift.toFixed(4) }} />
+        {/* … and the faded orange settles on it, edge to edge — plain
+            opacities, in place: nothing slides, nothing rises */}
+        <div className="absolute inset-0" style={{ backgroundColor: THIRD_BG, opacity: tone.toFixed(4) }} />
 
-      {/* ambient light on the orange — the home page's grain and blooms, so
-          the glass plates here have depth to catch. Rides with the dome (its
-          top follows the crown) so it never shows on the section above. */}
-      <div className="absolute inset-x-0" style={{ top: domeTop + sagitta, height: h * 1.4 }}>
-        <div className="absolute inset-0 grain opacity-50" />
-        {/* light from the upper left, over the heading */}
-        <div
-          className="absolute -left-40 -top-24 h-[680px] w-[820px] rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 68%)' }}
-        />
-        {/* the cool corner, lower right, mirroring the hero's diagonal */}
-        <div
-          className="absolute -bottom-24 -right-32 h-[620px] w-[760px] rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(ellipse at center, rgba(45,109,139,0.14) 0%, rgba(45,109,139,0) 68%)' }}
-        />
-        {/* a deeper amber pool, upper right, behind the ring */}
-        <div
-          className="absolute -right-20 top-[6%] h-[520px] w-[640px] rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(ellipse at center, rgba(166,120,33,0.16) 0%, rgba(166,120,33,0) 70%)' }}
-        />
+        {/* ambient light on the orange — the home page's grain and blooms,
+            so the glass here has depth to catch. Comes up with the tone. */}
+        <div className="absolute inset-x-0 top-0" style={{ height: h * 1.4, opacity: ambient.toFixed(3) }}>
+          <div className="absolute inset-0 grain opacity-50" />
+          {/* light from the upper left, over the heading */}
+          <div
+            className="absolute -left-40 -top-24 h-[680px] w-[820px] rounded-full blur-3xl"
+            style={{ background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 68%)' }}
+          />
+          {/* the cool corner, lower right, mirroring the hero's diagonal */}
+          <div
+            className="absolute -bottom-24 -right-32 h-[620px] w-[760px] rounded-full blur-3xl"
+            style={{ background: 'radial-gradient(ellipse at center, rgba(45,109,139,0.14) 0%, rgba(45,109,139,0) 68%)' }}
+          />
+          {/* a deeper amber pool, upper right, behind the ring */}
+          <div
+            className="absolute -right-20 top-[6%] h-[520px] w-[640px] rounded-full blur-3xl"
+            style={{ background: 'radial-gradient(ellipse at center, rgba(166,120,33,0.16) 0%, rgba(166,120,33,0) 70%)' }}
+          />
+        </div>
       </div>
 
-      {/* heading — upper-left corner; letters rise in, then the block fades
-          (with a slight lift) as the previews arrive for their turn */}
+    {/* ---- everything that plays on the ground — over the robot ---- */}
+    <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden" data-third-overlay aria-hidden>
+      {/* the chapter rule — laid out exactly like section 2's (same
+          container, same top padding), so it draws in the same place the
+          previous one stood. Its line is painted by the SVG below from the
+          moment it is measured; the row keeps the index and the label. */}
+      <div className="absolute inset-x-0 top-0 px-6 pt-28 sm:pt-32 lg:pt-36">
+        <div className="mx-auto max-w-[1240px]">
+          <ChapterRule
+            index="03"
+            label={`The work · ${String(LINE_COUNT).padStart(2, '0')} builds`}
+            drawn={rule}
+            tone="ink"
+            lineRef={ruleLineRef}
+            lineHidden={svgOwnsLine}
+            fade={ropeQ}
+          />
+        </div>
+      </div>
+
+      {/* heading — under the rule, bare on the orange (as the hero heading
+          is bare on the cream): the letters rise out of their line clips,
+          the subline follows; the block fades (with a slight lift) as the
+          previews arrive for their turn */}
       <div
-        className="absolute isolate rounded-[28px] border border-white/50 px-7 py-7 text-ink shadow-[0_40px_100px_-40px_rgba(90,60,10,0.4),inset_0_1px_0_rgba(255,255,255,0.75)] sm:rounded-[34px] sm:px-10 sm:py-9"
+        className="absolute text-ink"
         style={{
-          left: '7%',
-          top: '15svh',
-          maxWidth: 'min(720px, 84vw)',
-          // thin frost on the orange: light from the top left, the ground shows through
-          background: 'linear-gradient(145deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.08) 100%)',
-          backdropFilter: 'blur(14px) saturate(140%)',
-          WebkitBackdropFilter: 'blur(14px) saturate(140%)',
-          transform: `translateY(${((1 - plateIn) * 16 - headExit * 18).toFixed(1)}px)`,
-          opacity: plateAlpha,
-          visibility: plateAlpha < 0.005 ? 'hidden' : 'visible',
+          left: desk ? '7%' : '6%',
+          right: desk ? 'auto' : '6%',
+          // under the rule with air that scales with the viewport, but never
+          // closer than a clear line's worth on short screens
+          top: desk ? 'max(24svh, 200px)' : 'max(20svh, 176px)',
+          maxWidth: 'min(760px, 88vw)',
+          transform: `translateY(${(-headExit * 18).toFixed(1)}px)`,
+          opacity: headAlpha,
+          visibility: headVisible ? 'visible' : 'hidden',
         }}
       >
-        {/* specular highlight along the top edge */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px] sm:rounded-[34px]">
-          <div className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.95) 45%, transparent)' }} />
-        </div>
-        <h2 className="font-display text-[clamp(2.6rem,7vw,6.5rem)] leading-[0.95] tracking-[-0.02em]">
+        <h2 className="font-display text-[clamp(2.7rem,7.2vw,6.8rem)] leading-[0.94] tracking-[-0.025em]">
           {HEAD_LINES.map((line, li) => {
             const last = li === HEAD_LINES.length - 1
             const letters = line.split('').map((ch, ci) => {
@@ -239,43 +337,48 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
           })}
         </h2>
         <p
-          className="mt-6 max-w-[560px] text-[clamp(0.95rem,1.35vw,1.2rem)] font-light leading-relaxed text-ink/75"
-          style={{ opacity: subQ, transform: `translateY(${((1 - subQ) * 26).toFixed(1)}px)` }}
+          className="mt-6 max-w-[540px] text-[clamp(0.95rem,1.3vw,1.15rem)] font-light leading-relaxed text-ink/72"
+          style={{ opacity: subQ, transform: `translateY(${((1 - subQ) * 22).toFixed(1)}px)` }}
         >
           {SUB}
         </p>
       </div>
 
-      {/* the clothesline — fades in under the settling ring, projects clip on
-          one by one, then the line pans. Viewport-anchored. */}
-      <div
-        className="absolute"
-        style={{ left: L0, top: ropeYpx, width: g.lineW, transform: `translateX(${lineX.toFixed(1)}px)`, willChange: 'transform' }}
-      >
-        <div className="absolute inset-0" style={{ opacity: ropeQ.toFixed(3) }}>
-          {/* the rope — the same brown twill as the one the robot hangs from
-              on the right; a real clothesline, so it droops in the middle */}
-          <svg width={g.lineW} height={g.sag + 24} className="block" style={{ overflow: 'visible' }}>
-            <path
-              d={`M 12 12 Q ${g.lineW / 2} ${12 + g.sag}, ${g.lineW - 12} 12`}
-              fill="none"
-              stroke="#B49075"
-              strokeWidth="2.5"
-              strokeDasharray="3.2 2.8"
-            />
-            <path
-              d={`M 12 12 Q ${g.lineW / 2} ${12 + g.sag}, ${g.lineW - 12} 12`}
-              fill="none"
-              stroke="#9A7A61"
-              strokeWidth="2.5"
-              strokeDasharray="3.2 2.8"
-              strokeDashoffset="3.2"
-            />
-            <circle cx="12" cy="12" r="3.5" fill="#9A7A61" />
-            <circle cx={g.lineW - 12} cy="12" r="3.5" fill="#9A7A61" />
+      {/* the line — the chapter rule's own hairline, drawn left → right at
+          the top during the entrance; as the turn settles it descends to the
+          rope's height, takes its sag and pegs and is the clothesline the
+          projects clip onto, and pans away with them. One element for both
+          forms, so there is no seam between them. Viewport-anchored. */}
+      {svgOwnsLine && (
+        <div
+          className="absolute"
+          style={{
+            left: ruleLeft,
+            top: lineTop - 12,
+            width: ropeW,
+            transform: `translateX(${lineX.toFixed(1)}px)`,
+            willChange: 'transform',
+            opacity: rule > 0.001 ? 1 : 0,
+          }}
+        >
+          <svg width={ropeW} height={g.sag + 24} className="block" style={{ overflow: 'visible' }}>
+            {/* the pen: the line is revealed left → right by its dash offset */}
+            <g pathLength={1} strokeDasharray={1} strokeDashoffset={(1 - rule).toFixed(4)}>
+              {/* the chapter rule: an ink hairline on the orange */}
+              <path d={ropePath} pathLength={1} fill="none" stroke="rgba(27,26,23,0.45)" strokeWidth="1" />
+            </g>
+            {/* the rope — the same brown twill as the one the robot hangs from
+                on the right; a real clothesline, so it droops in the middle.
+                (Only ever visible once the pen has finished, so it needs no
+                reveal of its own; its dashes are in user units.) */}
+            <path d={ropePath} fill="none" stroke="#B49075" strokeWidth="2.5" strokeDasharray="3.2 2.8" style={{ opacity: ropeInk.toFixed(3) }} />
+            <path d={ropePath} fill="none" stroke="#9A7A61" strokeWidth="2.5" strokeDasharray="3.2 2.8" strokeDashoffset="3.2" style={{ opacity: ropeInk.toFixed(3) }} />
+            {/* the pegs at each end appear as the rule becomes the clothesline */}
+            <circle cx="0" cy="12" r="3.5" fill="#9A7A61" style={{ opacity: ropeInk.toFixed(3) }} />
+            <circle cx={ropeW} cy="12" r="3.5" fill="#9A7A61" style={{ opacity: ropeInk.toFixed(3) }} />
           </svg>
         </div>
-      </div>
+      )}
 
       {/* the ten projects — one element each, carried through every phase:
           on the ring → hopping to the line → hanging (and panning with it).
@@ -376,12 +479,13 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
               {/* far-side shade while on the ring */}
               <div className="absolute inset-0 bg-ink" style={{ opacity: shade.toFixed(3) }} />
             </div>
-            {/* the label tag — appears once the card is on the line */}
+            {/* the label — appears once the card is on the line: index, name,
+                and the one line of what it is */}
             <div
               className="mt-2 flex items-baseline justify-center gap-2 whitespace-nowrap text-ink/70"
               style={{ opacity: clamp01((d - 0.7) / 0.3) }}
             >
-              <span className="text-[11px] font-semibold tracking-[0.18em]">{String(i + 1).padStart(2, '0')}</span>
+              <span className="text-[11px] font-semibold tabular-nums tracking-[0.18em]">{String(i + 1).padStart(2, '0')}</span>
               <span className="text-[12px] font-medium">
                 {p.name} <span className="font-light text-ink/45">· {p.tag}</span>
               </span>
@@ -390,5 +494,6 @@ export default function SimpleThird({ q1, q2, qSpin, qDrop, qPan }: Props) {
         )
       })}
     </div>
+    </>
   )
 }

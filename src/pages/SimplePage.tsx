@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import SimpleHero from '../components/simple/SimpleHero'
 import SimpleSecond, { SECOND_BG } from '../components/simple/SimpleSecond'
-import SimpleThird from '../components/simple/SimpleThird'
+import SimpleThird, { LEAVE_SHARE, ROBOT_EXIT_SHARE } from '../components/simple/SimpleThird'
 import Robot3D, { preloadRobot } from '../components/simple/Robot3D'
 import Header from '../components/Header'
 import Loader from '../components/Loader'
@@ -35,10 +35,11 @@ const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
  * length, so the two are synchronized by construction.
  *
  * Because section 2 lives inside the pinned stage (section 3 freezes it in
- * place while the orange dome rises over it), the trail + arrow are split in
- * two: part A rides the hero in normal flow, part B lives inside the stage so
- * it stays frozen with the section. They hand the arrow over exactly at the
- * hero/section boundary — the arrow is pixel-identical on both sides of it.
+ * place while its ground changes tone and the line draws across it), the
+ * trail + arrow are split in two: part A rides the hero in normal flow,
+ * part B lives inside the stage so it stays frozen with the section. They
+ * hand the arrow over exactly at the hero/section boundary — the arrow is
+ * pixel-identical on both sides of it.
  */
 
 // Travel path, normalized to the hero+second area: down through the hero,
@@ -58,14 +59,6 @@ const PATH_SEGS: [Vec2, Vec2, Vec2, Vec2][] = [
   [[0.7014, 0.794], [0.7674, 0.7969], [0.7931, 0.8623], [0.7764, 0.9115]],
   // settles left along the bottom
   [[0.7764, 0.9115], [0.766, 0.9415], [0.625, 0.9838], [0.5361, 0.9792]],
-]
-
-// The wavy divider at the bottom of the hero (viewBox 1440 x 220) — used to
-// know where cream ends and dark begins so trail + arrow colors switch there.
-const WAVE_SEGS: [Vec2, Vec2, Vec2, Vec2][] = [
-  [[0, 120], [180, 92], [320, 42], [520, 86]],
-  [[520, 86], [680, 118], [840, 158], [1040, 96]],
-  [[1040, 96], [1180, 48], [1320, 36], [1440, 78]],
 ]
 
 function cubicAt(p0: Vec2, c1: Vec2, c2: Vec2, p1: Vec2, t: number): Vec2 {
@@ -88,22 +81,6 @@ function cubicAngleAt(p0: Vec2, c1: Vec2, c2: Vec2, p1: Vec2, t: number): number
   return (Math.atan2(dy, dx) * 180) / Math.PI
 }
 
-/** y of the wavy divider at x (in the wave's 1440-wide space), bisection. */
-function waveYAt(x: number): number {
-  for (const [p0, c1, c2, p1] of WAVE_SEGS) {
-    if (x < p0[0] || x > p1[0]) continue
-    let lo = 0
-    let hi = 1
-    for (let i = 0; i < 24; i++) {
-      const mid = (lo + hi) / 2
-      if (cubicAt(p0, c1, c2, p1, mid)[0] < x) lo = mid
-      else hi = mid
-    }
-    return cubicAt(p0, c1, c2, p1, (lo + hi) / 2)[1]
-  }
-  return 120
-}
-
 type TrailGeom = {
   pts: Vec2[]
   /** tangent angle at each point (deg, unwrapped — no ±180° seams) */
@@ -116,11 +93,12 @@ type TrailGeom = {
   strB: string[]
   /** arc length where the path crosses the hero/section boundary */
   Lb: number
-  /** document-y where cream ends (top of the wavy divider under the path) */
+  /** document-y where cream ends and the blue plane begins (the hero's
+   *  straight bottom edge): the trail and the arrow switch colour there */
   switchY: number
 }
 
-function buildTrail(areaW: number, areaH: number, heroH: number, waveH: number): TrailGeom {
+function buildTrail(areaW: number, areaH: number, heroH: number): TrailGeom {
   const segs = PATH_SEGS.map(([p0, c1, c2, p1]) => [
     [p0[0] * areaW, p0[1] * areaH],
     [c1[0] * areaW, c1[1] * areaH],
@@ -153,17 +131,10 @@ function buildTrail(areaW: number, areaH: number, heroH: number, waveH: number):
     cum.push(cum[i - 1] + Math.hypot(dx, dy))
   }
 
-  // where does the path cross the wavy divider? (single crossing, mid-hero)
-  const boundaryY = (xPx: number) => heroH - waveH + (waveYAt((xPx / Math.max(1, areaW)) * 1440) / 220) * waveH
-  let switchY = heroH
-  for (let i = 1; i < pts.length; i++) {
-    if (pts[i][1] >= boundaryY(pts[i][0]) && pts[i - 1][1] < boundaryY(pts[i - 1][0])) {
-      switchY = boundaryY(pts[i][0])
-      break
-    }
-  }
+  // the hero ends on a straight edge: cream above y = heroH, blue below
+  const switchY = heroH
 
-  // where does the path cross the flat hero/section boundary (y = heroH)?
+  // where does the path cross the hero/section boundary (y = heroH)?
   let Lb = cum[cum.length - 1]
   for (let i = 1; i < pts.length; i++) {
     if (pts[i][1] >= heroH - 0.5 && pts[i - 1][1] < heroH - 0.5) {
@@ -259,6 +230,7 @@ export default function SimplePage() {
   const arrowARef = useRef<HTMLDivElement>(null)
   const pathBRef = useRef<SVGPathElement>(null)
   const arrowBRef = useRef<HTMLDivElement>(null)
+  const trailBRef = useRef<HTMLDivElement>(null)
   const robotBoxRef = useRef<HTMLDivElement>(null)
   const trailGeom = useRef<TrailGeom | null>(null)
   const geom = useRef({
@@ -268,7 +240,7 @@ export default function SimplePage() {
     Lb: 0,
     switchY: 0,
     dist: 0,
-    domeEnd: 1,
+    enterEnd: 1,
     headEnd: 2,
     spinEnd: 3,
     dropEnd: 4,
@@ -391,16 +363,14 @@ export default function SimplePage() {
       const heroH = hero.offsetHeight
       const secH = sec.offsetHeight
       const areaH = heroH + secH
-      // the wavy divider container is the hero's last child
-      const waveH = (hero.lastElementChild as HTMLElement | null)?.offsetHeight || 146
-      const g = buildTrail(w, areaH, heroH, waveH)
+      const g = buildTrail(w, areaH, heroH)
       trailGeom.current = g
       lastA.current = -1
       lastB.current = -1
       // part B starts mid-pattern so its dots continue part A's rhythm
       // seamlessly across the boundary
       pathB.style.strokeDashoffset = (g.Lb % DASH_PERIOD).toFixed(2)
-      // part A gradient: ink → white across the wavy divider
+      // part A gradient: ink → white across the hero's bottom edge
       const grad = gradARef.current
       if (grad) {
         grad.setAttribute('y2', String(heroH))
@@ -422,17 +392,23 @@ export default function SimplePage() {
         Lb: g.Lb,
         switchY: g.switchY,
         dist: budget.dist,
-        domeEnd: budget.domeEnd,
+        enterEnd: budget.enterEnd,
         headEnd: budget.headEnd,
         spinEnd: budget.spinEnd,
         dropEnd: budget.dropEnd,
         pinPx: budget.pinPx,
       }
-      // the pin wrapper = the sticky stage + its scroll budget
+      // the pin wrapper = the sticky stage + its scroll budget — both on
+      // whole pixels: a fractional edge between the stage and the footer
+      // lets a hairline of the page background through at the pin end
       requestAnimationFrame(() => {
         const wrap = pinWrapRef.current
         const stage = stageRef.current
-        if (wrap && stage) wrap.style.height = stage.offsetHeight + budget.pinPx + 'px'
+        if (!wrap || !stage) return
+        stage.style.minHeight = ''
+        const stageH = Math.ceil(stage.getBoundingClientRect().height)
+        stage.style.minHeight = stageH + 'px'
+        wrap.style.height = Math.round(stageH + budget.pinPx) + 'px'
       })
       applyARef.current(0)
       applyBRef.current(0, 0)
@@ -465,9 +441,9 @@ export default function SimplePage() {
    *     flinch — by the time section 2 is fully in view, robot and perch
    *     coincide exactly.
    *   · once section 2 is fully in view, the pin starts: section 2 freezes in
-   *     place, and the orange dome of section 3 rises over it. The robot is
-   *     stage-aware, so it freezes with the section and exits the top with
-   *     it when the pin ends.
+   *     place, its copy leaves, the ground changes tone to section 3's
+   *     orange and the line draws across it. The robot is stage-aware, so it
+   *     freezes with the section and exits the top with it when the pin ends.
    *
    * Smoothness: scroll arrives in steps (wheel notches). One critically-
    * damped follower (SMOOTH_OMEGA) turns it into a scalar with continuous
@@ -528,6 +504,16 @@ export default function SimplePage() {
       const s = handoff(pA)
       const pinLocal = Math.max(0, px - G.heroH)
 
+      // section 3 phases (linear in scroll; SimpleThird eases them)
+      const q1 = clamp01(pinLocal / G.enterEnd)
+      const q2 = clamp01((pinLocal - G.enterEnd) / Math.max(1, G.headEnd - G.enterEnd))
+      const qSpin = clamp01((pinLocal - G.headEnd) / Math.max(1, G.spinEnd - G.headEnd))
+      const qDrop = clamp01((pinLocal - G.spinEnd) / Math.max(1, G.dropEnd - G.spinEnd))
+      const qPan = clamp01((pinLocal - G.dropEnd) / Math.max(1, G.dist))
+      // the robot stays through the tone change and the heading, and leaves
+      // with the heading as the previews arrive for their turn
+      const robotExit = smoothstep(clamp01(qSpin / ROBOT_EXIT_SHARE))
+
       // hero anchor (viewport px) — where the robot stands at rest
       const hx = w * 0.5
       const hy = h * (desk ? 0.48 : 0.5)
@@ -556,21 +542,20 @@ export default function SimplePage() {
       // glide reads as an organic flit rather than a straight diagonal
       const arc = (desk ? 40 : 22) * Math.sin(Math.PI * s)
       const baseY = desk ? h * 0.48 : h * 0.5
+      // the exit: a slight lift while fading, the same move the heading makes
+      const exitY = -18 * robotExit
       box.style.transform =
-        `translate(-50%, -50%) translate(${(tx - w / 2).toFixed(1)}px, ${(ty - baseY - arc).toFixed(1)}px)`
-      box.style.opacity = to.toFixed(3)
+        `translate(-50%, -50%) translate(${(tx - w / 2).toFixed(1)}px, ${(ty - baseY - arc + exitY).toFixed(1)}px)`
+      box.style.opacity = (to * (1 - robotExit)).toFixed(3)
 
       // trail + arrow derive from the same scalar — synced by construction
       const drawn = pA * G.total
       applyARef.current(drawn)
       applyBRef.current(pA, drawn)
 
-      // section 3 phases (linear in scroll; SimpleThird eases them)
-      const q1 = clamp01(pinLocal / G.domeEnd)
-      const q2 = clamp01((pinLocal - G.domeEnd) / Math.max(1, G.headEnd - G.domeEnd))
-      const qSpin = clamp01((pinLocal - G.headEnd) / Math.max(1, G.spinEnd - G.headEnd))
-      const qDrop = clamp01((pinLocal - G.spinEnd) / Math.max(1, G.dropEnd - G.spinEnd))
-      const qPan = clamp01((pinLocal - G.dropEnd) / Math.max(1, G.dist))
+      // the dotted trail + arrow over section 2 leave with its copy
+      const trailB = trailBRef.current
+      if (trailB) trailB.style.opacity = (1 - smoothstep(clamp01(q1 / LEAVE_SHARE))).toFixed(3)
 
       if (Math.abs(pA - lastPA) > 0.0004) {
         lastPA = pA
@@ -657,12 +642,18 @@ export default function SimplePage() {
           </div>
         </div>
 
-        {/* ——— the pin: section 2 freezes here while section 3 rises ——— */}
+        {/* ——— the pin: section 2 freezes here while section 3 arrives in place ——— */}
         <div ref={pinWrapRef} className="relative">
-          <div ref={stageRef} className="sticky top-0 z-0 min-h-[100svh] overflow-hidden">
-            {/* robot — inside the stage so it freezes with the section and
-                gets covered by the orange dome (above section-2 content,
-                below the orange). Still viewport-fixed + doc-anchored. */}
+          <div
+            ref={stageRef}
+            className="sticky top-0 z-0 min-h-[100svh] overflow-hidden"
+            style={{ backgroundColor: SECOND_BG }}
+          >
+            {/* robot — inside the stage so it freezes with the section. It
+                stands ON section 3's ground (above the tone change, below
+                the heading, the line and the previews), so it is the one
+                thing that stays while the ground turns orange under it.
+                Still viewport-fixed + doc-anchored. */}
             <div className="pointer-events-none fixed inset-0 z-[6]">
               <div
                 ref={robotBoxRef}
@@ -675,8 +666,15 @@ export default function SimplePage() {
 
             {/* section 2 (frozen while the pin holds) + trail part B */}
             <div ref={secondRef} className="relative">
-              <SimpleSecond progress={progress} />
-              <div className="pointer-events-none absolute inset-0 z-[5]" style={{ willChange: 'transform' }} aria-hidden>
+              {/* its exit rides the first part of section 3's entrance: the
+                  copy is gone before the ground changes tone under it */}
+              <SimpleSecond progress={progress} leave={clamp01(third.q1 / LEAVE_SHARE)} />
+              <div
+                ref={trailBRef}
+                className="pointer-events-none absolute inset-0 z-[5]"
+                style={{ willChange: 'transform' }}
+                aria-hidden
+              >
                 <svg className="absolute inset-0 block h-full w-full">
                   <path
                     ref={pathBRef}
@@ -698,10 +696,10 @@ export default function SimplePage() {
             </div>
 
             {/* bridge so section 2's background carries to the bottom of
-                the stage (where the orange dome rises from) */}
+                the stage on every aspect ratio */}
             <div className="h-[8svh] w-full" style={{ backgroundColor: SECOND_BG }} />
 
-            {/* section 3 — the orange dome, the heading, the spinning previews, the clothesline */}
+            {/* section 3 — the tone change, the line, the heading, the spinning previews, the clothesline */}
             <MemoThird q1={third.q1} q2={third.q2} qSpin={third.qSpin} qDrop={third.qDrop} qPan={third.qPan} />
           </div>
         </div>
