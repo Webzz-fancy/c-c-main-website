@@ -1,7 +1,8 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import SimpleHero from '../components/simple/SimpleHero'
 import SimpleSecond, { SECOND_BG } from '../components/simple/SimpleSecond'
-import SimpleThird, { LEAVE_SHARE, ROBOT_EXIT_SHARE } from '../components/simple/SimpleThird'
+import SimpleThird, { LEAVE_SHARE, ROBOT_EXIT_END, ROBOT_EXIT_START } from '../components/simple/SimpleThird'
+import SimpleTalk from '../components/simple/SimpleTalk'
 import Robot3D, { preloadRobot } from '../components/simple/Robot3D'
 import Header from '../components/Header'
 import Loader from '../components/Loader'
@@ -16,6 +17,7 @@ const MemoFooter = memo(Footer)
 const MemoHero = memo(SimpleHero)
 const MemoRope = memo(ScrollRope)
 const MemoThird = memo(SimpleThird)
+const MemoTalk = memo(SimpleTalk)
 import { pinBudget } from '../components/simple/lineGeom'
 import { handoff } from '../components/simple/journey'
 
@@ -35,7 +37,7 @@ const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
  * length, so the two are synchronized by construction.
  *
  * Because section 2 lives inside the pinned stage (section 3 freezes it in
- * place while its ground changes tone and the line draws across it), the
+ * place while its ground changes tone and the desktop window opens), the
  * trail + arrow are split in two: part A rides the hero in normal flow,
  * part B lives inside the stage so it stays frozen with the section. They
  * hand the arrow over exactly at the hero/section boundary — the arrow is
@@ -239,15 +241,14 @@ export default function SimplePage() {
     total: 0,
     Lb: 0,
     switchY: 0,
-    dist: 0,
     enterEnd: 1,
     headEnd: 2,
     spinEnd: 3,
-    dropEnd: 4,
+    endEnd: 4,
     pinPx: 100,
   })
   const [progress, setProgress] = useState(0)
-  const [third, setThird] = useState({ q1: 0, q2: 0, qSpin: 0, qDrop: 0, qPan: 0 })
+  const [third, setThird] = useState({ q1: 0, q2: 0, qSpin: 0, qEnd: 0 })
   const progressRef = useRef(0)
   // smoothed scroll scalar (fraction of the whole page) — the single shared
   // input for the trail, the arrow, the robot journey and section 3 — and
@@ -391,11 +392,10 @@ export default function SimplePage() {
         total: g.total,
         Lb: g.Lb,
         switchY: g.switchY,
-        dist: budget.dist,
         enterEnd: budget.enterEnd,
         headEnd: budget.headEnd,
         spinEnd: budget.spinEnd,
-        dropEnd: budget.dropEnd,
+        endEnd: budget.endEnd,
         pinPx: budget.pinPx,
       }
       // the pin wrapper = the sticky stage + its scroll budget — both on
@@ -442,7 +442,7 @@ export default function SimplePage() {
    *     coincide exactly.
    *   · once section 2 is fully in view, the pin starts: section 2 freezes in
    *     place, its copy leaves, the ground changes tone to section 3's
-   *     orange and the line draws across it. The robot is stage-aware, so it
+   *     orange and the projects window opens. The robot is stage-aware, so it
    *     freezes with the section and exits the top with it when the pin ends.
    *
    * Smoothness: scroll arrives in steps (wheel notches). One critically-
@@ -457,7 +457,7 @@ export default function SimplePage() {
     let raf = 0
     let last = performance.now()
     let lastPA = 0
-    let lastThird = { q1: -1, q2: -1, qSpin: -1, qDrop: -1, qPan: -1 }
+    let lastThird = { q1: -1, q2: -1, qSpin: -1, qEnd: -1 }
 
     const tick = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05)
@@ -508,11 +508,10 @@ export default function SimplePage() {
       const q1 = clamp01(pinLocal / G.enterEnd)
       const q2 = clamp01((pinLocal - G.enterEnd) / Math.max(1, G.headEnd - G.enterEnd))
       const qSpin = clamp01((pinLocal - G.headEnd) / Math.max(1, G.spinEnd - G.headEnd))
-      const qDrop = clamp01((pinLocal - G.spinEnd) / Math.max(1, G.dropEnd - G.spinEnd))
-      const qPan = clamp01((pinLocal - G.dropEnd) / Math.max(1, G.dist))
-      // the robot stays through the tone change and the heading, and leaves
-      // with the heading as the previews arrive for their turn
-      const robotExit = smoothstep(clamp01(qSpin / ROBOT_EXIT_SHARE))
+      const qEnd = clamp01((pinLocal - G.spinEnd) / Math.max(1, G.endEnd - G.spinEnd))
+      // the robot stays through the tone change and steps away as the file
+      // lands on the desktop, before its window rises where it stood
+      const robotExit = smoothstep(clamp01((q1 - ROBOT_EXIT_START) / (ROBOT_EXIT_END - ROBOT_EXIT_START)))
 
       // hero anchor (viewport px) — where the robot stands at rest
       const hx = w * 0.5
@@ -565,11 +564,10 @@ export default function SimplePage() {
         Math.abs(q1 - lastThird.q1) > 0.0008 ||
         Math.abs(q2 - lastThird.q2) > 0.0008 ||
         Math.abs(qSpin - lastThird.qSpin) > 0.0004 ||
-        Math.abs(qDrop - lastThird.qDrop) > 0.0008 ||
-        Math.abs(qPan - lastThird.qPan) > 0.0008
+        Math.abs(qEnd - lastThird.qEnd) > 0.0008
       ) {
-        lastThird = { q1, q2, qSpin, qDrop, qPan }
-        setThird({ q1, q2, qSpin, qDrop, qPan })
+        lastThird = { q1, q2, qSpin, qEnd }
+        setThird({ q1, q2, qSpin, qEnd })
       }
       raf = requestAnimationFrame(tick)
     }
@@ -651,7 +649,7 @@ export default function SimplePage() {
           >
             {/* robot — inside the stage so it freezes with the section. It
                 stands ON section 3's ground (above the tone change, below
-                the heading, the line and the previews), so it is the one
+                the window and everything in it), so it is the one
                 thing that stays while the ground turns orange under it.
                 Still viewport-fixed + doc-anchored. */}
             <div className="pointer-events-none fixed inset-0 z-[6]">
@@ -699,12 +697,15 @@ export default function SimplePage() {
                 the stage on every aspect ratio */}
             <div className="h-[8svh] w-full" style={{ backgroundColor: SECOND_BG }} />
 
-            {/* section 3 — the tone change, the line, the heading, the spinning previews, the clothesline */}
-            <MemoThird q1={third.q1} q2={third.q2} qSpin={third.qSpin} qDrop={third.qDrop} qPan={third.qPan} />
+            {/* section 3 — the tone change, the desktop, the window, the heading, the ring's turn, the closing line */}
+            <MemoThird q1={third.q1} q2={third.q2} qSpin={third.qSpin} qEnd={third.qEnd} />
           </div>
         </div>
 
-        {/* same footer as the main page — arrives when the line ends */}
+        {/* ——— let's talk — in normal flow after the pin ——— */}
+        <MemoTalk />
+
+        {/* same footer as the main page */}
         <MemoFooter />
       </>
     </div>
