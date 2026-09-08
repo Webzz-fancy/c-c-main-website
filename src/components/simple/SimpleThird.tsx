@@ -17,12 +17,15 @@ import {
  * smoothed scroll (four phase values, all 0→1, linear in scroll; easing
  * happens here):
  *
- *   q1    — the entrance. Section 2's copy leaves, the ground changes tone
- *           IN PLACE (the faded blue dissolves into the faded orange); the
- *           desktop is there: a file, "Projects.html", and the window opens
- *           from it — it rises from below the screen, out of focus, and
- *           settles into focus (the site's own reveal: translateY + blur),
- *           its title bar first, its body behind it.
+ *   q1    — the entrance. The section arrives under a plane of white fog
+ *           (section 2 scrolls away above it like any section); once it is
+ *           pinned the fog clears from below through a triangle that grows
+ *           out of the bottom edge — soft-edged, so it reads as fog lifting,
+ *           not a wipe — and the orange desktop is seen through it. When
+ *           the desktop is clear the window opens: it rises from below the
+ *           screen, out of focus, and settles into focus (the reference's
+ *           own reveal: translateY + blur), its title bar first, its body
+ *           behind it.
  *   q2    — inside the window: "Projects we make" rises line by line, the
  *           subline with it; the progress dots in the title bar count along.
  *   qSpin — the presentation: the heading blurs away as the ten previews
@@ -63,38 +66,28 @@ const CLOSE_LINES = ['Made to', 'be found.']
 
 /**
  * The entrance, inside q1:
- *   · the section-2 copy leaves first (SimplePage hands its exit to
- *     SimpleSecond over the first LEAVE part of q1)
- *   · the light comes up: the blue lifts to the page's own cream (a straight
- *     blue → orange dissolve would pass through a muddy khaki; lifting
- *     through the cream keeps every intermediate tone clean and on brand)
- *   · the faded orange settles onto the cream — the desktop
- *   · the file appears on the desktop, and the window opens from it: the
- *     title bar rises first, the body follows a beat behind (the staggered
- *     translateY + blur reveal the reference section uses)
+ *   · the fog clears: a triangle grows out of the bottom edge (apex up,
+ *     from a point at the bottom centre) until its sides have passed the
+ *     top corners — the desktop is seen through it, the fog keeps the rest
+ *   · the window opens once the desktop is clear: the title bar rises
+ *     first, the body follows a beat behind (the staggered translateY +
+ *     blur reveal the reference section uses)
  */
-const LEAVE = 0.34
-const LIFT_START = 0.2
-const LIFT_END = 0.52
-const TONE_START = 0.44
-const TONE_END = 0.82
-const FILE_START = 0.5
-const FILE_END = 0.7
-const WIN_START = 0.58
+const FOG_START = 0.0
+const FOG_END = 0.56
+const WIN_START = 0.52
 const WIN_END = 1.0
 
-/** the section-2 exit share of q1, read by SimplePage */
-export const LEAVE_SHARE = LEAVE
-
-/**
- * The robot stands on the ground while it changes tone under it — it is the
- * one thing that stays through the transition — and steps away (a slight
- * lift while fading, the same move the type makes) as the file lands on the
- * desktop, just before its window rises over the place it stood. In q1
- * units; read by SimplePage.
- */
-export const ROBOT_EXIT_START = 0.46
-export const ROBOT_EXIT_END = 0.66
+/** the fog's edge: how far it is out of focus (px) — the triangle must not
+ *  read as a cut-out */
+const FOG_SOFT = 26
+/** half the triangle's apex angle: tan(50°) — a wide triangle, so the
+ *  bottom clears early and the sides sweep the top corners last */
+const FOG_TAN = 1.19
+/** the fog is a plane the whole way through (the section arrives under it
+ *  and it clears); it fades a touch as it lifts, so the last of it is
+ *  breath rather than a wall — but never before the triangle has opened */
+const FOG_MIN_ALPHA = 0.94
 
 /**
  * The turn itself: one full revolution. The reference ring is front-loaded —
@@ -145,18 +138,35 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd }: Props) {
   const cardW = ringCardW(w)
   const desk = win.desk
 
-  /* ---- 1 · the entrance: the light comes up, the desktop, the window opens ---- */
-  const lift = smooth(clamp01((q1 - LIFT_START) / (LIFT_END - LIFT_START)))
-  const tone = smooth(clamp01((q1 - TONE_START) / (TONE_END - TONE_START)))
-  const file = outCubic(clamp01((q1 - FILE_START) / (FILE_END - FILE_START)))
+  /* ---- 1 · the entrance: the fog clears, the window opens ---------------- */
+  const fogQ = smooth(clamp01((q1 - FOG_START) / (FOG_END - FOG_START)))
+  // the triangle: apex at the bottom centre at first, rising to where its
+  // sides have passed the top corners (plus the soft edge), similar all the
+  // way — its base corners sit well below the screen so only the two sides
+  // are ever seen
+  const apexFull = h + w / 2 / FOG_TAN + FOG_SOFT * 3
+  // the apex starts a little below the bottom edge, so at q1 = 0 (the
+  // section sliding in under the fog) the fog is complete — no seam
+  const apexY = h + FOG_SOFT * 2 - fogQ * (apexFull + FOG_SOFT * 2)
+  const baseY = h + 400 + FOG_SOFT * 2
+  const halfBase = (baseY - apexY) * FOG_TAN
+  const fogOn = fogQ < 0.999
+  const fogAlpha = lerp(1, FOG_MIN_ALPHA, fogQ)
+  // the clip is laid out in the fog sheet's own box, which reaches FOG_PAD
+  // past the viewport on every side so the blur has room
+  const FOG_PAD = 90
+  const fogClip = fogOn
+    ? `polygon(evenodd, 0 0, ${w + 2 * FOG_PAD}px 0, ${w + 2 * FOG_PAD}px ${h + 2 * FOG_PAD}px, 0 ${h + 2 * FOG_PAD}px, ` +
+      `${(w / 2 + FOG_PAD).toFixed(1)}px ${(apexY + FOG_PAD).toFixed(1)}px, ` +
+      `${(w / 2 + halfBase + FOG_PAD).toFixed(1)}px ${(baseY + FOG_PAD).toFixed(1)}px, ` +
+      `${(w / 2 - halfBase + FOG_PAD).toFixed(1)}px ${(baseY + FOG_PAD).toFixed(1)}px)`
+    : 'none'
   // the window: title bar first, body a beat behind — both rise from below
   // and come into focus (translateY + blur, like the reference's reveal)
   const winQ = clamp01((q1 - WIN_START) / (WIN_END - WIN_START))
   const barIn = outQuart(clamp01(winQ / 0.7))
   const bodyIn = outQuart(clamp01((winQ - 0.18) / 0.82))
   const winVisible = winQ > 0.001
-  // the file icon reads as "open" once its window is up
-  const fileOpen = smooth(clamp01((winQ - 0.3) / 0.5))
 
   /* ---- 2 · the heading inside the window ------------------------------- */
   const subQ = smooth(clamp01((q2 - 0.5) / 0.5))
@@ -184,7 +194,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd }: Props) {
   // … and the closing line comes forward, line by line, out of a blur
   const closeVisible = endQ > 0.001
 
-  // the title bar's progress dots: the file's four "pages" — the ring's
+  // the title bar's progress dots: the window's four "pages" — the ring's
   // turn is the third, the closing line the fourth
   const dots = [
     smooth(clamp01(winQ / 0.5)),
@@ -194,27 +204,15 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd }: Props) {
   ]
   const stepLabel = endQ > 0.02 ? '04 / 04' : qSpin > 0.02 ? '03 / 04' : q2 > 0.02 ? '02 / 04' : '01 / 04'
 
-  const fileLeft = desk ? 40 : 14
-  const fileTop = desk ? Math.max(120, h * 0.19) : 82
-
   return (
-    // Both layers cover the WHOLE stage (not just one viewport height): when
-    // section 2's content is taller than the viewport the stage grows with
-    // it, and any strip left uncovered would slide out between the orange
-    // and the footer once the pin releases. Every position inside is still
-    // measured against the viewport (w, h), so the choreography is unchanged.
+    // All layers cover the whole stage (one viewport, pinned); every
+    // position inside is measured against the viewport (w, h).
     <>
-      {/* ---- the ground — UNDER the robot (it stands on it while the tone
-          changes), over section 2's plane ---- */}
-      <div className="pointer-events-none absolute inset-0 z-[4] overflow-hidden" aria-hidden>
-        {/* the light comes up first: the blue plane lifts to the cream … */}
-        <div className="absolute inset-0 bg-cream" style={{ opacity: lift.toFixed(4) }} />
-        {/* … and the faded orange settles on it, edge to edge — plain
-            opacities, in place: nothing slides, nothing rises */}
-        <div className="absolute inset-0" style={{ backgroundColor: THIRD_BG, opacity: tone.toFixed(4) }} />
+      {/* ---- the ground: the orange desktop ---- */}
+      <div className="pointer-events-none absolute inset-0 z-[4] overflow-hidden" style={{ backgroundColor: THIRD_BG }} aria-hidden>
         {/* the desktop's texture: the home page's grain, and a little light
             from the upper left */}
-        <div className="absolute inset-x-0 top-0" style={{ height: h * 1.4, opacity: tone.toFixed(3) }}>
+        <div className="absolute inset-x-0 top-0" style={{ height: h * 1.4 }}>
           <div className="absolute inset-0 grain opacity-60" />
           <div
             className="absolute -left-40 -top-24 h-[680px] w-[820px] rounded-full blur-3xl"
@@ -227,36 +225,8 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd }: Props) {
         </div>
       </div>
 
-      {/* ---- everything that plays on the desktop — over the robot ---- */}
+      {/* ---- everything that plays on the desktop ---- */}
       <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden" data-third-overlay aria-hidden>
-        {/* the file on the desktop: Projects.html. It appears with the
-            desktop and opens its window; while the window is up it reads as
-            the open document (selected) */}
-        <div
-          className={`absolute flex items-center text-ink ${desk ? 'w-[92px] flex-col gap-2' : 'flex-row gap-2'}`}
-          style={{
-            left: fileLeft,
-            top: fileTop,
-            opacity: file.toFixed(3),
-            transform: `translateY(${((1 - file) * 14).toFixed(1)}px)`,
-            filter: `blur(${((1 - file) * 6).toFixed(2)}px)`,
-          }}
-        >
-          <svg width={desk ? 44 : 26} height={desk ? 54 : 32} viewBox="0 0 44 54" fill="none" className="drop-shadow-[0_6px_10px_rgba(90,60,10,0.18)]">
-            <path d="M3 1.5h25l13 13V52.5H3z" fill={PAPER} stroke={INK} strokeWidth="1.5" strokeLinejoin="round" />
-            <path d="M28 1.5v13h13" fill={CHROME} stroke={INK} strokeWidth="1.5" strokeLinejoin="round" />
-            <path d="M10 25h18M10 31h24M10 37h20M10 43h14" stroke={INK} strokeWidth="1.5" strokeLinecap="round" strokeOpacity={0.55} />
-            {/* the open state: a brand square over the sheet */}
-            <rect x="24" y="34" width="14" height="14" rx="1" fill="#E1AD34" stroke={INK} strokeWidth="1.5" style={{ opacity: fileOpen }} />
-          </svg>
-          <span
-            className="rounded-[3px] px-1.5 py-[2px] text-center font-mono text-[11px] leading-none tracking-[0.02em]"
-            style={{ backgroundColor: `rgba(27,26,23,${(0.82 * fileOpen).toFixed(3)})`, color: fileOpen > 0.5 ? PAPER : INK }}
-          >
-            Projects.html
-          </span>
-        </div>
-
         {/* ---- the window ---- */}
         {winVisible && (
           <div
@@ -480,7 +450,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd }: Props) {
                 opacity: clamp01(barIn * 4).toFixed(3),
               }}
             >
-              {/* the progress dots — four polygons: the file's four pages */}
+              {/* the progress dots — four polygons: the window's four pages */}
               <div className="flex items-center gap-2">
                 {dots.map((d, i) => {
                   const sides = 4 + i * 2 // square, hexagon, octagon, decagon
@@ -491,7 +461,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd }: Props) {
                   )
                 })}
               </div>
-              <span className="absolute left-1/2 -translate-x-1/2 truncate text-[12px] font-medium">Projects.html</span>
+              <span className="absolute left-1/2 -translate-x-1/2 truncate text-[12px] font-medium">Projects</span>
               <div className="flex items-center gap-2">
                 <span className="hidden text-[10px] uppercase tracking-[0.18em] text-ink/60 sm:inline">Our work</span>
                 <span className="grid h-[16px] w-[16px] place-items-center border border-ink/80">
@@ -505,6 +475,43 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd }: Props) {
           </div>
         )}
       </div>
+
+      {/* ---- the fog — over everything, until it has cleared. One white
+          sheet with a triangular opening; the sheet is blurred as a whole,
+          so the opening's edge is soft (the blur is applied to the clipped
+          sheet, not before the clip), and the sheet reaches past the
+          viewport so its own edges never show. ---- */}
+      {fogOn && (
+        <div
+          className="pointer-events-none absolute inset-0 z-30"
+          style={{ filter: `blur(${FOG_SOFT}px)`, opacity: fogAlpha.toFixed(3), willChange: 'filter' }}
+          aria-hidden
+        >
+          <div
+            className="absolute bg-cream"
+            style={{
+              left: -FOG_PAD,
+              top: -FOG_PAD,
+              width: w + 2 * FOG_PAD,
+              height: h + 2 * FOG_PAD,
+              clipPath: fogClip,
+            }}
+          >
+            {/* the fog's body: light drifts in it, so it is never a flat
+                white plane */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  'radial-gradient(ellipse 60% 50% at 24% 30%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 70%), ' +
+                  'radial-gradient(ellipse 55% 60% at 78% 64%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 70%), ' +
+                  'radial-gradient(ellipse 50% 40% at 56% 18%, rgba(27,26,23,0.05) 0%, rgba(27,26,23,0) 70%), ' +
+                  'radial-gradient(ellipse 70% 45% at 40% 88%, rgba(27,26,23,0.06) 0%, rgba(27,26,23,0) 70%)',
+              }}
+            />
+          </div>
+        </div>
+      )}
     </>
   )
 }

@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import SimpleHero from '../components/simple/SimpleHero'
-import SimpleSecond, { SECOND_BG } from '../components/simple/SimpleSecond'
-import SimpleThird, { LEAVE_SHARE, ROBOT_EXIT_END, ROBOT_EXIT_START } from '../components/simple/SimpleThird'
+import SimpleSecond from '../components/simple/SimpleSecond'
+import SimpleThird from '../components/simple/SimpleThird'
 import SimpleTalk from '../components/simple/SimpleTalk'
 import Robot3D, { preloadRobot } from '../components/simple/Robot3D'
 import Header from '../components/Header'
@@ -36,12 +36,9 @@ const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
  * (a thin-stroke repaint — no mask surfaces). The arrow sits at the same arc
  * length, so the two are synchronized by construction.
  *
- * Because section 2 lives inside the pinned stage (section 3 freezes it in
- * place while its ground changes tone and the desktop window opens), the
- * trail + arrow are split in two: part A rides the hero in normal flow,
- * part B lives inside the stage so it stays frozen with the section. They
- * hand the arrow over exactly at the hero/section boundary — the arrow is
- * pixel-identical on both sides of it.
+ * The trail + arrow are split in two: part A rides the hero, part B rides
+ * section 2 (both in normal flow). They hand the arrow over exactly at the
+ * hero/section boundary — the arrow is pixel-identical on both sides of it.
  */
 
 // Travel path, normalized to the hero+second area: down through the hero,
@@ -238,6 +235,7 @@ export default function SimplePage() {
   const geom = useRef({
     heroH: 0,
     secH: 0,
+    pinStart: 0,
     total: 0,
     Lb: 0,
     switchY: 0,
@@ -389,6 +387,8 @@ export default function SimplePage() {
       geom.current = {
         heroH,
         secH,
+        // the pin starts where section 2 has scrolled fully away
+        pinStart: heroH + secH,
         total: g.total,
         Lb: g.Lb,
         switchY: g.switchY,
@@ -398,16 +398,16 @@ export default function SimplePage() {
         endEnd: budget.endEnd,
         pinPx: budget.pinPx,
       }
-      // the pin wrapper = the sticky stage + its scroll budget — both on
-      // whole pixels: a fractional edge between the stage and the footer
-      // lets a hairline of the page background through at the pin end
+      // the pin wrapper = the sticky stage (one viewport) + its scroll
+      // budget — both on whole pixels: a fractional edge between the stage
+      // and the next section lets a hairline of the page background through
+      // at the pin end
       requestAnimationFrame(() => {
         const wrap = pinWrapRef.current
         const stage = stageRef.current
         if (!wrap || !stage) return
-        stage.style.minHeight = ''
         const stageH = Math.ceil(stage.getBoundingClientRect().height)
-        stage.style.minHeight = stageH + 'px'
+        stage.style.height = stageH + 'px'
         wrap.style.height = Math.round(stageH + budget.pinPx) + 'px'
       })
       applyARef.current(0)
@@ -440,10 +440,10 @@ export default function SimplePage() {
    *     rises to meet it, so there is no dip-and-recover and nothing to
    *     flinch — by the time section 2 is fully in view, robot and perch
    *     coincide exactly.
-   *   · once section 2 is fully in view, the pin starts: section 2 freezes in
-   *     place, its copy leaves, the ground changes tone to section 3's
-   *     orange and the projects window opens. The robot is stage-aware, so it
-   *     freezes with the section and exits the top with it when the pin ends.
+   *   · section 2 then scrolls away like any section, and the robot leaves
+   *     with it (it is anchored to its perch in the section). Section 3
+   *     follows under a plane of fog and pins; the fog clears from below
+   *     and the projects window opens.
    *
    * Smoothness: scroll arrives in steps (wheel notches). One critically-
    * damped follower (SMOOTH_OMEGA) turns it into a scalar with continuous
@@ -497,21 +497,18 @@ export default function SimplePage() {
       const sp = smoothRef.current
       const px = sp * maxScroll
 
-      // pre-pin scroll (hero → section 2) drives the trail, the robot and
-      // the section-2 reveals — all of it completes exactly when the pin
-      // starts, so nothing is mid-motion while the section freezes
+      // hero → section 2 scroll drives the trail, the robot and the
+      // section-2 reveals — all of it completes when section 2 is fully in
+      // view; section 3's pin starts where section 2 has scrolled away
       const pA = Math.max(0, Math.min(1, px / Math.max(1, G.heroH)))
       const s = handoff(pA)
-      const pinLocal = Math.max(0, px - G.heroH)
+      const pinLocal = Math.max(0, px - G.pinStart)
 
       // section 3 phases (linear in scroll; SimpleThird eases them)
       const q1 = clamp01(pinLocal / G.enterEnd)
       const q2 = clamp01((pinLocal - G.enterEnd) / Math.max(1, G.headEnd - G.enterEnd))
       const qSpin = clamp01((pinLocal - G.headEnd) / Math.max(1, G.spinEnd - G.headEnd))
       const qEnd = clamp01((pinLocal - G.spinEnd) / Math.max(1, G.endEnd - G.spinEnd))
-      // the robot stays through the tone change and steps away as the file
-      // lands on the desktop, before its window rises where it stood
-      const robotExit = smoothstep(clamp01((q1 - ROBOT_EXIT_START) / (ROBOT_EXIT_END - ROBOT_EXIT_START)))
 
       // hero anchor (viewport px) — where the robot stands at rest
       const hx = w * 0.5
@@ -525,10 +522,10 @@ export default function SimplePage() {
         const prx = w * 0.773
         const pry = 0.42 * G.secH
         tx = hx + (prx - hx) * s
-        // stage-aware: fixed in the viewport up to and through the pin, then
-        // exits the top together with the stage once the pin ends
-        const stageOff = Math.min(0, G.heroH + G.pinPx - px)
-        ty = hy + (pry + stageOff - hy) * s
+        // doc-anchored to the perch: once section 2 is fully in view the
+        // robot scrolls away with it (and comes back with it)
+        const perchOff = Math.min(0, G.heroH - px)
+        ty = hy + (pry + perchOff - hy) * s
         to = 1
       } else {
         // mobile: content is full-width, so no perch — drift up-right and
@@ -541,20 +538,14 @@ export default function SimplePage() {
       // glide reads as an organic flit rather than a straight diagonal
       const arc = (desk ? 40 : 22) * Math.sin(Math.PI * s)
       const baseY = desk ? h * 0.48 : h * 0.5
-      // the exit: a slight lift while fading, the same move the heading makes
-      const exitY = -18 * robotExit
       box.style.transform =
-        `translate(-50%, -50%) translate(${(tx - w / 2).toFixed(1)}px, ${(ty - baseY - arc + exitY).toFixed(1)}px)`
-      box.style.opacity = (to * (1 - robotExit)).toFixed(3)
+        `translate(-50%, -50%) translate(${(tx - w / 2).toFixed(1)}px, ${(ty - baseY - arc).toFixed(1)}px)`
+      box.style.opacity = to.toFixed(3)
 
       // trail + arrow derive from the same scalar — synced by construction
       const drawn = pA * G.total
       applyARef.current(drawn)
       applyBRef.current(pA, drawn)
-
-      // the dotted trail + arrow over section 2 leave with its copy
-      const trailB = trailBRef.current
-      if (trailB) trailB.style.opacity = (1 - smoothstep(clamp01(q1 / LEAVE_SHARE))).toFixed(3)
 
       if (Math.abs(pA - lastPA) > 0.0004) {
         lastPA = pA
@@ -640,34 +631,22 @@ export default function SimplePage() {
           </div>
         </div>
 
-        {/* ——— the pin: section 2 freezes here while section 3 arrives in place ——— */}
-        <div ref={pinWrapRef} className="relative">
+        {/* robot — viewport-fixed, doc-anchored: centred in the hero, then
+            on its perch in section 2, with which it scrolls away */}
+        <div className="pointer-events-none fixed inset-0 z-[6]">
           <div
-            ref={stageRef}
-            className="sticky top-0 z-0 min-h-[100svh] overflow-hidden"
-            style={{ backgroundColor: SECOND_BG }}
+            ref={robotBoxRef}
+            className="absolute left-1/2 top-[50%] h-[min(60vh,520px)] w-[min(86vw,360px)] will-change-transform lg:top-[48%] lg:h-[min(76vh,680px)] lg:w-[min(40vw,520px)]"
+            style={{ transform: 'translate(-50%, -50%)' }}
           >
-            {/* robot — inside the stage so it freezes with the section. It
-                stands ON section 3's ground (above the tone change, below
-                the window and everything in it), so it is the one
-                thing that stays while the ground turns orange under it.
-                Still viewport-fixed + doc-anchored. */}
-            <div className="pointer-events-none fixed inset-0 z-[6]">
-              <div
-                ref={robotBoxRef}
-                className="absolute left-1/2 top-[50%] h-[min(60vh,520px)] w-[min(86vw,360px)] will-change-transform lg:top-[48%] lg:h-[min(76vh,680px)] lg:w-[min(40vw,520px)]"
-                style={{ transform: 'translate(-50%, -50%)' }}
-              >
-                <Robot3D scrollProgress={progress} onReady={() => setRobotReady(true)} />
-              </div>
-            </div>
+            <Robot3D scrollProgress={progress} onReady={() => setRobotReady(true)} />
+          </div>
+        </div>
 
-            {/* section 2 (frozen while the pin holds) + trail part B */}
-            <div ref={secondRef} className="relative">
-              {/* its exit rides the first part of section 3's entrance: the
-                  copy is gone before the ground changes tone under it */}
-              <SimpleSecond progress={progress} leave={clamp01(third.q1 / LEAVE_SHARE)} />
-              <div
+        {/* ——— section 2 (in normal flow) + trail part B ——— */}
+        <div ref={secondRef} className="relative z-[1]">
+          <SimpleSecond progress={progress} />
+          <div
                 ref={trailBRef}
                 className="pointer-events-none absolute inset-0 z-[5]"
                 style={{ willChange: 'transform' }}
@@ -693,11 +672,10 @@ export default function SimplePage() {
               </div>
             </div>
 
-            {/* bridge so section 2's background carries to the bottom of
-                the stage on every aspect ratio */}
-            <div className="h-[8svh] w-full" style={{ backgroundColor: SECOND_BG }} />
-
-            {/* section 3 — the tone change, the desktop, the window, the heading, the ring's turn, the closing line */}
+        {/* ——— the pin: section 3 arrives under the fog and holds while it plays ——— */}
+        <div ref={pinWrapRef} className="relative">
+          <div ref={stageRef} className="sticky top-0 z-0 h-[100svh] overflow-hidden bg-cream">
+            {/* section 3 — the fog clears, the desktop, the window, the heading, the ring's turn, the closing line */}
             <MemoThird q1={third.q1} q2={third.q2} qSpin={third.qSpin} qEnd={third.qEnd} />
           </div>
         </div>

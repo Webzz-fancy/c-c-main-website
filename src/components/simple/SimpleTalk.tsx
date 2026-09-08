@@ -11,14 +11,17 @@ import { site } from '../../config/site'
  * octagon and a circle — and the solid brand shape, "[ LET'S TALK ]", over
  * the first of them.
  *
- * The interaction: the shape is draggable along the rule. As it slides it
- * turns, and takes the form of each outline it passes — square to pentagon
- * to hexagon to octagon to circle: the business getting in shape. Let go
- * and it coasts a little and stops where it is. Its form, its turn and its
- * place are all one function of where it is on the rule, so it can never
- * be in an in-between state that doesn't make sense, and the whole thing
- * runs backwards just as well. A click (no drag) opens the booking link;
- * so does the keyboard (arrows slide it, Enter opens it).
+ * The interaction: the shape follows the mouse along the rule — no
+ * dragging: wherever the pointer is over the band around the rule, the
+ * shape glides to that x (never off the line, never up or down). As it
+ * travels it turns, and takes the form of each outline it passes — square
+ * to hexagon to heptagon to octagon to circle: the business getting in
+ * shape. When the pointer leaves the band the shape settles on the nearest
+ * station. Its form, its turn and its place are all one function of where
+ * it is on the rule, so it can never be in an in-between state that doesn't
+ * make sense, and it runs backwards just as well. A click opens the booking
+ * link; so does the keyboard (arrows step it along, Enter opens it). On
+ * touch screens (no hover) a finger sliding along the band moves it.
  */
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
@@ -103,6 +106,9 @@ function ngonPoints(n: number, rot: number, r = 49.5) {
 export default function SimpleTalk() {
   const sectionRef = useRef<HTMLElement>(null)
   const ruleRef = useRef<HTMLDivElement>(null)
+  const linkRef = useRef<HTMLAnchorElement>(null)
+  // is the pointer over the shape itself (a click there opens the link)
+  const [overShape, setOverShape] = useState(false)
 
   // in-view reveal (one shot): the type rises out of a blur, the rule and
   // its outlines arrive, the shape pops onto the first station
@@ -133,12 +139,13 @@ export default function SimpleTalk() {
   // the shape's place on the rule: 0 = over the first station, 1 = the last
   const [p, setP] = useState(0)
   const pRef = useRef(0)
-  const [dragging, setDragging] = useState(false)
   const [touched, setTouched] = useState(false)
-  const drag = useRef<{ id: number; startX: number; startP: number; lastX: number; lastT: number; v: number; moved: boolean } | null>(null)
-  // set by a drag, read by the click that follows it (a drag must not open
-  // the link; a clean click does)
-  const dragged = useRef(false)
+  // the follow: the pointer's target on the rule (null = pointer not over
+  // the band) and the follower loop that glides the shape to it
+  const target = useRef<number | null>(null)
+  const follow = useRef(0)
+  const velocity = useRef(0)
+  const lastT = useRef(0)
   const inertia = useRef(0)
 
   const setPos = useCallback((v: number) => {
@@ -147,40 +154,90 @@ export default function SimpleTalk() {
     setP(c)
   }, [])
 
-  /** the shape's travel in px (first station → last) */
-  const trackW = () => {
+  /** the pointer's x → its place on the rule (0 … 1, clamped) */
+  const placeAt = (clientX: number) => {
     const rule = ruleRef.current
-    if (!rule) return 1
-    return Math.max(1, rule.offsetWidth * stations(window.innerWidth).span)
+    if (!rule) return 0
+    const r = rule.getBoundingClientRect()
+    const st = stations(window.innerWidth)
+    // the shape's centre is at (first + p·span) of the rule; the row of
+    // outlines drifts by −p·drift — the pointer is over the shape's own x
+    return clamp01((clientX - r.left) / r.width - st.x[0]) / st.span
   }
 
   const stopInertia = () => {
     if (inertia.current) cancelAnimationFrame(inertia.current)
     inertia.current = 0
   }
+  const stopFollow = () => {
+    if (follow.current) cancelAnimationFrame(follow.current)
+    follow.current = 0
+  }
 
-  /** let go: coast with the release velocity, then settle on the nearest
-   *  station (a critically damped approach), so at rest the shape is always
-   *  one of the five — never something in between */
-  const settle = (v0: number) => {
+  /** the follower: a critically damped glide towards the pointer's place,
+   *  so the shape trails the mouse a touch instead of snapping to it */
+  const startFollow = () => {
+    if (follow.current) return
+    stopInertia()
+    lastT.current = performance.now()
+    const omega = 22
+    const step = (now: number) => {
+      const dt = Math.min(0.05, Math.max(0.001, (now - lastT.current) / 1000))
+      lastT.current = now
+      const t = target.current
+      if (t == null) {
+        follow.current = 0
+        return
+      }
+      // integrated in small sub-steps, so a slow frame cannot overshoot
+      let x = pRef.current
+      let v = velocity.current
+      const n = Math.max(1, Math.ceil(dt / 0.004))
+      const hdt = dt / n
+      for (let k = 0; k < n; k++) {
+        const acc = omega * omega * (t - x) - 2 * omega * v
+        v += acc * hdt
+        x += v * hdt
+      }
+      velocity.current = v
+      const next = x
+      if (Math.abs(t - next) < 0.0004 && Math.abs(velocity.current) < 0.01) {
+        setPos(t)
+        velocity.current = 0
+      } else {
+        setPos(next)
+      }
+      follow.current = requestAnimationFrame(step)
+    }
+    follow.current = requestAnimationFrame(step)
+  }
+
+  /** the pointer has left: settle on the nearest station (a critically
+   *  damped approach, carrying the follow's velocity), so at rest the shape
+   *  is always one of the five — never something in between */
+  const settle = (to?: number) => {
+    stopFollow()
     stopInertia()
     const n = STATIONS.length - 1
-    // v0 is in track shares per ms; the throw carries it on about as far as
-    // a coast with light friction would (≈ 0.2 s worth), then the nearest
-    // station takes it
-    const target = clamp(Math.round((pRef.current + v0 * 200) * n) / n, 0, 1)
-    let v = v0 * 1000 // shares per second
+    const dest = to ?? clamp(Math.round(pRef.current * n) / n, 0, 1)
+    let v = velocity.current
+    velocity.current = 0
     let last = performance.now()
     const omega = 12 // critically damped spring, 1/s
     const step = (now: number) => {
       const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000))
       last = now
-      const x = pRef.current
-      const acc = omega * omega * (target - x) - 2 * omega * v
-      v += acc * dt
-      const next = x + v * dt
-      if (Math.abs(target - next) < 0.0005 && Math.abs(v) < 0.02) {
-        setPos(target)
+      let x = pRef.current
+      const n = Math.max(1, Math.ceil(dt / 0.004))
+      const hdt = dt / n
+      for (let k = 0; k < n; k++) {
+        const acc = omega * omega * (dest - x) - 2 * omega * v
+        v += acc * hdt
+        x += v * hdt
+      }
+      const next = x
+      if (Math.abs(dest - next) < 0.0005 && Math.abs(v) < 0.02) {
+        setPos(dest)
         inertia.current = 0
         return
       }
@@ -190,40 +247,43 @@ export default function SimpleTalk() {
     inertia.current = requestAnimationFrame(step)
   }
 
-  const onPointerDown = (e: React.PointerEvent<HTMLAnchorElement>) => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return
-    stopInertia()
-    dragged.current = false
-    e.currentTarget.setPointerCapture(e.pointerId)
-    drag.current = { id: e.pointerId, startX: e.clientX, startP: pRef.current, lastX: e.clientX, lastT: performance.now(), v: 0, moved: false }
-    setDragging(true)
+  /** is this x over the shape (within its half width of its centre)? */
+  const hitsShape = (clientX: number) => {
+    const link = linkRef.current
+    if (!link) return false
+    const r = link.getBoundingClientRect()
+    return clientX >= r.left && clientX <= r.right
   }
-  const onPointerMove = (e: React.PointerEvent<HTMLAnchorElement>) => {
-    const d = drag.current
-    if (!d || d.id !== e.pointerId) return
-    const dx = e.clientX - d.startX
-    if (Math.abs(dx) > 4) {
-      d.moved = true
-      dragged.current = true
-    }
-    const now = performance.now()
-    const dt = Math.max(1, now - d.lastT)
-    // velocity in track shares per ms, lightly smoothed
-    d.v = lerp(d.v, (e.clientX - d.lastX) / trackW() / dt, 0.5)
-    d.lastX = e.clientX
-    d.lastT = now
-    setPos(d.startP + dx / trackW())
-    if (d.moved && !touched) setTouched(true)
+
+  /* the band around the rule: the pointer moving over it moves the shape */
+  const onBandMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    // a finger only moves it while it is down (so the page still scrolls
+    // over the band); a mouse moves it by hovering
+    if (e.pointerType !== 'mouse' && e.buttons === 0) return
+    target.current = placeAt(e.clientX)
+    if (!touched) setTouched(true)
+    setOverShape(hitsShape(e.clientX))
+    startFollow()
   }
-  const endDrag = (e: React.PointerEvent<HTMLAnchorElement>) => {
-    const d = drag.current
-    if (!d || d.id !== e.pointerId) return
-    drag.current = null
-    setDragging(false)
-    if (d.moved) settle(d.v)
+  const onBandLeave = () => {
+    target.current = null
+    setOverShape(false)
+    settle()
   }
-  const onClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (dragged.current) e.preventDefault()
+  const onBandClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // the shape is a link: a click on it opens the booking page (the
+    // pointer passes through the shape to the band, so the band forwards it)
+    if (hitsShape(e.clientX)) linkRef.current?.click()
+  }
+  const onBandDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse') return
+    target.current = placeAt(e.clientX)
+    if (!touched) setTouched(true)
+    startFollow()
+  }
+  const onBandUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse') return
+    onBandLeave()
   }
   const onKeyDown = (e: React.KeyboardEvent<HTMLAnchorElement>) => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
@@ -233,11 +293,17 @@ export default function SimpleTalk() {
       // a step to the next station
       const n = STATIONS.length - 1
       const at = Math.round(pRef.current * n)
-      pRef.current = clamp((at + (e.key === 'ArrowRight' ? 1 : -1)) / n, 0, 1)
-      settle(0)
+      target.current = null
+      settle(clamp((at + (e.key === 'ArrowRight' ? 1 : -1)) / n, 0, 1))
     }
   }
-  useEffect(() => () => stopInertia(), [])
+  useEffect(
+    () => () => {
+      stopInertia()
+      stopFollow()
+    },
+    [],
+  )
 
   /* ---- the shape, from its place on the rule ---- */
   const seg = clamp(p * (STATIONS.length - 1), 0, STATIONS.length - 1 - 1e-6)
@@ -304,7 +370,7 @@ export default function SimpleTalk() {
 
           {/* the outlines standing on it — the row drifts left as the shape
               travels right */}
-          <div className="absolute inset-x-0 top-0 h-0 will-change-transform" style={{ transform: `translate3d(${driftX}, 0, 0)` }} aria-hidden>
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-0 will-change-transform" style={{ transform: `translate3d(${driftX}, 0, 0)` }} aria-hidden>
           {STATIONS.map((s, i) => (
             <div
               key={i}
@@ -338,32 +404,28 @@ export default function SimpleTalk() {
             }}
             aria-hidden
           >
-            &lt; DRAG ME &gt;
+            &lt; FOLLOW ME &gt;
           </span>
 
-          {/* the shape */}
+          {/* the shape — a plain link that rides the band's pointer; the
+              pointer passes through it to the band, so the follow never
+              stutters at its own edge */}
           <a
+            ref={linkRef}
             href={booking}
             aria-label="Let’s talk. Book a free call"
-            className={`group absolute top-1/2 grid aspect-square w-[clamp(84px,10.4vw,200px)] -translate-x-1/2 -translate-y-1/2 select-none touch-pan-y place-items-center outline-none focus-visible:ring-2 focus-visible:ring-ink/60 focus-visible:ring-offset-4 focus-visible:ring-offset-cream ${
-              dragging ? 'cursor-grabbing' : 'cursor-grab'
-            }`}
+            className="group pointer-events-none absolute top-1/2 grid aspect-square w-[clamp(84px,10.4vw,200px)] -translate-x-1/2 -translate-y-1/2 select-none place-items-center outline-none focus-visible:ring-2 focus-visible:ring-ink/60 focus-visible:ring-offset-4 focus-visible:ring-offset-cream"
             style={{
               left,
               opacity: shown ? 1 : 0,
               transition: shown ? 'opacity 500ms ease 700ms' : 'none',
             }}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
-            onClick={onClick}
             onKeyDown={onKeyDown}
             draggable={false}
           >
             <span
-              className="block h-full w-full transition-transform duration-200 ease-out group-hover:scale-[1.04]"
-              style={{ transform: dragging ? 'scale(1.04)' : undefined }}
+              className="block h-full w-full transition-transform duration-200 ease-out"
+              style={{ transform: overShape ? 'scale(1.04)' : undefined }}
             >
             <span
               className="relative grid h-full w-full place-items-center bg-brand text-ink will-change-transform"
@@ -378,6 +440,21 @@ export default function SimpleTalk() {
             </span>
             </span>
           </a>
+
+          {/* the band: the strip around the rule the pointer moves the shape
+              in — as tall as the shape, edge to edge, over everything in the
+              strip (the shapes under it are decoration; the link is reached
+              through it with a click) */}
+          <div
+            className={`absolute inset-x-0 top-1/2 z-10 h-[clamp(96px,11.5vw,220px)] -translate-y-1/2 touch-pan-y ${overShape ? 'cursor-pointer' : 'cursor-ew-resize'}`}
+            onPointerMove={onBandMove}
+            onPointerLeave={onBandLeave}
+            onPointerDown={onBandDown}
+            onPointerUp={onBandUp}
+            onPointerCancel={onBandUp}
+            onClick={onBandClick}
+            aria-hidden
+          />
         </div>
 
         {/* the second way in */}

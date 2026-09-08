@@ -54,7 +54,7 @@ export function windowRect(vw: number, vh: number): WindowRect {
   const desk = vw >= 1024
   const left = desk ? 152 : 12
   const right = desk ? 72 : 12
-  const top = desk ? 104 : 128
+  const top = desk ? 104 : 96
   const bottom = desk ? 32 : 16
   return {
     left,
