@@ -17,7 +17,7 @@ export const site = {
 
   contact: {
     email: 'support@clauseandcode.com',
-    phone: '+971 00 000 0000',
+    phone: '+971 50 971 8796',
   },
 
   social: {
