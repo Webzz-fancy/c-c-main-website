@@ -3,11 +3,12 @@
 import { chromium } from 'playwright'
 import { mkdirSync } from 'node:fs'
 
-// [slug, url, extra wait ms] — The Yard opens on a film that plays before
-// its heading comes in, so it gets longer
+// [slug, url, extra wait ms, scroll to] — The Yard's preview is its first
+// section after the film ("Loved by many", the raspberry cup), so the page
+// is scrolled to that heading before the shot
 const ALL = [
   ['smash', 'https://webzz-fancy.github.io/burger-site/', 0],
-  ['the-yard', 'https://webzz-fancy.github.io/yard-new/', 14000],
+  ['the-yard', 'https://webzz-fancy.github.io/yard-new/', 14000, 'loved'],
   ['dana-habayeb', 'https://art-gallery-dana.netlify.app/', 0],
   ['yaseen-faez', 'https://yaseen-faez.netlify.app/', 0],
   ['alfajr', 'https://alfajr-watches.netlify.app/', 0],
@@ -18,7 +19,7 @@ const SITES = only.length ? ALL.filter(([slug]) => only.includes(slug)) : ALL
 
 mkdirSync('public/projects', { recursive: true })
 const browser = await chromium.launch()
-for (const [slug, url, extra] of SITES) {
+for (const [slug, url, extra, scrollTo] of SITES) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 })
   try {
     await page.goto(url, { waitUntil: 'load', timeout: 90000 })
@@ -28,7 +29,29 @@ for (const [slug, url, extra] of SITES) {
     await page.waitForTimeout(12000 + extra)
     await page.mouse.move(720, 450)
     await page.waitForTimeout(1500)
-    await page.evaluate(() => window.scrollTo(0, 0))
+    if (scrollTo === 'loved') {
+      // the section whose heading reads "LOVED BY MANY": scroll so the
+      // section's top sits under the site's header, then let its reveal play
+      await page.evaluate(() => {
+        const heads = [...document.querySelectorAll('h1, h2, h3')]
+        const h = heads.find((el) => /loved\s*by\s*many/i.test(el.textContent || ''))
+        const sec = h?.closest('section') || h
+        if (sec) {
+          const top = sec.getBoundingClientRect().top + window.scrollY
+          window.scrollTo(0, Math.max(0, top - 70))
+        } else {
+          window.scrollTo(0, window.innerHeight)
+        }
+      })
+      await page.waitForTimeout(4500)
+      // keep it exactly there for the shot (kill smooth scroll drift)
+      await page.evaluate(() => window.scrollBy(0, 1))
+      await page.waitForTimeout(400)
+      await page.evaluate(() => window.scrollBy(0, -1))
+      await page.waitForTimeout(1500)
+    } else {
+      await page.evaluate(() => window.scrollTo(0, 0))
+    }
     // the hosting badge is not part of the work: hide any small fixed
     // widget pinned to the bottom right corner (shadow roots included)
     await page.evaluate(() => {

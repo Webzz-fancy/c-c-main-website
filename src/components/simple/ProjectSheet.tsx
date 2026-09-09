@@ -178,7 +178,6 @@ export default function ProjectSheet({ project, index, onClose }: Props) {
                 </span>
                 <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
               </a>
-              <div className="mt-2 truncate font-mono text-[10.5px] text-ink/45">{p.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}</div>
             </div>
           </div>
         </div>
