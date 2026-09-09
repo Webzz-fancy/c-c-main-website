@@ -227,6 +227,7 @@ export default function SimplePage() {
     total: 0,
     Lb: 0,
     switchY: 0,
+    enterLead: 0,
     enterEnd: 1,
     headEnd: 2,
     spinEnd: 3,
@@ -360,6 +361,7 @@ export default function SimplePage() {
         total: g.total,
         Lb: g.Lb,
         switchY: g.switchY,
+        enterLead: budget.enterLead,
         enterEnd: budget.enterEnd,
         headEnd: budget.headEnd,
         spinEnd: budget.spinEnd,
@@ -466,8 +468,10 @@ export default function SimplePage() {
       const pA = Math.max(0, Math.min(1, px / Math.max(1, G.heroH)))
       const pinLocal = Math.max(0, px - G.pinStart)
 
-      // section 3 phases (linear in scroll; SimpleThird eases them)
-      const q1 = clamp01(pinLocal / G.enterEnd)
+      // section 3 phases (linear in scroll; SimpleThird eases them) — the
+      // window's entrance starts before the pin, while the orange desktop is
+      // still coming up the screen, so the two arrive together
+      const q1 = clamp01((px - (G.pinStart - G.enterLead)) / Math.max(1, G.enterLead + G.enterEnd))
       const q2 = clamp01((pinLocal - G.enterEnd) / Math.max(1, G.headEnd - G.enterEnd))
       const qSpin = clamp01((pinLocal - G.headEnd) / Math.max(1, G.spinEnd - G.headEnd))
       const qEnd = clamp01((pinLocal - G.spinEnd) / Math.max(1, G.endEnd - G.spinEnd))

@@ -18,11 +18,12 @@ import {
  * happens here):
  *
  *   q1    — the entrance, kept simple: the section arrives as the orange
- *           desktop (it scrolls in under section 2 like any section) and
- *           pins; the projects window then rises from below the screen,
- *           out of focus, and settles into focus (the reference's own
- *           reveal: translateY + blur), its title bar first, its body a
- *           beat behind — the project simply coming up.
+ *           desktop (it scrolls in under section 2 like any section) and,
+ *           while it is still coming up the screen, the projects window
+ *           rises inside it from below, out of focus, and settles into
+ *           focus as the desktop pins (the reference's own reveal:
+ *           translateY + blur), its title bar first, its body a beat
+ *           behind — the project simply coming up with the ground.
  *   q2    — inside the window: "Projects we make" rises line by line, the
  *           subline with it; the progress dots in the title bar count along.
  *   qSpin — the presentation: the heading blurs away as the six previews
