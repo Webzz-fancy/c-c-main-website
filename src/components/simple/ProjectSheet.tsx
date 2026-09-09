@@ -184,7 +184,7 @@ export default function ProjectSheet({ project, index, onClose }: Props) {
 
         {/* the status bar */}
         <div className="flex h-[28px] shrink-0 items-center justify-between border-t border-ink/60 px-3 font-mono text-[9.5px] uppercase tracking-[0.16em] text-ink/55 sm:px-4" style={{ backgroundColor: '#EDE7DB' }}>
-          <span>Clause &amp; Code · Simple</span>
+          <span>Clause &amp; Code · Websites</span>
           <span className="hidden sm:inline">Esc to close</span>
           <span>{String(index + 1).padStart(2, '0')} / 06</span>
         </div>

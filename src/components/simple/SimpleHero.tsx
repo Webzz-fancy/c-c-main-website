@@ -49,21 +49,25 @@ export default function SimpleHero({ revealed }: Props) {
           On phones the column is the top of the screen and the robot stands
           under it. No z-index on purpose: the robot (fixed, later in the
           DOM) renders in front where the two meet. */}
+      {/* on desktop the column starts level with the robot's head: the robot
+          box is centred at 50vh and min(76vh, 680px) tall, the head's top
+          sits 0.29 of the box under its centre, and the label + its gap
+          stand 36px above the heading's first line */}
       <div
         data-hero-copy
-        className="pointer-events-none absolute left-[6%] top-[13%] max-w-[560px] max-sm:right-[5%] max-sm:max-w-none sm:top-[14%] lg:max-w-[600px] xl:left-[8%]"
+        className="pointer-events-none absolute left-[6%] top-[13%] max-w-[560px] max-sm:right-[5%] max-sm:max-w-none sm:top-[14%] lg:top-[calc(50svh_-_0.29*min(76svh,680px)_-_36px)] lg:max-w-[700px] xl:left-[8%] xl:max-w-[760px]"
       >
         <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-muted">Our Projects · Websites &amp; AI discoverability</div>
         <h1 className="mt-4 font-display text-[clamp(2.5rem,4.6vw,4.7rem)] font-normal leading-[0.92] tracking-[-0.03em] text-ink">
-          Websites,
+          Websites that work
           <br />
           <span className="relative inline-block">
-            <span className="relative z-10 italic font-normal text-brand-600">engineered.</span>
+            <span className="relative z-10 italic font-normal text-brand-600">as well as they look.</span>
             <Underline active={drawn} />
           </span>
         </h1>
         {/* ---------- supporting copy, under the heading ---------- */}
-        <div className="mt-6 max-w-[460px] sm:mt-8">
+        <div className="mt-6 max-w-[520px] sm:mt-8">
           <p className="text-[15px] font-light leading-relaxed text-ink-soft sm:text-[16.5px]">
             A website is the front of a business. We build it with the same rigour we bring to the <em className="font-normal not-italic text-ink">operations behind one</em>.
           </p>
