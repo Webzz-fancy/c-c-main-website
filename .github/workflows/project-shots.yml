@@ -4,6 +4,11 @@ on:
     branches: ['arena/01a07717-clauseandcode']
     paths: ['scripts/shots/**', '.github/workflows/project-shots.yml']
   workflow_dispatch:
+    inputs:
+      only:
+        description: 'comma separated slugs (empty = all)'
+        required: false
+        default: ''
 permissions:
   contents: write
 jobs:
@@ -16,6 +21,8 @@ jobs:
       - run: npm init -y >/dev/null && npm i playwright@1.47.2 --no-audit --no-fund
         working-directory: scripts/shots
       - run: node scripts/shots/sites.mjs
+        env:
+          ONLY: ${{ github.event.inputs.only }}
       - run: |
           git config user.name "Arena Agent"
           git config user.email "agent@arena.ai"

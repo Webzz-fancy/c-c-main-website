@@ -3,28 +3,34 @@
 import { chromium } from 'playwright'
 import { mkdirSync } from 'node:fs'
 
-const SITES = [
-  ['smash', 'https://webzz-fancy.github.io/burger-site/'],
-  ['the-yard', 'https://webzz-fancy.github.io/yard-new/'],
-  ['dana-habayeb', 'https://art-gallery-dana.netlify.app/'],
-  ['yaseen-faez', 'https://yaseen-faez.netlify.app/'],
-  ['alfajr', 'https://alfajr-watches.netlify.app/'],
-  ['rashtions', 'https://rashtions.netlify.app/'],
+// [slug, url, extra wait ms] — The Yard opens on a film that plays before
+// its heading comes in, so it gets longer
+const ALL = [
+  ['smash', 'https://webzz-fancy.github.io/burger-site/', 0],
+  ['the-yard', 'https://webzz-fancy.github.io/yard-new/', 14000],
+  ['dana-habayeb', 'https://art-gallery-dana.netlify.app/', 0],
+  ['yaseen-faez', 'https://yaseen-faez.netlify.app/', 0],
+  ['alfajr', 'https://alfajr-watches.netlify.app/', 0],
+  ['rashtions', 'https://rashtions.netlify.app/', 0],
 ]
+const only = (process.env.ONLY || '').split(',').filter(Boolean)
+const SITES = only.length ? ALL.filter(([slug]) => only.includes(slug)) : ALL
 
 mkdirSync('public/projects', { recursive: true })
 const browser = await chromium.launch()
-for (const [slug, url] of SITES) {
+for (const [slug, url, extra] of SITES) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 })
   try {
     await page.goto(url, { waitUntil: 'load', timeout: 90000 })
     try { await page.waitForLoadState('networkidle', { timeout: 30000 }) } catch {}
     // every one of these sites opens with a loading screen — give it time
     // to count up and clear, and the hero time to settle
-    await page.waitForTimeout(12000)
+    await page.waitForTimeout(12000 + extra)
     await page.mouse.move(720, 450)
     await page.waitForTimeout(1500)
     await page.evaluate(() => window.scrollTo(0, 0))
+    // the hosting badge is not part of the work
+    await page.addStyleTag({ content: '#netlify-badge, [id*="netlify-badge"], a[href*="netlify_badge"], .netlify-badge { display: none !important; }' })
     await page.waitForTimeout(800)
     await page.screenshot({ path: `public/projects/${slug}.jpg`, type: 'jpeg', quality: 86 })
     console.log('ok', slug)
