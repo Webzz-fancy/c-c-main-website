@@ -49,7 +49,7 @@ const OFFERS: Offer[] = [
   {
     number: '01',
     title: 'Websites',
-    body: 'We map who is visiting and what they should do next, then build a site that answers that with nothing in the way. Quick to load, easy to keep current.',
+    body: 'We map who is visiting and what they came to do before a single page is designed. Then we build it fast, structured and easy to keep current.',
     cta: 'See the projects',
     mark: '→',
     href: '#projects',
@@ -58,8 +58,8 @@ const OFFERS: Offer[] = [
   {
     number: '02',
     title: 'AI discoverability & lead management',
-    body: 'We structure your site so search engines and AI assistants recommend you, then capture the enquiries that follow and make sure each one is answered.',
-    cta: 'Visit ai.clauseandcode.com',
+    body: 'We put your business where people now look, in ChatGPT, Gemini and Instagram, and connect it all to your booking so every enquiry is answered.',
+    cta: 'Explore the AI Client Engine',
     mark: '↗',
     href: AI_URL,
     external: true,
@@ -124,7 +124,7 @@ export default function SimpleSecond({ progress, reveal, onProjects }: Props) {
   const reached = (i: number) => r >= (geom.frac[i] ?? i / Math.max(1, OFFERS.length - 1)) - 0.04
 
   return (
-    <section id="simple-second" className="relative w-full bg-cream py-24 md:py-32">
+    <section id="simple-second" className="relative w-full bg-cream pb-16 pt-24 md:pb-20 md:pt-32">
       {/* ---------- ambient background behind the glass (as on the home page) ---------- */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <div className="absolute inset-0 grain opacity-60" />
@@ -169,13 +169,13 @@ export default function SimpleSecond({ progress, reveal, onProjects }: Props) {
             <div>
               <Eyebrow>What we do</Eyebrow>
               <h2 className="mt-6 font-display text-[clamp(2.2rem,4.4vw,3.6rem)] leading-[1.05] tracking-[-0.02em] text-ink">
-                Two disciplines,
+                Two things,
                 <br />
-                <span className="italic text-brand-600">one standard.</span>
+                <span className="italic text-brand-600">done properly.</span>
               </h2>
             </div>
             <p className="max-w-md text-[clamp(0.98rem,1.15vw,1.08rem)] font-light leading-relaxed text-ink-soft lg:pb-2">
-              We build the site people visit, and the layer that gets it recommended by search and AI. Then we make sure every enquiry that follows is answered, by the same team, to the same standard.
+              The website people visit, and the system that gets it found and turns interest into enquiries. Built by the same team that builds operations, to the same standard.
             </p>
           </div>
 

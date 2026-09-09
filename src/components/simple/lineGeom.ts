@@ -230,8 +230,8 @@ export function ringGeom(vw: number, vh: number): RingGeom {
  *   closing line appears over it → a short hold before the page moves on.
  */
 export function pinBudget(_vw: number, vh: number) {
-  const enterEnd = 0.9 * vh
-  const headEnd = enterEnd + 1.7 * vh
+  const enterEnd = 0.5 * vh
+  const headEnd = enterEnd + 0.8 * vh
   const spinEnd = headEnd + SPIN_VH * vh
   const endEnd = spinEnd + 1.5 * vh
   const pinPx = endEnd + 0.35 * vh
