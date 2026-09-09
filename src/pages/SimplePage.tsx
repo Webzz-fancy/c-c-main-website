@@ -21,7 +21,6 @@ const MemoTalk = memo(SimpleTalk)
 import { pinBudget } from '../components/simple/lineGeom'
 import { handoff } from '../components/simple/journey'
 
-const smoothstep = (t: number) => t * t * (3 - 2 * t)
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 
 /**
@@ -528,15 +527,22 @@ export default function SimplePage() {
         ty = hy + (pry + perchOff - hy) * s
         to = 1
       } else {
-        // mobile: content is full-width, so no perch — drift up-right and
-        // fade out as the section takes over (before the pin starts)
-        tx = hx + (w * 0.62 - hx) * s
-        ty = hy + (h * 0.34 - hy) * s
-        to = 1 - smoothstep(clamp01((pA - 0.45) / 0.25))
+        // mobile: content is full-width, so no perch — the robot stays
+        // centred, in parallax, for the whole of the hero: it rises at a
+        // fraction of the scroll speed (depth), and when the hero's bottom
+        // edge catches up with it, it rides out of the top with the hero,
+        // so it is gone exactly as section 2 arrives (and comes back the
+        // same way)
+        const robotHalfH = box.offsetHeight / 2
+        const parallaxY = hy - px * 0.35
+        const edgeY = G.heroH - px - robotHalfH - 12
+        tx = hx
+        ty = Math.min(parallaxY, edgeY)
+        to = 1
       }
       // a gentle upward arc through the handoff (zero at both ends), so the
       // glide reads as an organic flit rather than a straight diagonal
-      const arc = (desk ? 40 : 22) * Math.sin(Math.PI * s)
+      const arc = desk ? 40 * Math.sin(Math.PI * s) : 0
       const baseY = desk ? h * 0.48 : h * 0.5
       box.style.transform =
         `translate(-50%, -50%) translate(${(tx - w / 2).toFixed(1)}px, ${(ty - baseY - arc).toFixed(1)}px)`

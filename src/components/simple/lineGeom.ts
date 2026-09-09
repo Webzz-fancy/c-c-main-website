@@ -46,16 +46,17 @@ export type WindowRect = {
   desk: boolean
 }
 
-/** the window's place on the screen, viewport px. On desktop a strip of
- *  desktop stays free on the left for the file icon, and the right edge
- *  keeps clear of the hanging rope; on phones the file sits in a row above
- *  the window instead. */
+/** the window's place on the screen, viewport px: centred horizontally
+ *  (the side margins keep clear of the hanging rope on the right edge);
+ *  on desktop it hangs under the header capsule, on phones it is centred
+ *  vertically as well (the top margin clears the capsule, the bottom
+ *  matches it). */
 export function windowRect(vw: number, vh: number): WindowRect {
   const desk = vw >= 1024
-  const left = desk ? 152 : 12
+  const left = desk ? 72 : 12
   const right = desk ? 72 : 12
   const top = desk ? 104 : 96
-  const bottom = desk ? 32 : 16
+  const bottom = desk ? 32 : 96
   return {
     left,
     top,
