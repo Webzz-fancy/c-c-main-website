@@ -1,0 +1,24 @@
+name: Project screenshots
+on:
+  push:
+    branches: ['arena/01a07717-clauseandcode']
+    paths: ['scripts/shots/**', '.github/workflows/project-shots.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.47.2-jammy
+    steps:
+      - uses: actions/checkout@v4
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - run: npm init -y >/dev/null && npm i playwright@1.47.2 --no-audit --no-fund
+        working-directory: scripts/shots
+      - run: node scripts/shots/sites.mjs
+      - run: |
+          git config user.name "Arena Agent"
+          git config user.email "agent@arena.ai"
+          git add public/projects
+          git commit -m "Project screenshots for the Simple page ring" || echo "nothing to commit"
+          git push origin HEAD:arena/01a07717-clauseandcode
