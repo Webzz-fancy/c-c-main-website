@@ -30,29 +30,17 @@ for (const [slug, url, extra, scrollTo] of SITES) {
     await page.mouse.move(720, 450)
     await page.waitForTimeout(1500)
     if (scrollTo === 'loved') {
-      // The Yard opens on a scroll driven film: the "LOVED BY MANY" section
-      // is reached by wheeling through it. Wheel in steps until the heading
-      // is on screen and settled, then a little further so it sits at the
-      // top under the site's header.
-      const seen = async () =>
-        page.evaluate(() => {
-          const heads = [...document.querySelectorAll('h1, h2, h3, div, span')]
-          const h = heads.find((el) => el.children.length <= 3 && /loved\s*by\s*many/i.test((el.textContent || '').replace(/\s+/g, ' ')))
-          if (!h) return null
-          const r = h.getBoundingClientRect()
-          const cs = getComputedStyle(h)
-          const visible = r.width > 40 && r.height > 20 && cs.visibility !== 'hidden' && parseFloat(cs.opacity) > 0.5
-          return visible ? { top: r.top, bottom: r.bottom } : null
-        })
-      let found = null
-      for (let i = 0; i < 60 && !found; i++) {
-        await page.mouse.wheel(0, 320)
-        await page.waitForTimeout(450)
-        const v = await seen()
-        if (v && v.top > 40 && v.top < 260) found = v
+      // The Yard opens on a scroll driven film; its "LOVED BY MANY" section
+      // follows it. Wheel through in fixed steps and keep a frame at each
+      // (the frame that shows the section becomes the preview)
+      await page.evaluate(() => window.scrollTo(0, 0))
+      await page.waitForTimeout(1500)
+      for (let i = 1; i <= 14; i++) {
+        await page.mouse.wheel(0, 500)
+        await page.waitForTimeout(1600)
+        await page.screenshot({ path: `public/projects/${slug}-f${String(i).padStart(2, '0')}.jpg`, type: 'jpeg', quality: 80 })
       }
-      console.log(slug, 'heading', found ? 'found' : 'not found')
-      await page.waitForTimeout(3500)
+      console.log(slug, 'frames done')
     } else {
       await page.evaluate(() => window.scrollTo(0, 0))
     }
