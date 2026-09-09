@@ -456,20 +456,6 @@ export default function SimpleTalk() {
             aria-hidden
           />
         </div>
-
-        {/* the second way in */}
-        <div className="mt-[max(8svh,72px)] flex flex-col items-center gap-3 px-6 text-center" style={rise(520)}>
-          <a
-            href={booking}
-            className="group relative font-mono text-[12px] tracking-[0.18em] text-ink/80 transition-colors hover:text-ink"
-          >
-            [ Reserve your spot ]
-            <span className="absolute -bottom-0.5 left-0 h-px w-full origin-right scale-x-0 bg-ink transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:origin-left group-hover:scale-x-100" />
-          </a>
-          <a href={`mailto:${site.contact.email}`} className="text-[13px] font-light text-ink/55 transition-colors hover:text-ink">
-            {site.contact.email}
-          </a>
-        </div>
       </div>
     </section>
   )
