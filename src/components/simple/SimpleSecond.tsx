@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import BroomRobot from './BroomRobot'
 
 type Props = {
   /** pre-pin scroll, 0 at the top of the page → 1 when the section's top reaches the top of the screen */
@@ -22,9 +21,10 @@ type Props = {
  * AI discoverability & lead management goes to ai.clauseandcode.com.
  *
  * Across both cards runs a dashed road, and the Clause & Code robot rides
- * its broom along it with the scroll, as a white line drawing — from the
- * first card to the second, so the eye is carried from one offer to the
- * next. Nothing here plays on a timer; scrolling back flies it back.
+ * its broom along it with the scroll, as a white line drawing (the brand's
+ * own artwork, /broom-lineart.png) — from the first card to the second, so
+ * the eye is carried from one offer to the next. Nothing here plays on a
+ * timer; scrolling back flies it back.
  */
 export const CARD_BLUE = '#2D6D8B'
 export const AI_URL = 'https://ai.clauseandcode.com'
@@ -46,7 +46,7 @@ const CARDS = [
     mark: '↓',
     title: 'Websites',
     italic: 'built like products.',
-    body: 'We map who is visiting, what they need to understand and what they should do next, then design and build a site that answers those three questions with nothing in the way. Quick to load, easy for your team to keep current, and structured so it keeps working as the business grows.',
+    body: 'We map who is visiting and what they should do next, then build a site that answers that with nothing in the way. Quick to load, easy to keep current.',
     href: '#projects',
     external: false,
   },
@@ -55,7 +55,7 @@ const CARDS = [
     mark: '↗',
     title: 'AI discoverability',
     italic: '& lead management.',
-    body: 'We structure your site so search engines and AI assistants understand it and recommend you when it counts, then capture the enquiries that follow and make sure each one is answered. Found by people and by AI, with nothing lost in between.',
+    body: 'We structure your site so search engines and AI assistants recommend you, then capture the enquiries that follow and make sure each one is answered.',
     href: AI_URL,
     external: true,
   },
@@ -77,8 +77,8 @@ export default function SimpleSecond({ progress, roll, onProjects }: Props) {
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
   }, [])
-  const riderW = Math.round(Math.min(190, Math.max(96, dim.vw * 0.125)))
-  const riderH = Math.round(riderW * 1.1)
+  const riderW = Math.round(Math.min(200, Math.max(104, dim.vw * 0.13)))
+  const riderH = Math.round(riderW * 0.76)
   const travel = Math.max(0, dim.rowW - riderW)
   const q = clamp01(roll)
   // an eased flight: it sets off gently and settles at the far end
@@ -109,7 +109,7 @@ export default function SimpleSecond({ progress, roll, onProjects }: Props) {
         </div>
 
         {/* ---------- the two cards ---------- */}
-        <div ref={rowRef} className="relative mt-8 grid grid-cols-1 gap-3 sm:mt-10 lg:mt-12 lg:grid-cols-2 lg:gap-4">
+        <div ref={rowRef} className="relative mx-auto mt-8 grid w-full max-w-[560px] grid-cols-1 gap-[31px] sm:mt-10 lg:mt-12 lg:w-[60%] lg:max-w-none lg:grid-cols-2">
           {CARDS.map((card, i) => {
             const qi = cardIn[i]
             const first = i === 0
@@ -155,12 +155,12 @@ export default function SimpleSecond({ progress, roll, onProjects }: Props) {
 
                 {/* the type, under the road */}
                 <div className="px-6 pb-7 lg:px-8 lg:pb-8" style={{ paddingTop: ROAD_TOP + 44 }}>
-                  <h3 className="text-[clamp(1.9rem,3.1vw,3rem)] font-medium leading-[1.02] tracking-[-0.02em]">
+                  <h3 className="text-[clamp(1.6rem,2.1vw,2.2rem)] font-medium leading-[1.02] tracking-[-0.02em]">
                     {card.title}
                     <br />
                     <span className="font-display font-normal italic">{card.italic}</span>
                   </h3>
-                  <p className="mt-4 max-w-[560px] text-[14.5px] font-light leading-relaxed text-white/90 lg:text-[15.5px]">{card.body}</p>
+                  <p className="mt-4 text-[14px] font-light leading-relaxed text-white/90 lg:text-[14.5px]">{card.body}</p>
                 </div>
               </a>
             )
@@ -174,12 +174,12 @@ export default function SimpleSecond({ progress, roll, onProjects }: Props) {
               top: ROAD_TOP,
               width: riderW,
               height: riderH,
-              transform: `translate3d(${riderX.toFixed(1)}px, ${(-riderH * 0.66 + bob).toFixed(1)}px, 0) rotate(${lean.toFixed(2)}deg)`,
+              transform: `translate3d(${riderX.toFixed(1)}px, ${(-riderH * 0.7 + bob).toFixed(1)}px, 0) rotate(${lean.toFixed(2)}deg)`,
               opacity: riderIn.toFixed(3),
             }}
             aria-hidden
           >
-            <BroomRobot className="h-full w-full drop-shadow-[0_2px_6px_rgba(10,40,60,0.35)]" />
+            <img src="/broom-lineart.png" alt="" className="h-full w-full object-contain" draggable={false} decoding="async" />
           </div>
         </div>
       </div>
