@@ -169,13 +169,13 @@ export default function SimpleSecond({ progress, reveal, onProjects }: Props) {
             <div>
               <Eyebrow>What we do</Eyebrow>
               <h2 className="mt-6 font-display text-[clamp(2.2rem,4.4vw,3.6rem)] leading-[1.05] tracking-[-0.02em] text-ink">
-                Two things,
+                The website,
                 <br />
-                <span className="italic text-brand-600">done properly.</span>
+                <span className="italic text-brand-600">and what brings people to it.</span>
               </h2>
             </div>
             <p className="max-w-md text-[clamp(0.98rem,1.15vw,1.08rem)] font-light leading-relaxed text-ink-soft lg:pb-2">
-              The website people visit, and the system that gets it found and turns interest into enquiries. Built by the same team that builds operations, to the same standard.
+              We build the website itself, and the system around it that gets it recommended by search and AI and turns interest into enquiries. Same team, same standard as the operations we build.
             </p>
           </div>
 

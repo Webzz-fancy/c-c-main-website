@@ -59,10 +59,10 @@ export default function SimpleHero({ revealed }: Props) {
       >
         <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-muted">Our Projects · Websites &amp; AI discoverability</div>
         <h1 className="mt-4 font-display text-[clamp(2.5rem,4.6vw,4.7rem)] font-normal leading-[0.92] tracking-[-0.03em] text-ink">
-          Websites that work
+          Your website, built
           <br />
           <span className="relative inline-block">
-            <span className="relative z-10 italic font-normal text-brand-600">as well as they look.</span>
+            <span className="relative z-10 italic font-normal text-brand-600">to a higher standard.</span>
             <Underline active={drawn} />
           </span>
         </h1>
