@@ -17,15 +17,18 @@ import {
  * smoothed scroll (four phase values, all 0→1, linear in scroll; easing
  * happens here):
  *
- *   q1    — the entrance. The section arrives under a plane of white fog
- *           (section 2 scrolls away above it like any section); once it is
- *           pinned the fog clears from below through a triangle that grows
- *           out of the bottom edge — soft-edged, so it reads as fog lifting,
- *           not a wipe — and the orange desktop is seen through it. When
- *           the desktop is clear the window opens: it rises from below the
- *           screen, out of focus, and settles into focus (the reference's
- *           own reveal: translateY + blur), its title bar first, its body
- *           behind it.
+ *   q1    — the entrance (from the "entrance section" reference: a soft
+ *           cone of blue light rising from the bottom centre of a white page
+ *           until the whole screen is blue). The section arrives as a white
+ *           page (section 2 scrolls away above it like any section); once it
+ *           is pinned a cone of the section's orange rises out of the bottom
+ *           edge — a steep triangle, apex up, heavily out of focus, so its
+ *           edges are light rather than lines and its apex is rounded — and
+ *           grows until its sides have swept the top corners; the flat
+ *           orange comes up under it and the whole screen is the desktop.
+ *           Then the window opens: it rises from below the screen, out of
+ *           focus, and settles into focus (the reference's own reveal:
+ *           translateY + blur), its title bar first, its body behind it.
  *   q2    — inside the window: "Projects we make" rises line by line, the
  *           subline with it; the progress dots in the title bar count along.
  *   qSpin — the presentation: the heading blurs away as the ten previews
@@ -66,28 +69,30 @@ const CLOSE_LINES = ['Made to', 'be found.']
 
 /**
  * The entrance, inside q1:
- *   · the fog clears: a triangle grows out of the bottom edge (apex up,
- *     from a point at the bottom centre) until its sides have passed the
- *     top corners — the desktop is seen through it, the fog keeps the rest
- *   · the window opens once the desktop is clear: the title bar rises
- *     first, the body follows a beat behind (the staggered translateY +
- *     blur reveal the reference section uses)
+ *   · the glow: the cone rises from below the bottom edge (its apex, with
+ *     all its softness, starts under the screen) until its sides have
+ *     passed the top corners
+ *   · the ground: the flat orange comes up under the cone's core while it
+ *     is still growing, so the corners follow the cone and the tone
+ *     settles from the glow's light to the desktop's orange
+ *   · the window opens while the last of the light settles: the title bar
+ *     rises first, the body follows a beat behind (the staggered
+ *     translateY + blur reveal the reference section uses)
  */
-const FOG_START = 0.0
-const FOG_END = 0.56
-const WIN_START = 0.52
+const GLOW_START = 0.0
+const GLOW_END = 0.62
+const FILL_START = 0.5
+const FILL_END = 0.74
+const WIN_START = 0.64
 const WIN_END = 1.0
 
-/** the fog's edge: how far it is out of focus (px) — the triangle must not
- *  read as a cut-out */
-const FOG_SOFT = 26
-/** half the triangle's apex angle: tan(50°) — a wide triangle, so the
- *  bottom clears early and the sides sweep the top corners last */
-const FOG_TAN = 1.19
-/** the fog is a plane the whole way through (the section arrives under it
- *  and it clears); it fades a touch as it lifts, so the last of it is
- *  breath rather than a wall — but never before the triangle has opened */
-const FOG_MIN_ALPHA = 0.94
+/** half the cone's apex angle, as a tangent (≈ 36°): steep, a beam of light
+ *  standing on the bottom edge, as in the reference */
+const GLOW_TAN = 0.73
+/** the cone's light: luminous at the apex and the rim, the section's own
+ *  orange at the core — the blur blends the rim into the page's white */
+const GLOW_APEX = '#F1D68F'
+const GLOW_CORE = '#DDB964'
 
 /**
  * The turn itself: one full revolution. The reference ring is front-loaded —
@@ -138,29 +143,29 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd }: Props) {
   const cardW = ringCardW(w)
   const desk = win.desk
 
-  /* ---- 1 · the entrance: the fog clears, the window opens ---------------- */
-  const fogQ = smooth(clamp01((q1 - FOG_START) / (FOG_END - FOG_START)))
-  // the triangle: apex at the bottom centre at first, rising to where its
-  // sides have passed the top corners (plus the soft edge), similar all the
-  // way — its base corners sit well below the screen so only the two sides
-  // are ever seen
-  const apexFull = h + w / 2 / FOG_TAN + FOG_SOFT * 3
-  // the apex starts a little below the bottom edge, so at q1 = 0 (the
-  // section sliding in under the fog) the fog is complete — no seam
-  const apexY = h + FOG_SOFT * 2 - fogQ * (apexFull + FOG_SOFT * 2)
-  const baseY = h + 400 + FOG_SOFT * 2
-  const halfBase = (baseY - apexY) * FOG_TAN
-  const fogOn = fogQ < 0.999
-  const fogAlpha = lerp(1, FOG_MIN_ALPHA, fogQ)
-  // the clip is laid out in the fog sheet's own box, which reaches FOG_PAD
-  // past the viewport on every side so the blur has room
-  const FOG_PAD = 90
-  const fogClip = fogOn
-    ? `polygon(evenodd, 0 0, ${w + 2 * FOG_PAD}px 0, ${w + 2 * FOG_PAD}px ${h + 2 * FOG_PAD}px, 0 ${h + 2 * FOG_PAD}px, ` +
-      `${(w / 2 + FOG_PAD).toFixed(1)}px ${(apexY + FOG_PAD).toFixed(1)}px, ` +
-      `${(w / 2 + halfBase + FOG_PAD).toFixed(1)}px ${(baseY + FOG_PAD).toFixed(1)}px, ` +
-      `${(w / 2 - halfBase + FOG_PAD).toFixed(1)}px ${(baseY + FOG_PAD).toFixed(1)}px)`
-    : 'none'
+  /* ---- 1 · the entrance: the cone of light, the ground, the window ------ */
+  const glowQ = smooth(clamp01((q1 - GLOW_START) / (GLOW_END - GLOW_START)))
+  // how far out of focus the cone is: its softness is the whole point — the
+  // edge feathers over a good part of the screen, the apex is a dome of
+  // light rather than a point
+  const glowBlur = desk ? Math.round(Math.min(96, Math.max(48, w * 0.055))) : 40
+  const feather = glowBlur * 2.4
+  // the apex travels from under the bottom edge (with all its feather) to
+  // where the cone's sides have passed the top corners, feather included
+  const apexFrom = h + feather
+  // past the top corners by the full feather, so the cone alone fills the
+  // screen edge to edge before the flat ground is complete under it
+  const apexTo = -((w / 2 + feather * 1.4) / GLOW_TAN)
+  const apexY = lerp(apexFrom, apexTo, glowQ)
+  // the cone itself is one fixed shape that only moves (its blur is
+  // composited once, then translated): tall enough that its base is always
+  // below the screen, wide enough for its sides at that height
+  const coneH = h - apexTo + feather + 200
+  const coneW = 2 * coneH * GLOW_TAN
+  // the flat ground comes up under the cone's core, and the cone is let go
+  // once the ground is complete
+  const fill = smooth(clamp01((q1 - FILL_START) / (FILL_END - FILL_START)))
+  const glowOn = fill < 0.999
   // the window: title bar first, body a beat behind — both rise from below
   // and come into focus (translateY + blur, like the reference's reveal)
   const winQ = clamp01((q1 - WIN_START) / (WIN_END - WIN_START))
@@ -208,11 +213,36 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd }: Props) {
     // All layers cover the whole stage (one viewport, pinned); every
     // position inside is measured against the viewport (w, h).
     <>
-      {/* ---- the ground: the orange desktop ---- */}
-      <div className="pointer-events-none absolute inset-0 z-[4] overflow-hidden" style={{ backgroundColor: THIRD_BG }} aria-hidden>
+      {/* ---- the ground: the white page, the cone of light, the orange desktop ---- */}
+      <div className="pointer-events-none absolute inset-0 z-[4] overflow-hidden bg-cream" aria-hidden>
+        {/* the cone of light — a triangle, apex up, out of focus as a whole
+            (the blur is on the wrapper, the shape on the child, so the
+            shape's edges are what gets softened). It only ever moves:
+            nothing about it is re-drawn from frame to frame. */}
+        {glowOn && (
+          <div
+            className="absolute left-1/2 top-0 will-change-transform"
+            style={{
+              width: coneW,
+              height: coneH,
+              filter: `blur(${glowBlur}px)`,
+              transform: `translate3d(-50%, ${apexY.toFixed(1)}px, 0)`,
+            }}
+          >
+            <div
+              className="h-full w-full"
+              style={{
+                clipPath: 'polygon(50% 0, 100% 100%, 0 100%)',
+                background: `linear-gradient(to bottom, ${GLOW_APEX} 0%, ${GLOW_CORE} 38%, ${THIRD_BG} 100%)`,
+              }}
+            />
+          </div>
+        )}
+        {/* the desktop's flat orange, coming up under the light */}
+        <div className="absolute inset-0" style={{ backgroundColor: THIRD_BG, opacity: fill.toFixed(4) }} />
         {/* the desktop's texture: the home page's grain, and a little light
-            from the upper left */}
-        <div className="absolute inset-x-0 top-0" style={{ height: h * 1.4 }}>
+            from the upper left — with the ground */}
+        <div className="absolute inset-x-0 top-0" style={{ height: h * 1.4, opacity: fill.toFixed(3) }}>
           <div className="absolute inset-0 grain opacity-60" />
           <div
             className="absolute -left-40 -top-24 h-[680px] w-[820px] rounded-full blur-3xl"
@@ -475,43 +505,6 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd }: Props) {
           </div>
         )}
       </div>
-
-      {/* ---- the fog — over everything, until it has cleared. One white
-          sheet with a triangular opening; the sheet is blurred as a whole,
-          so the opening's edge is soft (the blur is applied to the clipped
-          sheet, not before the clip), and the sheet reaches past the
-          viewport so its own edges never show. ---- */}
-      {fogOn && (
-        <div
-          className="pointer-events-none absolute inset-0 z-30"
-          style={{ filter: `blur(${FOG_SOFT}px)`, opacity: fogAlpha.toFixed(3), willChange: 'filter' }}
-          aria-hidden
-        >
-          <div
-            className="absolute bg-cream"
-            style={{
-              left: -FOG_PAD,
-              top: -FOG_PAD,
-              width: w + 2 * FOG_PAD,
-              height: h + 2 * FOG_PAD,
-              clipPath: fogClip,
-            }}
-          >
-            {/* the fog's body: light drifts in it, so it is never a flat
-                white plane */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  'radial-gradient(ellipse 60% 50% at 24% 30%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 70%), ' +
-                  'radial-gradient(ellipse 55% 60% at 78% 64%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 70%), ' +
-                  'radial-gradient(ellipse 50% 40% at 56% 18%, rgba(27,26,23,0.05) 0%, rgba(27,26,23,0) 70%), ' +
-                  'radial-gradient(ellipse 70% 45% at 40% 88%, rgba(27,26,23,0.06) 0%, rgba(27,26,23,0) 70%)',
-              }}
-            />
-          </div>
-        </div>
-      )}
     </>
   )
 }
