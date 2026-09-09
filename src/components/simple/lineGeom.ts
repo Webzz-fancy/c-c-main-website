@@ -5,27 +5,101 @@
  *
  * Section 3 is a retro desktop: the orange ground is the desktop, one file
  * ("Projects.html") sits on it, and its window opens over the whole screen.
- * Inside the window the ten builds turn once on a ring; when the ring has
- * come to rest, the closing line appears over it.
+ * Inside the window the six builds turn once on a ring; when the ring has
+ * come to rest, the closing line appears over it. A click on a build opens
+ * it in the project sheet (the popup).
  */
 
-export const LINE_COUNT = 10
+export const LINE_COUNT = 6
 
-export type Project = { name: string; tag: string; tint: string; ink: string }
+export type Project = {
+  /** the file name of the screenshot in /public/projects (without .jpg) */
+  slug: string
+  name: string
+  tag: string
+  url: string
+  /** two lines about the build, for the popup */
+  lines: [string, string]
+  /** the site's own tone: the preview's paper while the screenshot loads,
+   *  and the popup's accent */
+  tint: string
+  ink: string
+}
 
-/** placeholder projects — each preview becomes the site's hero screenshot
- *  once the real links are in; until then an abstract page in its own tone */
+/** the six Simple builds on the ring, in ring order */
 export const PROJECTS: Project[] = [
-  { name: 'Kestrel', tag: 'Fintech', tint: '#DCE7EE', ink: '#2D6D8B' },
-  { name: 'Marlowe', tag: 'Law', tint: '#EFE6D6', ink: '#7C591A' },
-  { name: 'Ondine', tag: 'Aesthetics', tint: '#F3E4E0', ink: '#A6613F' },
-  { name: 'Basecoat', tag: 'SaaS', tint: '#E4E9F2', ink: '#3B4E7A' },
-  { name: 'Northgate', tag: 'Real estate', tint: '#E8E6DF', ink: '#4A4740' },
-  { name: 'Folio', tag: 'Portfolio', tint: '#F6EAD2', ink: '#C9962A' },
-  { name: 'Quanta', tag: 'AI tools', tint: '#E1ECEA', ink: '#2F6F66' },
-  { name: 'Loom & Co', tag: 'Retail', tint: '#F1E3D3', ink: '#9A6A3A' },
-  { name: 'Halcyon', tag: 'Wellness', tint: '#E6EEE3', ink: '#4F7A4E' },
-  { name: 'Verre', tag: 'Studio', tint: '#ECEAF0', ink: '#5B5570' },
+  {
+    slug: 'smash',
+    name: 'Smash',
+    tag: 'Restaurant',
+    url: 'https://webzz-fancy.github.io/burger-site/',
+    lines: [
+      'A smash burger house told as one long sear: menu, a live build your own order, and a reservation flow.',
+      'Scroll driven from the first frame, with the heat of the griddle rising as you read.',
+    ],
+    tint: '#1A1614',
+    ink: '#E8B04B',
+  },
+  {
+    slug: 'the-yard',
+    name: 'The Yard',
+    tag: 'Coffee',
+    url: 'https://webzz-fancy.github.io/yard-new/',
+    lines: [
+      'A specialty coffee drive thru at SPARK, Sharjah: the four most loved drinks, the sweets, and the reviews.',
+      'Built around the padel court next door, with a game, set, dessert rhythm to the scroll.',
+    ],
+    tint: '#EFE7D8',
+    ink: '#2F5D3A',
+  },
+  {
+    slug: 'dana-habayeb',
+    name: 'Dana Habayeb',
+    tag: 'Art gallery',
+    url: 'https://art-gallery-dana.netlify.app/',
+    lines: [
+      'An online gallery for a contemporary artist: fifteen originals with sizes, prices and availability.',
+      'Each painting opens to be looked at closely, and every original can be bought or commissioned from the page.',
+    ],
+    tint: '#F2EDE4',
+    ink: '#1B1A17',
+  },
+  {
+    slug: 'yaseen-faez',
+    name: 'Yaseen Faez',
+    tag: 'Architecture',
+    url: 'https://yaseen-faez.netlify.app/',
+    lines: [
+      'A portfolio for an architectural engineer in Dubai: towers, villas and public work drawn from the project archive.',
+      'A 360° interior walkthrough, a day to night canopy study and the full record of practice and credentials.',
+    ],
+    tint: '#14161A',
+    ink: '#C9B58A',
+  },
+  {
+    slug: 'alfajr',
+    name: 'AlFajr',
+    tag: 'Watches',
+    url: 'https://alfajr-watches.netlify.app/',
+    lines: [
+      'An official store for prayer time watches and clocks, made since 1985: two gates, watches and clocks.',
+      'The collections, the features of each line, and the time until the next Fajr on the page itself.',
+    ],
+    tint: '#101418',
+    ink: '#D4AF37',
+  },
+  {
+    slug: 'rashtions',
+    name: 'Rashtions',
+    tag: 'Food brand',
+    url: 'https://rashtions.netlify.app/',
+    lines: [
+      'An Emirati snack built on dates and camel milk: four flavours, the six ingredients, and the bundle prices.',
+      'A jar that turns over as you scroll, a cart with the discount applied on its own, and corporate gifting.',
+    ],
+    tint: '#F4E9DA',
+    ink: '#7A4A1F',
+  },
 ]
 
 /* ---------------------------------------------------------------------------
@@ -70,7 +144,7 @@ export function windowRect(vw: number, vh: number): WindowRect {
 }
 
 /* ---------------------------------------------------------------------------
- * The presentation ring (from the "project section" reference): the ten
+ * The presentation ring (from the "project section" reference): the six
  * previews stand — flat, facing the viewer — on a ring around a vertical
  * axis, at different heights, and the ring turns exactly ONCE with the
  * scroll, decelerating into its rest pose. Perspective does the rest:
@@ -84,17 +158,17 @@ export const SPIN_VH = 2.8
  *  increasing = travelling right across the front, then round the back).
  *  Irregular on purpose, like the reference — and, with the heights and
  *  sizes below, tuned so nothing overlaps once the ring is at rest. */
-export const RING_ANGLE = [0, 29, 67, 115, 140, 167, 217, 240, 289, 335]
+export const RING_ANGLE = [0, 52, 118, 180, 236, 300]
 
 /** height of each preview's centre on the ring, -1…1 × the ring's vertical
  *  amplitude (0 = ring centre) */
-export const RING_Y = [-0.59, 1, 0.18, -0.85, -0.16, 0.91, 0.81, 0.07, 0.71, -0.97]
+export const RING_Y = [-0.6, 0.95, -0.15, 0.85, -0.95, 0.3]
 
 /** size of each preview on the ring at unit depth, × the unit card width */
-export const RING_SIZE = [0.38, 0.39, 0.38, 0.38, 0.41, 0.49, 0.38, 0.38, 0.39, 0.41]
+export const RING_SIZE = [0.74, 0.66, 0.7, 0.66, 0.68, 0.66]
 
-/** a preview's height, × its width (the strip + a 3:2 screen) */
-export const CARD_ASPECT = 0.78
+/** a preview's height, × its width (the strip + a 16:10 screen) */
+export const CARD_ASPECT = 0.74
 
 export type RingGeom = {
   cx: number // ring axis, viewport px
@@ -108,7 +182,7 @@ export type RingGeom = {
 const PERSP = 2.85
 /** the widest a preview gets on the ring, × the unit card width
  *  (RING_SIZE max × the depth factor at the front) */
-const RING_MAX_W = 0.49 * (PERSP / (PERSP - 1))
+const RING_MAX_W = 0.74 * (PERSP / (PERSP - 1))
 /** horizontal reach of a preview's centre during the turn, × R (the extreme
  *  of sin(a) · f / (f − R·cos a)) */
 const RING_REACH = 1.07
@@ -116,8 +190,8 @@ const RING_REACH = 1.07
 /** the unit card width the ring sizes are measured against, px */
 export function ringCardW(vw: number) {
   const desk = vw >= 1024
-  const base = desk ? Math.min(250, Math.max(180, vw * 0.17)) : Math.min(200, vw * 0.46)
-  const scale = desk ? 1 : Math.min(0.9, Math.max(0.62, vw / 960))
+  const base = desk ? Math.min(250, Math.max(180, vw * 0.17)) : Math.min(200, vw * 0.44)
+  const scale = desk ? 1 : Math.min(0.9, Math.max(0.6, vw / 960))
   // the previews fill the window: larger than the reference's ring, which
   // turned on an open page
   return base * scale * (desk ? 1.15 : 1.3)
@@ -137,9 +211,14 @@ export function ringGeom(vw: number, vh: number): RingGeom {
   const bot = win.top + win.height - win.status - inset
   const cy = (top + bot) / 2
   const room = win.width / 2 - inset - halfW
-  let R = win.desk ? Math.min(win.width * 0.32, vh * 0.42) : Math.min(win.width * 0.3, vh * 0.16)
+  let R = win.desk ? Math.min(win.width * 0.32, vh * 0.42) : Math.min(win.width * 0.34, vh * 0.2)
   R = Math.max(40, Math.min(R, room / RING_REACH))
-  const ampY = Math.max(0, ((bot - top) / 2 - halfH) / front)
+  // the vertical spread: on desktop the frontmost preview at ±1 stays inside
+  // the window even as it passes the front; on phones the window is tall
+  // and narrow, so the ring is given more of that height (a preview may
+  // touch the bar or the status strip for a moment as it passes the front)
+  const spread = win.desk ? 1 : 1.3
+  const ampY = Math.max(0, (((bot - top) / 2 - halfH) / front) * spread)
   return { cx, cy, R, f: R * PERSP, ampY }
 }
 
@@ -151,7 +230,7 @@ export function ringGeom(vw: number, vh: number): RingGeom {
  *   closing line appears over it → a short hold before the page moves on.
  */
 export function pinBudget(_vw: number, vh: number) {
-  const enterEnd = 1.5 * vh
+  const enterEnd = 0.9 * vh
   const headEnd = enterEnd + 1.7 * vh
   const spinEnd = headEnd + SPIN_VH * vh
   const endEnd = spinEnd + 1.5 * vh

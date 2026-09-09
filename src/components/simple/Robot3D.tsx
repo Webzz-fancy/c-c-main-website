@@ -265,16 +265,13 @@ function RobotModel({ src, scrollProgress, onFirstFrame }: { src: string; scroll
     g.scale.x = 1 - breathe * 0.35
     g.scale.z = 1 - breathe * 0.35
     g.position.y = Math.sin(t * 0.62) * 0.006 - 0.46
-    // settle into second section: same handoff ramp as the page's robot
-    // journey, so the pose lands exactly when the body reaches its perch.
-    // The page hands us an already-smoothed scroll value → apply it
-    // directly (a ~60ms damp only guards one-frame jumps, e.g. a mid-page
-    // reload). The robot stays perfectly UPRIGHT — no roll, no pitch. The
-    // 45° is a horizontal turn (yaw) to the LEFT, so it faces the content
-    // on the left side of the section in a three-quarter view (face still
-    // visible).
+    // the robot stands turned 45° toward the type on its left (a
+    // three-quarter view, face visible) and turns a touch further as the
+    // page scrolls (the page hands us an already-smoothed scroll value; the
+    // damp only guards one-frame jumps, e.g. a mid-page reload). It stays
+    // perfectly UPRIGHT — the turn is horizontal (yaw) only.
     const s = handoff(scrollProgress)
-    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, (-Math.PI / 4) * s, 16, dt)
+    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, -Math.PI / 4 - (Math.PI / 18) * s, 16, dt)
     g.rotation.z = THREE.MathUtils.damp(g.rotation.z, 0, 16, dt)
     g.rotation.x = THREE.MathUtils.damp(g.rotation.x, 0, 16, dt)
   })
@@ -332,22 +329,13 @@ function Face3D({ scrollProgress }: { scrollProgress: number }) {
     const { x, y, active } = pointer.current
     const vw = typeof window !== 'undefined' ? window.innerWidth : 1200
     const vh = typeof window !== 'undefined' ? window.innerHeight : 800
-    // gaze anchor follows the robot's journey (same handoff ramp + perch
-    // formula as SimplePage), so eye tracking stays correct while it moves
+    // gaze anchor: where the face is on screen (the robot stands on the
+    // right of the hero on desktop, under the type on phones, and rises in
+    // parallax as the hero scrolls — the same formula as SimplePage)
     const desk = vw >= 1024
-    const rs = handoff(scrollProgress)
-    let faceCX: number
-    let faceCY: number
-    if (desk) {
-      const secH = vh * 0.92
-      const perchX = vw * 0.773
-      const perchFaceY = 0.42 * secH - 0.075 * vh // face sits above the body's centre
-      faceCX = vw * 0.5 + (perchX - vw * 0.5) * rs
-      faceCY = vh * 0.405 + (perchFaceY - vh * 0.405) * rs
-    } else {
-      faceCX = vw * 0.5 + (vw * 0.62 - vw * 0.5) * rs
-      faceCY = vh * 0.44 + (vh * 0.28 - vh * 0.44) * rs
-    }
+    const scrolled = scrollProgress * vh
+    const faceCX = desk ? vw * 0.72 : vw * 0.5
+    const faceCY = (desk ? vh * 0.405 : vh * 0.65) - scrolled * 0.35
 
     let tx: number, ty: number
     if (active && !coarse) {

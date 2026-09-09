@@ -1,18 +1,17 @@
 /**
- * The robot's journey from the hero to its section-2 perch — one ramp shared
- * by SimplePage (position) and Robot3D (the 45° turn + gaze anchor), so pose
- * and position always finish together.
+ * The robot's turn through the hero — one ramp shared by SimplePage and
+ * Robot3D, so pose and position always agree.
  *
- * Domain: the pre-pin scroll, 0 at the top of the page → 1 when section 2 is
- * fully in view (the pin starts). One long, gentle ramp that lasts the whole
- * way: the robot glides up-right while the page scrolls under it and lands
- * on its perch exactly as the section settles into place.
+ * Domain: the hero scroll, 0 at the top of the page → 1 when the hero has
+ * scrolled away. The robot stands on the right of the hero (under the type
+ * on phones) and, as the visitor scrolls, turns a little toward the type
+ * while it rides out with the hero — a gentle, monotonic ramp.
  */
-export const HANDOFF_START = 0.12
-export const HANDOFF_END = 0.97
+export const TURN_START = 0.05
+export const TURN_END = 0.9
 
 const smoothstep = (t: number) => t * t * (3 - 2 * t)
 
-/** 0 in the hero → 1 once the perch is reached */
+/** 0 at rest → 1 fully turned */
 export const handoff = (p: number) =>
-  smoothstep(Math.max(0, Math.min(1, (p - HANDOFF_START) / (HANDOFF_END - HANDOFF_START))))
+  smoothstep(Math.max(0, Math.min(1, (p - TURN_START) / (TURN_END - TURN_START))))
