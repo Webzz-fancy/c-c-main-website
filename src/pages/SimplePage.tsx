@@ -11,7 +11,7 @@ import Loader from '../components/Loader'
 import Footer from '../components/Footer'
 import ScrollRope from '../components/ScrollRope'
 
-// the journey loop updates React state every frame while the arrow travels;
+// the journey loop updates React state every frame while the page scrolls;
 // these parts of the page don't depend on it, so they must not re-render
 // with it (keeps each frame's JS work down to what actually changes)
 const MemoHeader = memo(Header)
@@ -25,44 +25,70 @@ import { pinBudget } from '../components/simple/lineGeom'
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 
 /**
- * Arrow + dotted trail — behaviour reproduced from the project.mp4 reference:
+ * The dotted trail — from the project.mp4 reference:
  *
- *   There is NO pre-existing dotted path on the page.
- *   The arrow travels (scroll-driven). Wherever it has already travelled,
- *   the dotted trail exists — nothing before the arrow, nothing after it.
+ *   There is NO pre-existing dotted path on the page. The line draws itself
+ *   with the scroll: wherever the scroll has already reached, the dotted
+ *   trail exists — nothing after it.
  *
- * One bezier path in pixel space over the hero+section-2 area. Each frame the
- * dotted path is emitted from the start exactly as far as the arrow has gone
- * (a thin-stroke repaint — no mask surfaces). The arrow sits at the same arc
- * length, so the two are synchronized by construction.
+ * One smooth wave in pixel space from behind the robot to the start of
+ * section 2. Each frame the dotted path is emitted from the start exactly as
+ * far as the scroll has drawn it (a thin-stroke repaint — no mask surfaces).
  *
- * The trail + arrow are split in two: part A rides the hero, part B rides
- * section 2 (both in normal flow). They hand the arrow over exactly at the
- * hero/section boundary — the arrow is pixel-identical on both sides of it.
+ * The trail is split in two: part A rides the hero, part B rides section 2
+ * (both in normal flow). They hand over exactly at the hero/section
+ * boundary — the line is pixel-identical on both sides of it.
  */
 
-// The travel path, in pixel space, laid out on the measured hero and
-// section 2: it starts behind the robot (on the right of the hero), curves
-// down and left under the type, crosses into section 2 and arrives — as an
-// arrow pointing right, the reference's "A → B" — in the opening row of
-// section 2, beside its subheading, just as the cards rise under it.
+// The travel path, in pixel space, laid out on the measured hero: a dotted
+// line that draws itself with the scroll, from behind the robot down through
+// the hero to the start of section 2, as one smooth wave — every joint is
+// tangent-continuous (the handle on each side of a joint is the mirror of
+// the other), so there is no corner anywhere along it.
 type Vec2 = [number, number]
 type Seg = [Vec2, Vec2, Vec2, Vec2]
 function pathSegs(w: number, H: number): Seg[] {
-  if (w >= 1024) {
-    return [
-      // hero: from behind the robot's waist, down-left
-      [[0.74 * w, 0.42 * H], [0.66 * w, 0.47 * H], [0.52 * w, 0.6 * H], [0.42 * w, 0.76 * H]],
-      // across the boundary, still down-left, bottoming out
-      [[0.42 * w, 0.76 * H], [0.32 * w, 0.92 * H], [0.16 * w, H - 30], [0.19 * w, H + 30]],
-      // the turn to the right, into the opening row
-      [[0.19 * w, H + 30], [0.226 * w, H + 102], [0.22 * w, H + 168], [0.33 * w, H + 168]],
-    ]
+  const desk = w >= 1024
+  // the wave's spine: the points it passes through, top to bottom, and the
+  // horizontal swing (the amplitude) at each
+  const x0 = desk ? 0.74 * w : 0.5 * w
+  const pts: Vec2[] = desk
+    ? [
+        [x0, 0.56 * H],
+        [0.6 * w, 0.72 * H],
+        [0.44 * w, 0.86 * H],
+        [0.3 * w, H],
+        [0.2 * w, H + 90],
+      ]
+    : [
+        [x0, 0.86 * H],
+        [0.36 * w, 0.95 * H],
+        [0.2 * w, H + 48],
+        [0.14 * w, H + 110],
+      ]
+  // Catmull-Rom → cubic Béziers: smooth through every point by construction
+  const segs: Seg[] = []
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)]
+    const p1 = pts[i]
+    const p2 = pts[i + 1]
+    const p3 = pts[Math.min(pts.length - 1, i + 2)]
+    const k = 1 / 6
+    segs.push([
+      p1,
+      [p1[0] + (p2[0] - p0[0]) * k, p1[1] + (p2[1] - p0[1]) * k],
+      [p2[0] - (p3[0] - p1[0]) * k, p2[1] - (p3[1] - p1[1]) * k],
+      p2,
+    ])
   }
-  return [
-    [[0.5 * w, 0.7 * H], [0.42 * w, 0.76 * H], [0.3 * w, 0.86 * H], [0.26 * w, 0.98 * H]],
-    [[0.26 * w, 0.98 * H], [0.22 * w, H + 0.03 * H], [0.3 * w, H + 103], [0.62 * w, H + 103]],
-  ]
+  // the wave: a sideways sway added on top of the spine, so the line reads
+  // as a wave rather than a bend — applied by displacing the control points
+  // and the joints together (the tangents stay continuous)
+  // (zero at the start, so the line sets off exactly behind the robot)
+  const amp = desk ? 0.05 * w : 0.07 * w
+  const total = pts[pts.length - 1][1] - pts[0][1]
+  const sway = (y: number) => Math.sin(((y - pts[0][1]) / total) * Math.PI * 2) * amp
+  return segs.map((seg) => seg.map(([x, y]) => [x + sway(y), y] as Vec2) as Seg)
 }
 
 function cubicAt(p0: Vec2, c1: Vec2, c2: Vec2, p1: Vec2, t: number): Vec2 {
@@ -77,18 +103,8 @@ function cubicAt(p0: Vec2, c1: Vec2, c2: Vec2, p1: Vec2, t: number): Vec2 {
   ]
 }
 
-/** tangent direction of the cubic at t, degrees */
-function cubicAngleAt(p0: Vec2, c1: Vec2, c2: Vec2, p1: Vec2, t: number): number {
-  const u = 1 - t
-  const dx = 3 * u * u * (c1[0] - p0[0]) + 6 * u * t * (c2[0] - c1[0]) + 3 * t * t * (p1[0] - c2[0])
-  const dy = 3 * u * u * (c1[1] - p0[1]) + 6 * u * t * (c2[1] - c1[1]) + 3 * t * t * (p1[1] - c2[1])
-  return (Math.atan2(dy, dx) * 180) / Math.PI
-}
-
 type TrailGeom = {
   pts: Vec2[]
-  /** tangent angle at each point (deg, unwrapped — no ±180° seams) */
-  angs: number[]
   cum: number[]
   total: number
   /** "x y" per point, part A (hero+second area coordinates) */
@@ -106,20 +122,11 @@ function buildTrail(areaW: number, heroH: number): TrailGeom {
 
   const STEPS = 120
   const pts: Vec2[] = []
-  const angs: number[] = []
   for (let s = 0; s < segs.length; s++) {
     const [p0, c1, c2, p1] = segs[s]
     // joint points are shared between segments — emit them once
     const start = s === 0 ? 0 : 1
-    for (let i = start; i <= STEPS; i++) {
-      pts.push(cubicAt(p0, c1, c2, p1, i / STEPS))
-      let ang = cubicAngleAt(p0, c1, c2, p1, i / STEPS)
-      // unwrap against the previous angle so interpolation never crosses a seam
-      const prev = angs.length ? angs[angs.length - 1] : ang
-      while (ang - prev > 180) ang -= 360
-      while (ang - prev < -180) ang += 360
-      angs.push(ang)
-    }
+    for (let i = start; i <= STEPS; i++) pts.push(cubicAt(p0, c1, c2, p1, i / STEPS))
   }
 
   const cum: number[] = [0]
@@ -145,7 +152,7 @@ function buildTrail(areaW: number, heroH: number): TrailGeom {
 
   const strA = pts.map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`)
   const strB = pts.map((p) => `${p[0].toFixed(1)} ${(p[1] - heroH).toFixed(1)}`)
-  return { pts, angs, cum, total: cum[cum.length - 1], strA, strB, Lb, switchY }
+  return { pts, cum, total: cum[cum.length - 1], strA, strB, Lb, switchY }
 }
 
 /** index of the last sampled point at or before arc length `dist` */
@@ -185,21 +192,6 @@ function trailD(g: TrailGeom, from: number, to: number, strs: string[], dy: numb
   return `M ${at(a)}${mid} L ${at(b)}`
 }
 
-function pointAt(g: TrailGeom, dist: number): { x: number; y: number; ang: number } {
-  const { pts, angs, cum, total } = g
-  const dd = Math.max(0, Math.min(total, dist))
-  const lo = indexAt(g, dd)
-  const span = cum[lo + 1] - cum[lo] || 1
-  const t = (dd - cum[lo]) / span
-  const x = pts[lo][0] + (pts[lo + 1][0] - pts[lo][0]) * t
-  const y = pts[lo][1] + (pts[lo + 1][1] - pts[lo][1]) * t
-  // the arrow's heading is the curve's true tangent, interpolated — it
-  // turns continuously instead of ticking from one polyline segment to the next
-  const ang = angs[lo] + (angs[lo + 1] - angs[lo]) * t
-  return { x, y, ang }
-}
-
-const TRAIL_LAG = 34 // trail tail stays this many px behind the (bigger) arrow tip
 const DASH = '12 11' // the trail's dot pattern (period 23px)
 const DASH_PERIOD = 23
 
@@ -207,8 +199,8 @@ const DASH_PERIOD = 23
  * The shared smoothed scroll scalar is a critically-damped second-order
  * follower of the raw scroll. Scroll arrives in steps (wheel notches); a
  * plain exponential follower turns each step into a velocity JUMP — the
- * arrow visibly kicks on every notch. A second-order follower has continuous
- * velocity, so the arrow, the robot journey, the section reveals and the
+ * line visibly kicks on every notch. A second-order follower has continuous
+ * velocity, so the trail, the robot, the section reveals and the
  * section-3 phases all glide through one continuous, shared clock.
  * SMOOTH_OMEGA is the natural frequency (rad/s): higher = tighter tracking.
  */
@@ -221,9 +213,7 @@ export default function SimplePage() {
   const pinWrapRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const pathARef = useRef<SVGPathElement>(null)
-  const arrowARef = useRef<HTMLDivElement>(null)
   const pathBRef = useRef<SVGPathElement>(null)
-  const arrowBRef = useRef<HTMLDivElement>(null)
   const trailBRef = useRef<HTMLDivElement>(null)
   const robotBoxRef = useRef<HTMLDivElement>(null)
   const trailGeom = useRef<TrailGeom | null>(null)
@@ -254,7 +244,7 @@ export default function SimplePage() {
   }
   const progressRef = useRef(0)
   // smoothed scroll scalar (fraction of the whole page) — the single shared
-  // input for the trail, the arrow, the robot journey and section 3 — and
+  // input for the trail, the robot, the section reveals and section 3 — and
   // its velocity (the follower is second-order)
   const smoothRef = useRef(0)
   const smoothVelRef = useRef(0)
@@ -265,55 +255,35 @@ export default function SimplePage() {
   const [loaderGone, setLoaderGone] = useState(false)
   const [robotReady, setRobotReady] = useState(false)
 
-  // trail part A (over the hero) + part B (over the frozen section 2) — both
-  // derived from the same smoothed value, written directly to the DOM.
+  // trail part A (over the hero) + part B (over section 2) — both derived
+  // from the same smoothed value, written directly to the DOM: the dotted
+  // line exists exactly as far as it has been drawn
   const applyARef = useRef<(drawn: number) => void>(() => {})
   const lastA = useRef(-1)
   applyARef.current = (drawn) => {
     const g = trailGeom.current
-    const arrow = arrowARef.current
     const path = pathARef.current
-    if (!g || !arrow) return
-    const reveal = Math.max(0, Math.min(g.Lb, drawn - TRAIL_LAG))
-    if (path && Math.abs(reveal - lastA.current) > 0.05) {
+    if (!g || !path) return
+    const reveal = Math.max(0, Math.min(g.Lb, drawn))
+    if (Math.abs(reveal - lastA.current) > 0.05) {
       lastA.current = reveal
       path.setAttribute('d', trailD(g, 0, reveal, g.strA, 0))
     }
-    const { x, y, ang } = pointAt(g, drawn)
-    // arrow fades in from behind the robot, then hands over to part B at the
-    // hero/section boundary
-    let op = drawn <= 0.02 * g.total ? 0 : Math.min(1, (drawn - 0.02 * g.total) / (0.08 * g.total))
-    if (drawn >= g.Lb) op = 0
-    arrow.style.opacity = op.toFixed(3)
-    const grow = 0.9 + 0.1 * Math.min(1, (drawn / g.total) * 20)
-    arrow.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -50%) rotate(${ang.toFixed(2)}deg) scale(${grow.toFixed(3)})`
   }
 
-  const applyBRef = useRef<(pA: number, drawn: number) => void>(() => {})
+  const applyBRef = useRef<(drawn: number) => void>(() => {})
   const lastB = useRef(-1)
-  applyBRef.current = (pA, drawn) => {
+  applyBRef.current = (drawn) => {
     const g = trailGeom.current
     const hero = heroRef.current
-    const arrow = arrowBRef.current
     const path = pathBRef.current
-    if (!g || !arrow || !hero) return
+    if (!g || !path || !hero) return
     const heroH = hero.offsetHeight
-    const reveal = Math.max(g.Lb, Math.min(g.total, drawn - TRAIL_LAG))
-    if (path && Math.abs(reveal - lastB.current) > 0.05) {
+    const reveal = Math.max(g.Lb, Math.min(g.total, drawn))
+    if (Math.abs(reveal - lastB.current) > 0.05) {
       lastB.current = reveal
       path.setAttribute('d', trailD(g, g.Lb, reveal, g.strB, heroH))
     }
-    const { x, y, ang } = pointAt(g, drawn)
-    const ay = y - heroH
-    let op = drawn < g.Lb ? 0 : 1
-    if (pA > 0.9) {
-      // flies out along its tangent while fading, as the journey completes
-      const e = (pA - 0.9) / 0.1
-      op *= 1 - e
-    }
-    arrow.style.opacity = op.toFixed(3)
-    const grow = 0.9 + 0.1 * Math.min(1, (drawn / g.total) * 20)
-    arrow.style.transform = `translate(${x.toFixed(1)}px, ${ay.toFixed(1)}px) translate(-50%, -50%) rotate(${ang.toFixed(2)}deg) scale(${grow.toFixed(3)})`
   }
 
   // scroll progress: 0 at the top → 1 at the very bottom of the page.
@@ -400,7 +370,7 @@ export default function SimplePage() {
         wrap.style.height = Math.round(stageH + budget.pinPx) + 'px'
       })
       applyARef.current(0)
-      applyBRef.current(0, 0)
+      applyBRef.current(0)
     }
     build()
     window.addEventListener('resize', build)
@@ -430,7 +400,7 @@ export default function SimplePage() {
    *
    * Smoothness: scroll arrives in steps (wheel notches). One critically-
    * damped follower (SMOOTH_OMEGA) turns it into a scalar with continuous
-   * velocity, and the trail, the arrow, the robot, the section-2 reveals
+   * velocity, and the trail, the robot, the section-2 reveals
    * and the section-3 phases all derive from that SAME scalar — one shared
    * clock.
    */
@@ -497,8 +467,8 @@ export default function SimplePage() {
       // (phones), in parallax — it rises at a fraction of the scroll speed,
       // and when the hero's bottom edge catches up with it, it rides out of
       // the top with the hero
-      const hx = desk ? w * 0.74 : w * 0.5
-      const hy = desk ? h * 0.48 : h * 0.71
+      const hx = desk ? w * 0.72 : w * 0.5
+      const hy = desk ? h * 0.5 : h * 0.71
       const robotHalfH = box.offsetHeight / 2
       const parallaxY = hy - px * 0.35
       const edgeY = G.heroH - px - robotHalfH - 12
@@ -511,10 +481,10 @@ export default function SimplePage() {
       const rollFrom = G.heroH - h * 0.55
       const roll = clamp01((px - rollFrom) / Math.max(1, G.pinStart - rollFrom))
 
-      // trail + arrow derive from the same scalar — synced by construction
+      // the trail draws with the same scalar: complete as section 2 arrives
       const drawn = pA * G.total
       applyARef.current(drawn)
-      applyBRef.current(pA, drawn)
+      applyBRef.current(drawn)
 
       if (Math.abs(pA - lastPA) > 0.0004) {
         lastPA = pA
@@ -539,12 +509,6 @@ export default function SimplePage() {
     return () => cancelAnimationFrame(raf)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  const arrowSvg = (
-    <svg width="46" height="46" viewBox="0 0 32 32" fill="none" className="drop-shadow-[0_8px_16px_rgba(0,0,0,0.32)]">
-      <path d="M28.2 4.2L4.1 14.6l8.4 4.7 3.7 9.1 12-24.2z" fill="currentColor" />
-    </svg>
-  )
 
   return (
     <div ref={wrapperRef} className="relative min-h-screen bg-cream">
@@ -571,11 +535,11 @@ export default function SimplePage() {
             <MemoHero revealed={loaderGone} />
           </div>
           {/* own compositor layer: the trail repaints every frame while the
-              arrow travels, and must not drag the hero's blurred glows into
+              line draws, and must not drag the hero's blurred glows into
               that repaint */}
           <div className="pointer-events-none absolute inset-0 z-[5]" style={{ willChange: 'transform' }} aria-hidden>
             <svg className="absolute inset-0 block h-full w-full">
-              {/* the trail exists exactly as far as the arrow has travelled */}
+              {/* the trail exists exactly as far as it has been drawn */}
               <path
                 ref={pathARef}
                 d=""
@@ -587,9 +551,6 @@ export default function SimplePage() {
                 strokeDasharray={DASH}
               />
             </svg>
-            <div ref={arrowARef} className="absolute left-0 top-0 text-ink will-change-transform" style={{ opacity: 0 }}>
-              {arrowSvg}
-            </div>
           </div>
         </div>
 
@@ -626,9 +587,6 @@ export default function SimplePage() {
                     strokeDasharray={DASH}
                   />
                 </svg>
-                <div ref={arrowBRef} className="absolute left-0 top-0 text-ink will-change-transform" style={{ opacity: 0 }}>
-                  {arrowSvg}
-                </div>
               </div>
             </div>
 

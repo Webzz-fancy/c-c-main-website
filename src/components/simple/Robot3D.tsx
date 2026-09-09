@@ -265,14 +265,13 @@ function RobotModel({ src, scrollProgress, onFirstFrame }: { src: string; scroll
     g.scale.x = 1 - breathe * 0.35
     g.scale.z = 1 - breathe * 0.35
     g.position.y = Math.sin(t * 0.62) * 0.006 - 0.46
-    // the turn through the hero: the same ramp as the page's robot
-    // journey. The page hands us an already-smoothed scroll value → apply
-    // it directly (a ~60ms damp only guards one-frame jumps, e.g. a
-    // mid-page reload). The robot stays perfectly UPRIGHT — no roll, no
-    // pitch. The turn is horizontal (yaw) to the LEFT, toward the type on
-    // the left of the hero, a three-quarter view at most (face visible).
+    // the robot stands turned 45° toward the type on its left (a
+    // three-quarter view, face visible) and turns a touch further as the
+    // page scrolls (the page hands us an already-smoothed scroll value; the
+    // damp only guards one-frame jumps, e.g. a mid-page reload). It stays
+    // perfectly UPRIGHT — the turn is horizontal (yaw) only.
     const s = handoff(scrollProgress)
-    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, (-Math.PI / 5) * s, 16, dt)
+    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, -Math.PI / 4 - (Math.PI / 18) * s, 16, dt)
     g.rotation.z = THREE.MathUtils.damp(g.rotation.z, 0, 16, dt)
     g.rotation.x = THREE.MathUtils.damp(g.rotation.x, 0, 16, dt)
   })
@@ -335,7 +334,7 @@ function Face3D({ scrollProgress }: { scrollProgress: number }) {
     // parallax as the hero scrolls — the same formula as SimplePage)
     const desk = vw >= 1024
     const scrolled = scrollProgress * vh
-    const faceCX = desk ? vw * 0.74 : vw * 0.5
+    const faceCX = desk ? vw * 0.72 : vw * 0.5
     const faceCY = (desk ? vh * 0.405 : vh * 0.65) - scrolled * 0.35
 
     let tx: number, ty: number
