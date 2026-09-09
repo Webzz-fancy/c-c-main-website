@@ -1,7 +1,9 @@
-import { memo, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import SimpleHero from '../components/simple/SimpleHero'
 import SimpleSecond from '../components/simple/SimpleSecond'
 import SimpleThird, { THIRD_BG } from '../components/simple/SimpleThird'
+import ProjectSheet from '../components/simple/ProjectSheet'
+import { PROJECTS } from '../components/simple/lineGeom'
 import SimpleTalk from '../components/simple/SimpleTalk'
 import Robot3D, { preloadRobot } from '../components/simple/Robot3D'
 import Header from '../components/Header'
@@ -241,6 +243,10 @@ export default function SimplePage() {
   const [progress, setProgress] = useState(0)
   const [roll, setRoll] = useState(0)
   const [third, setThird] = useState({ q1: 0, q2: 0, qSpin: 0, qEnd: 0 })
+  // the build open in the project sheet (null = closed)
+  const [openIdx, setOpenIdx] = useState<number | null>(null)
+  const openProject = useCallback((i: number) => setOpenIdx(i), [])
+  const closeProject = useCallback(() => setOpenIdx(null), [])
   // the Websites card: down to the projects window, opened
   const goProjects = () => {
     const G = geom.current
@@ -630,7 +636,7 @@ export default function SimplePage() {
         <div ref={pinWrapRef} id="projects" className="relative">
           <div ref={stageRef} className="sticky top-0 z-0 h-[100svh] overflow-hidden" style={{ backgroundColor: THIRD_BG }}>
             {/* section 3 — the desktop, the window, the heading, the ring's turn, the closing line */}
-            <MemoThird q1={third.q1} q2={third.q2} qSpin={third.qSpin} qEnd={third.qEnd} />
+            <MemoThird q1={third.q1} q2={third.q2} qSpin={third.qSpin} qEnd={third.qEnd} onOpen={openProject} />
           </div>
         </div>
 
@@ -639,6 +645,9 @@ export default function SimplePage() {
 
         {/* same footer as the main page */}
         <MemoFooter />
+
+        {/* the project sheet: a build from the ring, opened */}
+        <ProjectSheet project={openIdx === null ? null : PROJECTS[openIdx]} index={openIdx ?? 0} onClose={closeProject} />
       </>
     </div>
   )

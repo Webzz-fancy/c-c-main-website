@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { projectShot } from './ProjectSheet'
 import {
   CARD_ASPECT,
   PROJECTS,
@@ -24,7 +25,7 @@ import {
  *           beat behind — the project simply coming up.
  *   q2    — inside the window: "Projects we make" rises line by line, the
  *           subline with it; the progress dots in the title bar count along.
- *   qSpin — the presentation: the heading blurs away as the ten previews
+ *   qSpin — the presentation: the heading blurs away as the six previews
  *           rise into the window on a ring around a vertical axis (up + out
  *           of a blur, the same move as the window); the ring turns exactly
  *           ONCE, decelerating into its rest pose.
@@ -57,7 +58,7 @@ const INK = '#1B1A17'
 
 const HEAD_LINES = ['Projects', 'we make']
 const SUB =
-  'Ten recent Simple builds. Each one mapped before it was designed, built to load fast, and structured so people and AI can find it and understand it.'
+  'Six recent Simple builds. Each one mapped before it was designed, built to load fast, and structured so people and AI can find it and understand it. Click a build to look closer.'
 const CLOSE_LINES = ['Made to', 'be found.']
 
 /**
@@ -90,7 +91,7 @@ const RING_IN_END = 0.2
  *  and blur(15px) */
 const RISE_BLUR = 15
 
-type Props = { q1: number; q2: number; qSpin: number; qEnd: number }
+type Props = { q1: number; q2: number; qSpin: number; qEnd: number; onOpen?: (index: number) => void }
 
 /** an n-gon path (the reference's progress dots are polygons) */
 function polygonPoints(n: number, r: number, cx: number, cy: number) {
@@ -102,7 +103,7 @@ function polygonPoints(n: number, r: number, cx: number, cy: number) {
   return pts.join(' ')
 }
 
-export default function SimpleThird({ q1, q2, qSpin, qEnd }: Props) {
+export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
   const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }))
   useEffect(() => {
     const onResize = () => setVp({ w: window.innerWidth, h: window.innerHeight })
@@ -183,7 +184,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd }: Props) {
       </div>
 
       {/* ---- everything that plays on the desktop ---- */}
-      <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden" data-third-overlay aria-hidden>
+      <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden" data-third-overlay>
         {/* ---- the window ---- */}
         {winVisible && (
           <div
@@ -265,10 +266,10 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd }: Props) {
                 </p>
               </div>
 
-              {/* the ten projects on the ring — one element each. Stacked by
+              {/* the six projects on the ring — one element each. Stacked by
                   depth so previews at the front of the ring paint on top. The
                   ring lives in window space: viewport px minus the window's
-                  origin. */}
+                  origin. Each is a button: it opens the build's sheet. */}
               {PROJECTS.map((p, i) => {
                 // angle: rest angle minus the remaining part of the one turn;
                 // the ring turns clockwise seen from above (front moves right,
@@ -294,10 +295,17 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd }: Props) {
                 const shade = far * 0.14
                 const z = 100 + Math.round((rz + 1) * 50)
                 const blur = (1 - inQ) * RISE_BLUR + back * 4
+                // clickable once it has arrived and is not too far round the
+                // back (the front ones are what the eye is on)
+                const clickable = inQ > 0.95 && rz > -0.6 && !!onOpen
                 return (
-                  <div
-                    key={p.name}
-                    className="absolute left-0 top-0 will-change-transform"
+                  <button
+                    key={p.slug}
+                    type="button"
+                    tabIndex={clickable ? 0 : -1}
+                    aria-label={`${p.name}: look closer`}
+                    onClick={clickable ? () => onOpen(i) : undefined}
+                    className={`group absolute left-0 top-0 block appearance-none border-0 bg-transparent p-0 text-left will-change-transform ${clickable ? 'pointer-events-auto cursor-pointer' : ''}`}
                     style={{
                       width: cw,
                       transform: `translate3d(${(cx - cw / 2).toFixed(1)}px, ${(cy - (cw * CARD_ASPECT) / 2 + inY).toFixed(1)}px, 0)`,
@@ -308,30 +316,34 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd }: Props) {
                     }}
                   >
                     {/* the preview: a small browser sheet — its strip with the
-                        name and the tag, and the page below; becomes the site's
-                        hero screenshot once the links are in */}
-                    <div
-                      className="relative overflow-hidden rounded-[6px] border border-ink/80 bg-white shadow-[0_16px_36px_-16px_rgba(60,40,5,0.45)]"
-                    >
-                      <div className="flex items-center justify-between border-b border-ink/60 px-[7%] py-[4%]" style={{ backgroundColor: CHROME }}>
-                        <span className="font-mono text-[clamp(8px,0.62vw,11px)] tracking-[0.04em] text-ink/85">
+                        name and the tag, and the site's home page below */}
+                    <div className="relative overflow-hidden rounded-[6px] border border-ink/80 bg-white shadow-[0_16px_36px_-16px_rgba(60,40,5,0.45)] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:-translate-y-1">
+                      <div className="flex items-center justify-between gap-2 border-b border-ink/60 px-[6%] py-[3.5%]" style={{ backgroundColor: CHROME }}>
+                        <span className="truncate whitespace-nowrap font-mono text-[clamp(8px,0.62vw,11px)] tracking-[0.04em] text-ink/85">
                           {String(i + 1).padStart(2, '0')}&nbsp;{p.name}
                         </span>
-                        <span className="font-mono text-[clamp(7px,0.55vw,10px)] uppercase tracking-[0.12em] text-ink/55">{p.tag}</span>
+                        {desk && <span className="shrink-0 whitespace-nowrap font-mono text-[clamp(7px,0.55vw,10px)] uppercase tracking-[0.12em] text-ink/55">{p.tag}</span>}
                       </div>
-                      <div className="relative aspect-[3/2] w-full" style={{ backgroundColor: p.tint }}>
-                        {/* an abstract page: a heading block, a line of copy,
-                            a picture, in the project's own tone */}
-                        <div className="absolute left-[7%] top-[12%] h-[11%] w-[46%] rounded-[2px]" style={{ backgroundColor: p.ink, opacity: 0.85 }} />
-                        <div className="absolute left-[7%] top-[29%] h-[5%] w-[34%] rounded-[2px]" style={{ backgroundColor: p.ink, opacity: 0.35 }} />
-                        <div className="absolute left-[7%] top-[38%] h-[5%] w-[40%] rounded-[2px]" style={{ backgroundColor: p.ink, opacity: 0.35 }} />
-                        <div className="absolute bottom-[12%] right-[7%] top-[12%] w-[36%] rounded-[3px] bg-white/70" />
-                        <div className="absolute bottom-[12%] left-[7%] h-[13%] w-[20%] rounded-[2px]" style={{ backgroundColor: p.ink }} />
+                      <div className="relative aspect-[16/10] w-full" style={{ backgroundColor: p.tint }}>
+                        <img
+                          src={projectShot(p.slug)}
+                          alt=""
+                          className="absolute inset-0 h-full w-full object-cover object-top"
+                          loading="lazy"
+                          decoding="async"
+                          draggable={false}
+                        />
+                        {/* the invitation, on hover */}
+                        <div className="absolute inset-x-0 bottom-0 flex justify-end p-[5%] opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                          <span className="rounded-full border border-white/80 bg-ink/80 px-[3.5%] py-[1.5%] font-mono text-[clamp(7px,0.55vw,10px)] uppercase tracking-[0.14em] text-white">
+                            Look closer
+                          </span>
+                        </div>
                       </div>
                       {/* far-side shade while on the ring */}
-                      <div className="absolute inset-0 bg-ink" style={{ opacity: shade.toFixed(3) }} />
+                      <div className="pointer-events-none absolute inset-0 bg-ink" style={{ opacity: shade.toFixed(3) }} />
                     </div>
-                  </div>
+                  </button>
                 )
               })}
 

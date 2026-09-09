@@ -29,8 +29,25 @@ for (const [slug, url, extra] of SITES) {
     await page.mouse.move(720, 450)
     await page.waitForTimeout(1500)
     await page.evaluate(() => window.scrollTo(0, 0))
-    // the hosting badge is not part of the work
-    await page.addStyleTag({ content: '#netlify-badge, [id*="netlify-badge"], a[href*="netlify_badge"], .netlify-badge { display: none !important; }' })
+    // the hosting badge is not part of the work: hide any small fixed
+    // widget pinned to the bottom right corner (shadow roots included)
+    await page.evaluate(() => {
+      const hide = (root) => {
+        for (const el of root.querySelectorAll('*')) {
+          if (el.shadowRoot) hide(el.shadowRoot)
+          const cs = getComputedStyle(el)
+          if (cs.position !== 'fixed') continue
+          const r = el.getBoundingClientRect()
+          if (r.width < 420 && r.height < 240 && r.right > innerWidth - 60 && r.bottom > innerHeight - 60) {
+            el.style.setProperty('display', 'none', 'important')
+          }
+        }
+      }
+      hide(document)
+      for (const f of document.querySelectorAll('iframe')) {
+        if (/netlify/i.test(f.src || '')) f.style.setProperty('display', 'none', 'important')
+      }
+    })
     await page.waitForTimeout(800)
     await page.screenshot({ path: `public/projects/${slug}.jpg`, type: 'jpeg', quality: 86 })
     console.log('ok', slug)
