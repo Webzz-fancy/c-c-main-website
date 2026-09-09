@@ -224,16 +224,18 @@ export function ringGeom(vw: number, vh: number): RingGeom {
 
 /**
  * Scroll budget for the pinned section-3 experience, in px of scroll:
- *   the entrance (section 2's copy leaves, the ground turns orange, the
- *   file appears and its window opens) → the heading rises inside the
+ *   the entrance — the window rises while the orange desktop is still
+ *   scrolling up into view (it starts `enterLead` px BEFORE the pin, and
+ *   is standing `enterEnd` px after it) → the heading rises inside the
  *   window → the ring's single turn → the ring comes to rest and the
  *   closing line appears over it → a short hold before the page moves on.
  */
 export function pinBudget(_vw: number, vh: number) {
-  const enterEnd = 0.9 * vh
-  const headEnd = enterEnd + 1.7 * vh
+  const enterLead = 0.7 * vh
+  const enterEnd = 0.15 * vh
+  const headEnd = enterEnd + 0.6 * vh
   const spinEnd = headEnd + SPIN_VH * vh
   const endEnd = spinEnd + 1.5 * vh
   const pinPx = endEnd + 0.35 * vh
-  return { enterEnd, headEnd, spinEnd, endEnd, pinPx }
+  return { enterLead, enterEnd, headEnd, spinEnd, endEnd, pinPx }
 }

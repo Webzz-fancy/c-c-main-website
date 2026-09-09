@@ -18,11 +18,12 @@ import {
  * happens here):
  *
  *   q1    — the entrance, kept simple: the section arrives as the orange
- *           desktop (it scrolls in under section 2 like any section) and
- *           pins; the projects window then rises from below the screen,
- *           out of focus, and settles into focus (the reference's own
- *           reveal: translateY + blur), its title bar first, its body a
- *           beat behind — the project simply coming up.
+ *           desktop (it scrolls in under section 2 like any section) and,
+ *           while it is still coming up the screen, the projects window
+ *           rises inside it from below, out of focus, and settles into
+ *           focus as the desktop pins (the reference's own reveal:
+ *           translateY + blur), its title bar first, its body a beat
+ *           behind — the project simply coming up with the ground.
  *   q2    — inside the window: "Projects we make" rises line by line, the
  *           subline with it; the progress dots in the title bar count along.
  *   qSpin — the presentation: the heading blurs away as the six previews
@@ -56,9 +57,13 @@ const PAPER = '#F6F2EA'
 const CHROME = '#EDE7DB'
 const INK = '#1B1A17'
 
-const HEAD_LINES = ['Projects', 'we make']
+const HEAD_LINES = ['Interactive', 'experiences.']
 const SUB =
-  'Six recent Simple builds. Each one mapped before it was designed, built to load fast, and structured so people and AI can find it and understand it. Click a build to look closer.'
+  'Six recent builds. Each one designed around what its visitors came to do, animated with purpose, quick to load, and structured so people and AI can find it. Click one to look closer.'
+/** the heading's letters rise one after the other; the stagger is set from
+ *  the letter count so the last letter is always standing by the end of q2 */
+const HEAD_LETTERS = HEAD_LINES.join('').length
+const HEAD_STAGGER = Math.min(0.03, 0.5 / HEAD_LETTERS)
 const CLOSE_LINES = ['Made to', 'be found.']
 
 /**
@@ -240,7 +245,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
                     const last = li === HEAD_LINES.length - 1
                     const letters = line.split('').map((ch, ci) => {
                       const i = offsets[li] + ci
-                      const lp = smooth(clamp01((q2 - i * 0.03) / 0.42))
+                      const lp = smooth(clamp01((q2 - i * HEAD_STAGGER) / 0.42))
                       return (
                         <span
                           key={ci}
@@ -400,7 +405,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
                 className="absolute inset-x-0 bottom-0 flex items-center justify-between border-t border-ink/70 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60"
                 style={{ height: win.status, backgroundColor: CHROME }}
               >
-                <span>Clause &amp; Code · Simple</span>
+                <span>Clause &amp; Code · Websites</span>
                 <span className="hidden sm:inline">Scroll to turn the ring</span>
                 <span className="tabular-nums">{stepLabel}</span>
               </div>

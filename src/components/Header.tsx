@@ -43,7 +43,6 @@ const NAV: NavItem[] = [
       },
     ],
   },
-  { label: 'About Us', href: '#about' },
 ]
 
 function Logo({ href }: { href: string }) {

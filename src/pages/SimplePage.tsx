@@ -220,10 +220,14 @@ export default function SimplePage() {
   const geom = useRef({
     heroH: 0,
     secH: 0,
+    /** section 2's card row: its top in the document and its height */
+    cardsTop: 0,
+    cardsH: 1,
     pinStart: 0,
     total: 0,
     Lb: 0,
     switchY: 0,
+    enterLead: 0,
     enterEnd: 1,
     headEnd: 2,
     spinEnd: 3,
@@ -231,7 +235,7 @@ export default function SimplePage() {
     pinPx: 100,
   })
   const [progress, setProgress] = useState(0)
-  const [roll, setRoll] = useState(0)
+  const [reveal, setReveal] = useState(0)
   const [third, setThird] = useState({ q1: 0, q2: 0, qSpin: 0, qEnd: 0 })
   // the build open in the project sheet (null = closed)
   const [openIdx, setOpenIdx] = useState<number | null>(null)
@@ -334,6 +338,10 @@ export default function SimplePage() {
       const h = window.innerHeight
       const heroH = hero.offsetHeight
       const secH = sec.offsetHeight
+      const cards = sec.querySelector<HTMLElement>('[data-cards]')
+      const cardsRect = cards?.getBoundingClientRect()
+      const cardsTop = cardsRect ? cardsRect.top + window.scrollY : heroH + secH * 0.5
+      const cardsH = cardsRect ? Math.max(1, cardsRect.height) : 1
       const g = buildTrail(w, heroH)
       trailGeom.current = g
       lastA.current = -1
@@ -346,11 +354,14 @@ export default function SimplePage() {
       geom.current = {
         heroH,
         secH,
+        cardsTop,
+        cardsH,
         // the pin starts where section 2 has scrolled fully away
         pinStart: heroH + secH,
         total: g.total,
         Lb: g.Lb,
         switchY: g.switchY,
+        enterLead: budget.enterLead,
         enterEnd: budget.enterEnd,
         headEnd: budget.headEnd,
         spinEnd: budget.spinEnd,
@@ -386,7 +397,7 @@ export default function SimplePage() {
   }, [])
 
   /**
-   * Master scroll loop — robot + trail + section 2's wheel + section 3.
+   * Master scroll loop — robot + trail + section 2's reveal + section 3.
    *
    *   · the hero stands with the robot on the right, facing the viewer (the
    *     trail emerges behind it)
@@ -395,7 +406,7 @@ export default function SimplePage() {
    *     toward the type; when the hero's bottom edge catches up with it, it
    *     rides out of the top with the hero — gone exactly as section 2
    *     arrives (and back the same way). It is NEVER scaled down.
-   *   · section 2 scrolls like any section; its wheel rolls with the scroll.
+   *   · section 2 scrolls like any section; its cards reveal with the scroll.
    *     Section 3 follows and pins; the projects window rises.
    *
    * Smoothness: scroll arrives in steps (wheel notches). One critically-
@@ -410,7 +421,7 @@ export default function SimplePage() {
     let raf = 0
     let last = performance.now()
     let lastPA = 0
-    let lastRoll = 0
+    let lastReveal = 0
     let lastThird = { q1: -1, q2: -1, qSpin: -1, qEnd: -1 }
 
     const tick = (now: number) => {
@@ -457,8 +468,10 @@ export default function SimplePage() {
       const pA = Math.max(0, Math.min(1, px / Math.max(1, G.heroH)))
       const pinLocal = Math.max(0, px - G.pinStart)
 
-      // section 3 phases (linear in scroll; SimpleThird eases them)
-      const q1 = clamp01(pinLocal / G.enterEnd)
+      // section 3 phases (linear in scroll; SimpleThird eases them) — the
+      // window's entrance starts before the pin, while the orange desktop is
+      // still coming up the screen, so the two arrive together
+      const q1 = clamp01((px - (G.pinStart - G.enterLead)) / Math.max(1, G.enterLead + G.enterEnd))
       const q2 = clamp01((pinLocal - G.enterEnd) / Math.max(1, G.headEnd - G.enterEnd))
       const qSpin = clamp01((pinLocal - G.headEnd) / Math.max(1, G.spinEnd - G.headEnd))
       const qEnd = clamp01((pinLocal - G.spinEnd) / Math.max(1, G.endEnd - G.spinEnd))
@@ -476,10 +489,12 @@ export default function SimplePage() {
       const baseY = desk ? h * 0.48 : h * 0.5
       box.style.transform = `translate(-50%, -50%) translate(${(hx - w / 2).toFixed(1)}px, ${(ty - baseY).toFixed(1)}px)`
 
-      // section 2's wheel: rolls from the moment the cards come up into
-      // view until the section has scrolled away
-      const rollFrom = G.heroH - h * 0.55
-      const roll = clamp01((px - rollFrom) / Math.max(1, G.pinStart - rollFrom))
+      // section 2's cards: they reveal with the scroll from the moment the
+      // row comes up over the bottom of the screen, and stand complete when
+      // the row reaches the middle of the screen (the line draws with it)
+      const revealFrom = G.cardsTop - h * 0.96
+      const revealTo = G.cardsTop + G.cardsH / 2 - h / 2
+      const reveal = clamp01((px - revealFrom) / Math.max(1, revealTo - revealFrom))
 
       // the trail draws with the same scalar: complete as section 2 arrives
       const drawn = pA * G.total
@@ -490,9 +505,9 @@ export default function SimplePage() {
         lastPA = pA
         setProgress(pA)
       }
-      if (Math.abs(roll - lastRoll) > 0.0006) {
-        lastRoll = roll
-        setRoll(roll)
+      if (Math.abs(reveal - lastReveal) > 0.0006) {
+        lastReveal = reveal
+        setReveal(reveal)
       }
       if (
         Math.abs(q1 - lastThird.q1) > 0.0008 ||
@@ -568,7 +583,7 @@ export default function SimplePage() {
 
         {/* ——— section 2 (in normal flow) + trail part B ——— */}
         <div ref={secondRef} className="relative z-[1]">
-          <SimpleSecond progress={progress} roll={roll} onProjects={goProjects} />
+          <SimpleSecond progress={progress} reveal={reveal} onProjects={goProjects} />
           <div
                 ref={trailBRef}
                 className="pointer-events-none absolute inset-0 z-[5]"
