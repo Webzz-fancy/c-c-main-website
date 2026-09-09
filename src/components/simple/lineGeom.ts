@@ -151,7 +151,7 @@ export function ringGeom(vw: number, vh: number): RingGeom {
  *   closing line appears over it → a short hold before the page moves on.
  */
 export function pinBudget(_vw: number, vh: number) {
-  const enterEnd = 1.5 * vh
+  const enterEnd = 0.9 * vh
   const headEnd = enterEnd + 1.7 * vh
   const spinEnd = headEnd + SPIN_VH * vh
   const endEnd = spinEnd + 1.5 * vh

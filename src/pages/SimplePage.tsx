@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import SimpleHero from '../components/simple/SimpleHero'
 import SimpleSecond from '../components/simple/SimpleSecond'
-import SimpleThird from '../components/simple/SimpleThird'
+import SimpleThird, { THIRD_BG } from '../components/simple/SimpleThird'
 import SimpleTalk from '../components/simple/SimpleTalk'
 import Robot3D, { preloadRobot } from '../components/simple/Robot3D'
 import Header from '../components/Header'
@@ -19,7 +19,6 @@ const MemoRope = memo(ScrollRope)
 const MemoThird = memo(SimpleThird)
 const MemoTalk = memo(SimpleTalk)
 import { pinBudget } from '../components/simple/lineGeom'
-import { handoff } from '../components/simple/journey'
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 
@@ -40,24 +39,29 @@ const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
  * hero/section boundary — the arrow is pixel-identical on both sides of it.
  */
 
-// Travel path, normalized to the hero+second area: down through the hero,
-// then one big smooth sweep right → down → left along the bottom of the
-// second section.
+// The travel path, in pixel space, laid out on the measured hero and
+// section 2: it starts behind the robot (on the right of the hero), curves
+// down and left under the type, crosses into section 2 and arrives — as an
+// arrow pointing right, the reference's "A → B" — in the opening row of
+// section 2, beside its subheading, just as the cards rise under it.
 type Vec2 = [number, number]
-const PATH_SEGS: [Vec2, Vec2, Vec2, Vec2][] = [
-  // hero: starts behind the robot (center), curves down-left
-  [[0.5, 0.394], [0.38, 0.4143], [0.292, 0.4565], [0.252, 0.5208]],
-  // second: continues left, then begins the long sweep
-  [[0.252, 0.5208], [0.212, 0.5869], [0.232, 0.6508], [0.312, 0.7022]],
-  // the big smooth sweep right — flows out along the robot's waist line
-  // (control points are tangent-continuous at the joints, so the travel
-  // reads as one flowing curve — no kinks)
-  [[0.312, 0.7022], [0.4396, 0.7836], [0.6042, 0.79], [0.7014, 0.794]],
-  // curves down on the right side of the sweep
-  [[0.7014, 0.794], [0.7674, 0.7969], [0.7931, 0.8623], [0.7764, 0.9115]],
-  // settles left along the bottom
-  [[0.7764, 0.9115], [0.766, 0.9415], [0.625, 0.9838], [0.5361, 0.9792]],
-]
+type Seg = [Vec2, Vec2, Vec2, Vec2]
+function pathSegs(w: number, H: number): Seg[] {
+  if (w >= 1024) {
+    return [
+      // hero: from behind the robot's waist, down-left
+      [[0.74 * w, 0.42 * H], [0.66 * w, 0.47 * H], [0.52 * w, 0.6 * H], [0.42 * w, 0.76 * H]],
+      // across the boundary, still down-left, bottoming out
+      [[0.42 * w, 0.76 * H], [0.32 * w, 0.92 * H], [0.16 * w, H - 30], [0.19 * w, H + 30]],
+      // the turn to the right, into the opening row
+      [[0.19 * w, H + 30], [0.226 * w, H + 102], [0.22 * w, H + 168], [0.33 * w, H + 168]],
+    ]
+  }
+  return [
+    [[0.5 * w, 0.7 * H], [0.42 * w, 0.76 * H], [0.3 * w, 0.86 * H], [0.26 * w, 0.98 * H]],
+    [[0.26 * w, 0.98 * H], [0.22 * w, H + 0.03 * H], [0.3 * w, H + 103], [0.62 * w, H + 103]],
+  ]
+}
 
 function cubicAt(p0: Vec2, c1: Vec2, c2: Vec2, p1: Vec2, t: number): Vec2 {
   const u = 1 - t
@@ -91,18 +95,12 @@ type TrailGeom = {
   strB: string[]
   /** arc length where the path crosses the hero/section boundary */
   Lb: number
-  /** document-y where cream ends and the blue plane begins (the hero's
-   *  straight bottom edge): the trail and the arrow switch colour there */
+  /** document-y of the hero's straight bottom edge (the seam between the two parts) */
   switchY: number
 }
 
-function buildTrail(areaW: number, areaH: number, heroH: number): TrailGeom {
-  const segs = PATH_SEGS.map(([p0, c1, c2, p1]) => [
-    [p0[0] * areaW, p0[1] * areaH],
-    [c1[0] * areaW, c1[1] * areaH],
-    [c2[0] * areaW, c2[1] * areaH],
-    [p1[0] * areaW, p1[1] * areaH],
-  ] as [Vec2, Vec2, Vec2, Vec2])
+function buildTrail(areaW: number, heroH: number): TrailGeom {
+  const segs = pathSegs(areaW, heroH)
 
   const STEPS = 120
   const pts: Vec2[] = []
@@ -129,7 +127,8 @@ function buildTrail(areaW: number, areaH: number, heroH: number): TrailGeom {
     cum.push(cum[i - 1] + Math.hypot(dx, dy))
   }
 
-  // the hero ends on a straight edge: cream above y = heroH, blue below
+  // the hero ends on a straight edge at y = heroH (cream on both sides now;
+  // kept as the seam where part A hands over to part B)
   const switchY = heroH
 
   // where does the path cross the hero/section boundary (y = heroH)?
@@ -220,11 +219,6 @@ export default function SimplePage() {
   const pinWrapRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const pathARef = useRef<SVGPathElement>(null)
-  const gradARef = useRef<SVGLinearGradientElement>(null)
-  const aStop1 = useRef<SVGStopElement>(null)
-  const aStop2 = useRef<SVGStopElement>(null)
-  const aStop3 = useRef<SVGStopElement>(null)
-  const aStop4 = useRef<SVGStopElement>(null)
   const arrowARef = useRef<HTMLDivElement>(null)
   const pathBRef = useRef<SVGPathElement>(null)
   const arrowBRef = useRef<HTMLDivElement>(null)
@@ -245,7 +239,13 @@ export default function SimplePage() {
     pinPx: 100,
   })
   const [progress, setProgress] = useState(0)
+  const [roll, setRoll] = useState(0)
   const [third, setThird] = useState({ q1: 0, q2: 0, qSpin: 0, qEnd: 0 })
+  // the Websites card: down to the projects window, opened
+  const goProjects = () => {
+    const G = geom.current
+    window.scrollTo({ top: Math.round(G.pinStart + G.enterEnd), behavior: 'smooth' })
+  }
   const progressRef = useRef(0)
   // smoothed scroll scalar (fraction of the whole page) — the single shared
   // input for the trail, the arrow, the robot journey and section 3 — and
@@ -281,7 +281,6 @@ export default function SimplePage() {
     arrow.style.opacity = op.toFixed(3)
     const grow = 0.9 + 0.1 * Math.min(1, (drawn / g.total) * 20)
     arrow.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -50%) rotate(${ang.toFixed(2)}deg) scale(${grow.toFixed(3)})`
-    arrow.style.color = y < g.switchY ? '#1B1A17' : '#FFFFFF'
   }
 
   const applyBRef = useRef<(pA: number, drawn: number) => void>(() => {})
@@ -309,7 +308,6 @@ export default function SimplePage() {
     arrow.style.opacity = op.toFixed(3)
     const grow = 0.9 + 0.1 * Math.min(1, (drawn / g.total) * 20)
     arrow.style.transform = `translate(${x.toFixed(1)}px, ${ay.toFixed(1)}px) translate(-50%, -50%) rotate(${ang.toFixed(2)}deg) scale(${grow.toFixed(3)})`
-    arrow.style.color = '#FFFFFF'
   }
 
   // scroll progress: 0 at the top → 1 at the very bottom of the page.
@@ -360,27 +358,13 @@ export default function SimplePage() {
       const h = window.innerHeight
       const heroH = hero.offsetHeight
       const secH = sec.offsetHeight
-      const areaH = heroH + secH
-      const g = buildTrail(w, areaH, heroH)
+      const g = buildTrail(w, heroH)
       trailGeom.current = g
       lastA.current = -1
       lastB.current = -1
       // part B starts mid-pattern so its dots continue part A's rhythm
       // seamlessly across the boundary
       pathB.style.strokeDashoffset = (g.Lb % DASH_PERIOD).toFixed(2)
-      // part A gradient: ink → white across the hero's bottom edge
-      const grad = gradARef.current
-      if (grad) {
-        grad.setAttribute('y2', String(heroH))
-        const b = Math.max(14, heroH * 0.015)
-        const f = (v: number) => Math.max(0, Math.min(1, v / heroH))
-        aStop1.current?.setAttribute('offset', '0')
-        aStop2.current?.setAttribute('offset', f(g.switchY - b).toFixed(4))
-        aStop3.current?.setAttribute('offset', f(g.switchY + b).toFixed(4))
-        aStop4.current?.setAttribute('offset', '1')
-      }
-      // part B lives below the divider — a single solid colour
-      pathB.setAttribute('stroke', '#FFFFFF')
 
       const budget = pinBudget(w, h)
       geom.current = {
@@ -426,29 +410,23 @@ export default function SimplePage() {
   }, [])
 
   /**
-   * Master scroll loop — robot journey + trail + section 3.
+   * Master scroll loop — robot + trail + section 2's wheel + section 3.
    *
-   *   · the hero stands with the robot centred, facing the viewer (the trail
-   *     emerges behind it)
-   *   · on the way down the robot glides to its perch in the UPPER-RIGHT
-   *     of the second section (the empty right column), turned 45° LEFT —
-   *     a horizontal turn, it stays perfectly upright — so it faces the
-   *     content on the left. It is NEVER scaled down. The glide is a single
-   *     monotonic move in viewport space (up and to the right, one gentle
-   *     arc): the robot settles where the perch will be and the section
-   *     rises to meet it, so there is no dip-and-recover and nothing to
-   *     flinch — by the time section 2 is fully in view, robot and perch
-   *     coincide exactly.
-   *   · section 2 then scrolls away like any section, and the robot leaves
-   *     with it (it is anchored to its perch in the section). Section 3
-   *     follows under a plane of fog and pins; the fog clears from below
-   *     and the projects window opens.
+   *   · the hero stands with the robot on the right, facing the viewer (the
+   *     trail emerges behind it)
+   *   · on the way down the robot stays put in the hero, in parallax: it
+   *     rises at a fraction of the scroll speed (depth) and turns a little
+   *     toward the type; when the hero's bottom edge catches up with it, it
+   *     rides out of the top with the hero — gone exactly as section 2
+   *     arrives (and back the same way). It is NEVER scaled down.
+   *   · section 2 scrolls like any section; its wheel rolls with the scroll.
+   *     Section 3 follows and pins; the projects window rises.
    *
    * Smoothness: scroll arrives in steps (wheel notches). One critically-
    * damped follower (SMOOTH_OMEGA) turns it into a scalar with continuous
-   * velocity, and the trail, the arrow, the robot pose, the section-2
-   * reveals and the section-3 phases all derive from that SAME scalar — one
-   * shared clock.
+   * velocity, and the trail, the arrow, the robot, the section-2 reveals
+   * and the section-3 phases all derive from that SAME scalar — one shared
+   * clock.
    */
   useEffect(() => {
     const box = robotBoxRef.current
@@ -456,6 +434,7 @@ export default function SimplePage() {
     let raf = 0
     let last = performance.now()
     let lastPA = 0
+    let lastRoll = 0
     let lastThird = { q1: -1, q2: -1, qSpin: -1, qEnd: -1 }
 
     const tick = (now: number) => {
@@ -500,7 +479,6 @@ export default function SimplePage() {
       // section-2 reveals — all of it completes when section 2 is fully in
       // view; section 3's pin starts where section 2 has scrolled away
       const pA = Math.max(0, Math.min(1, px / Math.max(1, G.heroH)))
-      const s = handoff(pA)
       const pinLocal = Math.max(0, px - G.pinStart)
 
       // section 3 phases (linear in scroll; SimpleThird eases them)
@@ -509,44 +487,23 @@ export default function SimplePage() {
       const qSpin = clamp01((pinLocal - G.headEnd) / Math.max(1, G.spinEnd - G.headEnd))
       const qEnd = clamp01((pinLocal - G.spinEnd) / Math.max(1, G.endEnd - G.spinEnd))
 
-      // hero anchor (viewport px) — where the robot stands at rest
-      const hx = w * 0.5
-      const hy = h * (desk ? 0.48 : 0.5)
-
-      let tx: number, ty: number, to: number
-      if (desk) {
-        // perch: centre of the empty right column of section 2, in
-        // viewport px once the section is fully in view (the pin start).
-        // Stays full size — no shrinking, at all.
-        const prx = w * 0.773
-        const pry = 0.42 * G.secH
-        tx = hx + (prx - hx) * s
-        // doc-anchored to the perch: once section 2 is fully in view the
-        // robot scrolls away with it (and comes back with it)
-        const perchOff = Math.min(0, G.heroH - px)
-        ty = hy + (pry + perchOff - hy) * s
-        to = 1
-      } else {
-        // mobile: content is full-width, so no perch — the robot stays
-        // centred, in parallax, for the whole of the hero: it rises at a
-        // fraction of the scroll speed (depth), and when the hero's bottom
-        // edge catches up with it, it rides out of the top with the hero,
-        // so it is gone exactly as section 2 arrives (and comes back the
-        // same way)
-        const robotHalfH = box.offsetHeight / 2
-        const parallaxY = hy - px * 0.35
-        const edgeY = G.heroH - px - robotHalfH - 12
-        tx = hx
-        ty = Math.min(parallaxY, edgeY)
-        to = 1
-      }
-      // a gentle upward arc through the handoff (zero at both ends), so the
-      // glide reads as an organic flit rather than a straight diagonal
-      const arc = desk ? 40 * Math.sin(Math.PI * s) : 0
+      // the robot: on the right of the hero (desktop) / under the type
+      // (phones), in parallax — it rises at a fraction of the scroll speed,
+      // and when the hero's bottom edge catches up with it, it rides out of
+      // the top with the hero
+      const hx = desk ? w * 0.74 : w * 0.5
+      const hy = desk ? h * 0.48 : h * 0.71
+      const robotHalfH = box.offsetHeight / 2
+      const parallaxY = hy - px * 0.35
+      const edgeY = G.heroH - px - robotHalfH - 12
+      const ty = Math.min(parallaxY, edgeY)
       const baseY = desk ? h * 0.48 : h * 0.5
-      box.style.transform =
-        `translate(-50%, -50%) translate(${(tx - w / 2).toFixed(1)}px, ${(ty - baseY - arc).toFixed(1)}px)`
-      box.style.opacity = to.toFixed(3)
+      box.style.transform = `translate(-50%, -50%) translate(${(hx - w / 2).toFixed(1)}px, ${(ty - baseY).toFixed(1)}px)`
+
+      // section 2's wheel: rolls from the moment the cards come up into
+      // view until the section has scrolled away
+      const rollFrom = G.heroH - h * 0.55
+      const roll = clamp01((px - rollFrom) / Math.max(1, G.pinStart - rollFrom))
 
       // trail + arrow derive from the same scalar — synced by construction
       const drawn = pA * G.total
@@ -556,6 +513,10 @@ export default function SimplePage() {
       if (Math.abs(pA - lastPA) > 0.0004) {
         lastPA = pA
         setProgress(pA)
+      }
+      if (Math.abs(roll - lastRoll) > 0.0006) {
+        lastRoll = roll
+        setRoll(roll)
       }
       if (
         Math.abs(q1 - lastThird.q1) > 0.0008 ||
@@ -608,41 +569,30 @@ export default function SimplePage() {
               that repaint */}
           <div className="pointer-events-none absolute inset-0 z-[5]" style={{ willChange: 'transform' }} aria-hidden>
             <svg className="absolute inset-0 block h-full w-full">
-              <defs>
-                <linearGradient id="cc-trail-grad-a" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="100" ref={gradARef}>
-                  <stop ref={aStop1} offset="0" stopColor="#111111" stopOpacity="0.22" />
-                  <stop ref={aStop2} offset="0.5" stopColor="#111111" stopOpacity="0.22" />
-                  <stop ref={aStop3} offset="0.5" stopColor="#FFFFFF" stopOpacity="0.88" />
-                  <stop ref={aStop4} offset="1" stopColor="#FFFFFF" stopOpacity="0.88" />
-                </linearGradient>
-              </defs>
               {/* the trail exists exactly as far as the arrow has travelled */}
               <path
                 ref={pathARef}
                 d=""
                 fill="none"
-                stroke="url(#cc-trail-grad-a)"
+                stroke="#111111"
+                strokeOpacity="0.22"
                 strokeWidth="1.4"
                 strokeLinecap="round"
                 strokeDasharray={DASH}
               />
             </svg>
-            <div
-              ref={arrowARef}
-              className="absolute left-0 top-0 will-change-transform"
-              style={{ opacity: 0, transition: 'color 240ms linear' }}
-            >
+            <div ref={arrowARef} className="absolute left-0 top-0 text-ink will-change-transform" style={{ opacity: 0 }}>
               {arrowSvg}
             </div>
           </div>
         </div>
 
-        {/* robot — viewport-fixed, doc-anchored: centred in the hero, then
-            on its perch in section 2, with which it scrolls away */}
+        {/* robot — viewport-fixed, doc-anchored: on the right of the hero
+            (under the type on phones), in parallax, leaving with the hero */}
         <div className="pointer-events-none fixed inset-0 z-[6]">
           <div
             ref={robotBoxRef}
-            className="absolute left-1/2 top-[50%] h-[min(60vh,520px)] w-[min(86vw,360px)] will-change-transform lg:top-[48%] lg:h-[min(76vh,680px)] lg:w-[min(40vw,520px)]"
+            className="absolute left-1/2 top-[50%] h-[min(52vh,440px)] w-[min(80vw,340px)] will-change-transform lg:top-[48%] lg:h-[min(76vh,680px)] lg:w-[min(40vw,520px)]"
             style={{ transform: 'translate(-50%, -50%)' }}
           >
             <Robot3D scrollProgress={progress} onReady={() => setRobotReady(true)} />
@@ -651,7 +601,7 @@ export default function SimplePage() {
 
         {/* ——— section 2 (in normal flow) + trail part B ——— */}
         <div ref={secondRef} className="relative z-[1]">
-          <SimpleSecond progress={progress} />
+          <SimpleSecond progress={progress} roll={roll} onProjects={goProjects} />
           <div
                 ref={trailBRef}
                 className="pointer-events-none absolute inset-0 z-[5]"
@@ -663,25 +613,23 @@ export default function SimplePage() {
                     ref={pathBRef}
                     d=""
                     fill="none"
+                    stroke="#111111"
+                    strokeOpacity="0.22"
                     strokeWidth="1.4"
                     strokeLinecap="round"
                     strokeDasharray={DASH}
                   />
                 </svg>
-                <div
-                  ref={arrowBRef}
-                  className="absolute left-0 top-0 will-change-transform"
-                  style={{ opacity: 0, transition: 'color 240ms linear' }}
-                >
+                <div ref={arrowBRef} className="absolute left-0 top-0 text-ink will-change-transform" style={{ opacity: 0 }}>
                   {arrowSvg}
                 </div>
               </div>
             </div>
 
-        {/* ——— the pin: section 3 arrives under the fog and holds while it plays ——— */}
-        <div ref={pinWrapRef} className="relative">
-          <div ref={stageRef} className="sticky top-0 z-0 h-[100svh] overflow-hidden bg-cream">
-            {/* section 3 — the fog clears, the desktop, the window, the heading, the ring's turn, the closing line */}
+        {/* ——— the pin: section 3 arrives and holds while it plays ——— */}
+        <div ref={pinWrapRef} id="projects" className="relative">
+          <div ref={stageRef} className="sticky top-0 z-0 h-[100svh] overflow-hidden" style={{ backgroundColor: THIRD_BG }}>
+            {/* section 3 — the desktop, the window, the heading, the ring's turn, the closing line */}
             <MemoThird q1={third.q1} q2={third.q2} qSpin={third.qSpin} qEnd={third.qEnd} />
           </div>
         </div>
