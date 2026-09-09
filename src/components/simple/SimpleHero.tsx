@@ -65,12 +65,12 @@ export default function SimpleHero({ revealed }: Props) {
         data-hero-copy
         className="pointer-events-none absolute left-[6%] top-[13%] max-w-[560px] max-sm:right-[5%] max-sm:max-w-none sm:top-[14%] lg:max-w-[600px] xl:left-[8%]"
       >
-        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-muted">Our Projects · Simple</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-muted">Our Projects · Websites &amp; AI discoverability</div>
         <h1 className="mt-4 font-display text-[clamp(2.5rem,4.6vw,4.7rem)] font-normal leading-[0.92] tracking-[-0.03em] text-ink">
-          Simple on the
+          Built to be
           <br />
           <span className="relative inline-block">
-            <span className="relative z-10 italic font-normal text-brand-600">outside.</span>
+            <span className="relative z-10 italic font-normal text-brand-600">recommended.</span>
             <Underline active={drawn} />
           </span>
         </h1>
