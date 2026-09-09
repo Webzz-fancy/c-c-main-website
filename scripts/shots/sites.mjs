@@ -31,16 +31,14 @@ for (const [slug, url, extra, scrollTo] of SITES) {
     await page.waitForTimeout(1500)
     if (scrollTo === 'loved') {
       // The Yard opens on a scroll driven film; its "LOVED BY MANY" section
-      // follows it. Wheel through in fixed steps and keep a frame at each
-      // (the frame that shows the section becomes the preview)
+      // (the raspberry cup, "Iced Americano with Raspberry") follows it.
+      // Wheel through the film in fixed steps: the tenth step is that frame.
       await page.evaluate(() => window.scrollTo(0, 0))
       await page.waitForTimeout(1500)
-      for (let i = 1; i <= 14; i++) {
+      for (let i = 1; i <= 10; i++) {
         await page.mouse.wheel(0, 500)
         await page.waitForTimeout(1600)
-        await page.screenshot({ path: `public/projects/${slug}-f${String(i).padStart(2, '0')}.jpg`, type: 'jpeg', quality: 80 })
       }
-      console.log(slug, 'frames done')
     } else {
       await page.evaluate(() => window.scrollTo(0, 0))
     }
