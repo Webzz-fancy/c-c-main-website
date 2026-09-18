@@ -544,6 +544,7 @@ export default function SimplePage() {
         {/* same hanging robot + rope as the main page (rides the right edge) */}
         <MemoRope />
 
+        <main>
         {/* ——— hero (in normal flow) + trail part A over it ——— */}
         <div className="relative">
           <div ref={heroRef}>
@@ -615,6 +616,7 @@ export default function SimplePage() {
 
         {/* ——— let's talk — in normal flow after the pin ——— */}
         <MemoTalk />
+        </main>
 
         {/* same footer as the main page */}
         <MemoFooter />

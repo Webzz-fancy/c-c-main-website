@@ -151,7 +151,7 @@ export default function ProjectSheet({ project, index, onClose }: Props) {
             <div className="relative aspect-[16/10] w-full">
               <img
                 src={projectShot(p.slug)}
-                alt={`${p.name} home page`}
+                alt={`${p.name}, ${p.tag.toLowerCase()} website by Clause & Code`}
                 className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.015]"
                 loading="eager"
                 decoding="async"
