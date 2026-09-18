@@ -11,6 +11,8 @@ import Loader from './components/Loader'
 import { RobotMoodProvider } from './context/RobotMood'
 import SimplePage from './pages/SimplePage'
 import ComplexPage from './pages/ComplexPage'
+import { pageForPath } from './config/seo'
+import { applyHead } from './lib/head'
 
 type Page = 'home' | 'simple' | 'complex'
 function getPage(path: string): Page {
@@ -25,6 +27,12 @@ export default function App() {
   const [page, setPage] = useState<Page>(() =>
     typeof window !== 'undefined' ? getPage(window.location.pathname) : 'home',
   )
+
+  // the document head follows the page: title, description, canonical,
+  // social card and JSON-LD (the build pre-renders the same for each URL)
+  useEffect(() => {
+    applyHead(pageForPath(window.location.pathname))
+  }, [page])
 
   useEffect(() => {
     const onPop = () => setPage(getPage(window.location.pathname))

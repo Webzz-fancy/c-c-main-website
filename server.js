@@ -80,21 +80,37 @@ app.post('/api/drop-problem', (req, res) => {
 // Static site
 // ---------------------------------------------------------------------------
 
-// Hashed assets are immutable; everything else revalidates.
+// One canonical URL per page: the pre-rendered pages live at /simple/ and
+// /complex/ (dist/simple/index.html …), so the bare path redirects there.
+// Everything else with a trailing slash that is not a pre-rendered page is
+// left alone.
+const PRERENDERED = ['simple', 'complex']
+app.get(/^\/(simple|complex)$/, (req, res) => {
+  const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''
+  res.redirect(301, `${req.path}/${qs}`)
+})
+
+// Hashed assets are immutable; HTML and the crawler files revalidate.
 app.use(
   express.static(distDir, {
     maxAge: '1y',
     setHeaders(res, filePath) {
-      if (filePath.endsWith('.html')) {
+      if (/\.(html|xml|txt|webmanifest)$/.test(filePath)) {
         res.setHeader('Cache-Control', 'no-cache')
       }
     },
   }),
 )
 
-// SPA fallback — any non-API route returns index.html.
-app.get(/^\/(?!api\/).*/, (_req, res) => {
-  res.sendFile(path.join(distDir, 'index.html'))
+// SPA fallback — any non-API route returns the closest pre-rendered page
+// (its own head + crawler copy), so deep links and unknown paths still
+// render the app.
+app.get(/^\/(?!api\/).*/, (req, res) => {
+  const first = req.path.split('/')[1]
+  const page = PRERENDERED.includes(first) ? first : ''
+  const file = path.join(distDir, page, 'index.html')
+  res.setHeader('Cache-Control', 'no-cache')
+  res.sendFile(fs.existsSync(file) ? file : path.join(distDir, 'index.html'))
 })
 
 app.use('/api', (_req, res) => res.status(404).json({ ok: false, error: 'Not found' }))

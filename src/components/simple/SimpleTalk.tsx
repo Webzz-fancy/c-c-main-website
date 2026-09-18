@@ -113,7 +113,7 @@ export default function SimpleTalk() {
   // in-view reveal (one shot): the type rises out of a blur, the rule and
   // its outlines arrive, the shape pops onto the first station
   const [shown, setShown] = useState(false)
-  const [vw, setVw] = useState(() => window.innerWidth)
+  const [vw, setVw] = useState(() => (typeof window === 'undefined' ? 1440 : window.innerWidth))
   useEffect(() => {
     const onResize = () => setVw(window.innerWidth)
     window.addEventListener('resize', onResize)

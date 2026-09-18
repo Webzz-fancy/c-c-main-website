@@ -109,7 +109,7 @@ function polygonPoints(n: number, r: number, cx: number, cy: number) {
 }
 
 export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
-  const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }))
+  const [vp, setVp] = useState(() => (typeof window === 'undefined' ? { w: 1440, h: 900 } : { w: window.innerWidth, h: window.innerHeight }))
   useEffect(() => {
     const onResize = () => setVp({ w: window.innerWidth, h: window.innerHeight })
     onResize()
@@ -332,7 +332,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
                       <div className="relative aspect-[16/10] w-full" style={{ backgroundColor: p.tint }}>
                         <img
                           src={projectShot(p.slug)}
-                          alt=""
+                          alt={`${p.name}, ${p.tag.toLowerCase()} website by Clause & Code`}
                           className="absolute inset-0 h-full w-full object-cover object-top"
                           loading="lazy"
                           decoding="async"
