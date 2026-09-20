@@ -21,6 +21,10 @@ type Props = {
 }
 
 export const projectShot = (slug: string) => `/projects/${slug}.jpg`
+/** the same screenshot at 720px wide — what the ring's previews show on
+ *  phones (a fraction of the bytes and of the decoding for the same look
+ *  at that size) */
+export const projectShotSmall = (slug: string) => `/projects/${slug}-720.jpg`
 
 export default function ProjectSheet({ project, index, onClose }: Props) {
   // keep the last project while the sheet plays out
