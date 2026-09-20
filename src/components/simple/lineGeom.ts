@@ -167,8 +167,20 @@ export const RING_Y = [-0.6, 0.95, -0.15, 0.85, -0.95, 0.3]
 /** size of each preview on the ring at unit depth, × the unit card width */
 export const RING_SIZE = [0.74, 0.66, 0.7, 0.66, 0.68, 0.66]
 
-/** a preview's height, × its width (the strip + a 16:10 screen) */
+/** a preview's height, × its width (the strip + a 16:10 screen) — the
+ *  ratio at the desktop's sizes; the previews are placed by it */
 export const CARD_ASPECT = 0.74
+
+/** the height a preview of width w actually renders at: its frame (1px a
+ *  side), its strip (padding 3.5% of the width above and below one line of
+ *  8–11px mono, and its rule) and its 16:10 screen. On desktop this is
+ *  CARD_ASPECT × w; on phones the line does not shrink with the card, so
+ *  the small previews are a little taller than the ratio says — the ring
+ *  is fitted to this, not to the ratio */
+export function ringCardH(w: number, vw: number) {
+  const font = Math.min(11, Math.max(8, vw * 0.0062))
+  return (w - 2) * (0.625 + 0.07) + font * 1.5 + 3
+}
 
 export type RingGeom = {
   cx: number // ring axis, viewport px
@@ -180,9 +192,12 @@ export type RingGeom = {
 
 /** perspective ratio: f = PERSP × R */
 const PERSP = 2.85
+/** the depth factor at the front of the ring — how much larger a preview is
+ *  at its nearest than at unit depth (its largest size on the ring) */
+export const RING_FRONT = PERSP / (PERSP - 1)
 /** the widest a preview gets on the ring, × the unit card width
  *  (RING_SIZE max × the depth factor at the front) */
-const RING_MAX_W = 0.74 * (PERSP / (PERSP - 1))
+const RING_MAX_W = 0.74 * RING_FRONT
 /** horizontal reach of a preview's centre during the turn, × R (the extreme
  *  of sin(a) · f / (f − R·cos a)) */
 const RING_REACH = 1.07
@@ -202,7 +217,7 @@ export function ringCardW(vw: number) {
 export function ringGeom(vw: number, vh: number): RingGeom {
   const win = windowRect(vw, vh)
   const cardW = ringCardW(vw)
-  const front = PERSP / (PERSP - 1)
+  const front = RING_FRONT
   const halfW = 0.5 * RING_MAX_W * cardW
   const halfH = 0.5 * CARD_ASPECT * RING_MAX_W * cardW
   const inset = win.desk ? 28 : 14
@@ -213,12 +228,34 @@ export function ringGeom(vw: number, vh: number): RingGeom {
   const room = win.width / 2 - inset - halfW
   let R = win.desk ? Math.min(win.width * 0.32, vh * 0.42) : Math.min(win.width * 0.34, vh * 0.2)
   R = Math.max(40, Math.min(R, room / RING_REACH))
-  // the vertical spread: on desktop the frontmost preview at ±1 stays inside
-  // the window even as it passes the front; on phones the window is tall
-  // and narrow, so the ring is given more of that height (a preview may
-  // touch the bar or the status strip for a moment as it passes the front)
-  const spread = win.desk ? 1 : 1.3
-  const ampY = Math.max(0, (((bot - top) / 2 - halfH) / front) * spread)
+  // the vertical amplitude. On desktop: the largest preview, at ±1, stays
+  // inside the body even as it passes the front (one bound for all six).
+  // On phones the window is tall and narrow, so the ring is given as much
+  // of that height as the previews allow: each preview is bounded by ITS
+  // OWN size and height on the ring — the tall ones are the smaller ones,
+  // so the ring spreads further than the single bound would let it, and
+  // still every preview stays between the bar and the status strip for the
+  // whole turn (it can never be clipped by the window's bottom edge).
+  let ampY: number
+  if (win.desk) {
+    ampY = ((bot - top) / 2 - halfH) / front
+  } else {
+    const half = (bot - top) / 2
+    ampY = Infinity
+    for (let i = 0; i < RING_Y.length; i++) {
+      const y = Math.abs(RING_Y[i])
+      if (y < 0.05) continue
+      // the preview at its largest (the front), about the point it is
+      // placed by: CARD_ASPECT/2 of its width above, the rest of its real
+      // height below
+      const cw = RING_SIZE[i] * cardW * front
+      const above = 0.5 * CARD_ASPECT * cw
+      const below = ringCardH(cw, vw) - above
+      const reach = RING_Y[i] > 0 ? below : above
+      ampY = Math.min(ampY, (half - reach) / (y * front))
+    }
+  }
+  ampY = Math.max(0, Number.isFinite(ampY) ? ampY : 0)
   return { cx, cy, R, f: R * PERSP, ampY }
 }
 

@@ -404,10 +404,15 @@ function FallbackBox() {
 
 export default function Robot3D({
   scrollProgress,
+  active = true,
   onReady,
   className = '',
 }: {
   scrollProgress: number
+  /** is the robot on screen? While it is not, the canvas does not draw at
+   *  all (no WebGL frames behind the sections below the hero); the scene
+   *  is kept, so it resumes instantly when it comes back */
+  active?: boolean
   onReady?: () => void
   className?: string
 }) {
@@ -444,6 +449,7 @@ export default function Robot3D({
         gl={{ antialias: true, alpha: true, toneMappingExposure: 0.92 }}
         camera={{ position: [0, 0.62, 2.88], fov: 33 }}
         shadows
+        frameloop={active ? 'always' : 'never'}
         style={{ background: 'transparent' }}
       >
         {/*

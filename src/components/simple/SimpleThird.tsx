@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
-import { projectShot } from './ProjectSheet'
+import { useLayoutEffect, useState } from 'react'
+import { projectShot, projectShotSmall } from './ProjectSheet'
+import { viewportH } from './viewport'
 import {
   CARD_ASPECT,
   PROJECTS,
@@ -109,9 +110,16 @@ function polygonPoints(n: number, r: number, cx: number, cy: number) {
 }
 
 export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
+  // the stage is one viewport tall (100vh), so everything in it is measured
+  // against that same, steady height — on a phone innerHeight changes with
+  // the address bar mid scroll, and re-laying the ring out to it would make
+  // the window jump while the ring is turning
   const [vp, setVp] = useState(() => (typeof window === 'undefined' ? { w: 1440, h: 900 } : { w: window.innerWidth, h: window.innerHeight }))
-  useEffect(() => {
-    const onResize = () => setVp({ w: window.innerWidth, h: window.innerHeight })
+  useLayoutEffect(() => {
+    const onResize = () => {
+      const next = { w: window.innerWidth, h: viewportH() }
+      setVp((cur) => (cur.w === next.w && cur.h === next.h ? cur : next))
+    }
     onResize()
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
@@ -122,6 +130,13 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
   const ring = ringGeom(w, h)
   const cardW = ringCardW(w)
   const desk = win.desk
+  // the "out of focus" part of the reveals is a real blur filter on
+  // desktop; on phones the same moves play without it (a blur re-rasterises
+  // the element on every frame of the scroll — six previews, the heading
+  // and the window body at once is what made the section stick), and the
+  // screenshots are served at the size the ring shows them
+  const soft = desk
+  const shotSrc = desk ? projectShot : projectShotSmall
 
   /* ---- 1 · the entrance: the window rises ------------------------------ */
   // the window: title bar first, body a beat behind — both rise from below
@@ -177,12 +192,14 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
             from the upper left */}
         <div className="absolute inset-x-0 top-0" style={{ height: h * 1.4 }}>
           <div className="absolute inset-0 grain opacity-60" />
+          {/* (the glows are soft radial gradients already; the extra blur
+              is only worth its cost on desktop) */}
           <div
-            className="absolute -left-40 -top-24 h-[680px] w-[820px] rounded-full blur-3xl"
+            className={`absolute -left-40 -top-24 h-[680px] w-[820px] rounded-full ${soft ? 'blur-3xl' : ''}`}
             style={{ background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 68%)' }}
           />
           <div
-            className="absolute -bottom-24 -right-32 h-[620px] w-[760px] rounded-full blur-3xl"
+            className={`absolute -bottom-24 -right-32 h-[620px] w-[760px] rounded-full ${soft ? 'blur-3xl' : ''}`}
             style={{ background: 'radial-gradient(ellipse at center, rgba(45,109,139,0.12) 0%, rgba(45,109,139,0) 68%)' }}
           />
         </div>
@@ -208,7 +225,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
               style={{
                 backgroundColor: PAPER,
                 transform: `translate3d(0, ${((1 - bodyIn) * (h - win.top + 40)).toFixed(1)}px, 0)`,
-                filter: bodyIn < 0.999 ? `blur(${((1 - bodyIn) * RISE_BLUR).toFixed(2)}px)` : 'none',
+                filter: soft && bodyIn < 0.999 ? `blur(${((1 - bodyIn) * RISE_BLUR).toFixed(2)}px)` : 'none',
                 opacity: clamp01(bodyIn * 4).toFixed(3),
               }}
             >
@@ -232,7 +249,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
                   top: win.bar + (desk ? win.pad * 0.9 : 24),
                   right: win.pad,
                   opacity: headAlpha,
-                  filter: headExit > 0.001 ? `blur(${(headExit * RISE_BLUR).toFixed(2)}px)` : 'none',
+                  filter: soft && headExit > 0.001 ? `blur(${(headExit * RISE_BLUR).toFixed(2)}px)` : 'none',
                   transform: `translateY(${(-headExit * 24).toFixed(1)}px)`,
                   visibility: headVisible ? 'visible' : 'hidden',
                 }}
@@ -315,7 +332,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
                       width: cw,
                       transform: `translate3d(${(cx - cw / 2).toFixed(1)}px, ${(cy - (cw * CARD_ASPECT) / 2 + inY).toFixed(1)}px, 0)`,
                       opacity: (inQ * (1 - 0.55 * back)).toFixed(3),
-                      filter: blur > 0.01 ? `blur(${blur.toFixed(2)}px)` : 'none',
+                      filter: soft && blur > 0.01 ? `blur(${blur.toFixed(2)}px)` : 'none',
                       zIndex: z,
                       visibility: inQ > 0.001 ? 'visible' : 'hidden',
                     }}
@@ -331,7 +348,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
                       </div>
                       <div className="relative aspect-[16/10] w-full" style={{ backgroundColor: p.tint }}>
                         <img
-                          src={projectShot(p.slug)}
+                          src={shotSrc(p.slug)}
                           alt={`${p.name}, ${p.tag.toLowerCase()} website by Clause & Code`}
                           className="absolute inset-0 h-full w-full object-cover object-top"
                           loading="lazy"
@@ -377,7 +394,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
                             style={{
                               opacity: lp.toFixed(3),
                               transform: `translate3d(0, ${((1 - lp) * 60).toFixed(1)}px, 0)`,
-                              filter: lp < 0.999 ? `blur(${((1 - lp) * RISE_BLUR).toFixed(2)}px)` : 'none',
+                              filter: soft && lp < 0.999 ? `blur(${((1 - lp) * RISE_BLUR).toFixed(2)}px)` : 'none',
                             }}
                           >
                             {last ? <span className="italic text-brand-600">{line}</span> : line}
@@ -400,10 +417,11 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
                 </div>
               )}
 
-              {/* the status bar */}
+              {/* the status bar — in front of the ring: the previews rise
+                  into the window from under it, never over it */}
               <div
                 className="absolute inset-x-0 bottom-0 flex items-center justify-between border-t border-ink/70 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60"
-                style={{ height: win.status, backgroundColor: CHROME }}
+                style={{ height: win.status, backgroundColor: CHROME, zIndex: 300 }}
               >
                 <span>Clause &amp; Code · Websites</span>
                 <span className="hidden sm:inline">Scroll to turn the ring</span>
@@ -418,7 +436,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
                 height: win.bar,
                 backgroundColor: CHROME,
                 transform: `translate3d(0, ${((1 - barIn) * (h - win.top + 40)).toFixed(1)}px, 0)`,
-                filter: barIn < 0.999 ? `blur(${((1 - barIn) * RISE_BLUR).toFixed(2)}px)` : 'none',
+                filter: soft && barIn < 0.999 ? `blur(${((1 - barIn) * RISE_BLUR).toFixed(2)}px)` : 'none',
                 opacity: clamp01(barIn * 4).toFixed(3),
               }}
             >

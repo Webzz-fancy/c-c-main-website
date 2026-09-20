@@ -20,7 +20,11 @@ const MemoHero = memo(SimpleHero)
 const MemoRope = memo(ScrollRope)
 const MemoThird = memo(SimpleThird)
 const MemoTalk = memo(SimpleTalk)
+const MemoSecond = memo(SimpleSecond)
+const MemoRobot = memo(Robot3D)
+const MemoSheet = memo(ProjectSheet)
 import { pinBudget } from '../components/simple/lineGeom'
+import { viewportH } from '../components/simple/viewport'
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 
@@ -205,6 +209,12 @@ const DASH_PERIOD = 23
  * SMOOTH_OMEGA is the natural frequency (rad/s): higher = tighter tracking.
  */
 const SMOOTH_OMEGA = 12
+/** on a touch screen the scroll is already continuous (no notches) and the
+ *  finger is the clock: the follower tracks much tighter (a critically
+ *  damped follower trails a moving finger by 2v/ω — at 12 that is a third
+ *  of a screen on a quick drag, which reads as the page sticking; at 40 it
+ *  is a few dozen px, gone within a tenth of a second) */
+const SMOOTH_OMEGA_TOUCH = 40
 
 export default function SimplePage() {
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -242,10 +252,10 @@ export default function SimplePage() {
   const openProject = useCallback((i: number) => setOpenIdx(i), [])
   const closeProject = useCallback(() => setOpenIdx(null), [])
   // the Websites card: down to the projects window, opened
-  const goProjects = () => {
+  const goProjects = useCallback(() => {
     const G = geom.current
     window.scrollTo({ top: Math.round(G.pinStart + G.enterEnd), behavior: 'smooth' })
-  }
+  }, [])
   const progressRef = useRef(0)
   // smoothed scroll scalar (fraction of the whole page) — the single shared
   // input for the trail, the robot, the section reveals and section 3 — and
@@ -258,6 +268,9 @@ export default function SimplePage() {
   // for that frame, and the robot is standing there, complete, at reveal.
   const [loaderGone, setLoaderGone] = useState(false)
   const [robotReady, setRobotReady] = useState(false)
+  const onRobotReady = useCallback(() => setRobotReady(true), [])
+  // is the robot on screen? (its canvas only draws while it is)
+  const [robotOn, setRobotOn] = useState(true)
 
   // trail part A (over the hero) + part B (over section 2) — both derived
   // from the same smoothed value, written directly to the DOM: the dotted
@@ -335,7 +348,10 @@ export default function SimplePage() {
       const pathB = pathBRef.current
       if (!hero || !sec || !pathA || !pathB) return
       const w = window.innerWidth
-      const h = window.innerHeight
+      // the pinned stage is one viewport tall (100vh): its scroll budget is
+      // measured against that same steady height, so a phone's address bar
+      // sliding away mid scroll cannot change it under the ring
+      const h = viewportH()
       const heroH = hero.offsetHeight
       const secH = sec.offsetHeight
       const cards = sec.querySelector<HTMLElement>('[data-cards]')
@@ -376,6 +392,9 @@ export default function SimplePage() {
         const wrap = pinWrapRef.current
         const stage = stageRef.current
         if (!wrap || !stage) return
+        // measure the stage at its CSS height (a rebuild — a rotated phone,
+        // a resized window — must not read back the pixels set last time)
+        stage.style.height = ''
         const stageH = Math.ceil(stage.getBoundingClientRect().height)
         stage.style.height = stageH + 'px'
         wrap.style.height = Math.round(stageH + budget.pinPx) + 'px'
@@ -384,14 +403,27 @@ export default function SimplePage() {
       applyBRef.current(0)
     }
     build()
-    window.addEventListener('resize', build)
+    // a phone's address bar sliding away fires resize without changing the
+    // layout (the width and the steady viewport height are the same):
+    // nothing to rebuild then — a rebuild mid scroll re-measures the page
+    let lastW = window.innerWidth
+    let lastH = viewportH()
+    const onResize = () => {
+      const w = window.innerWidth
+      const h = viewportH()
+      if (w === lastW && h === lastH) return
+      lastW = w
+      lastH = h
+      build()
+    }
+    window.addEventListener('resize', onResize)
     let alive = true
     document.fonts?.ready?.then(() => {
       if (alive) build()
     })
     return () => {
       alive = false
-      window.removeEventListener('resize', build)
+      window.removeEventListener('resize', onResize)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -422,10 +454,17 @@ export default function SimplePage() {
     let last = performance.now()
     let lastPA = 0
     let lastReveal = 0
+    let lastRobotOn = true
     let lastThird = { q1: -1, q2: -1, qSpin: -1, qEnd: -1 }
+    const omega = window.matchMedia('(pointer: coarse)').matches ? SMOOTH_OMEGA_TOUCH : SMOOTH_OMEGA
 
     const tick = (now: number) => {
-      const dt = Math.min((now - last) / 1000, 0.05)
+      // the follower is integrated in 4 ms sub-steps below, so a long frame
+      // is simply integrated for its real duration: on a phone that drops
+      // frames the picture stays where the finger is, instead of falling
+      // behind by the dropped time and catching up afterwards (only a tab
+      // coming back from the background is capped)
+      const dt = Math.min((now - last) / 1000, 0.25)
       last = now
       const wrap = wrapperRef.current
       if (!wrap) {
@@ -448,7 +487,7 @@ export default function SimplePage() {
         const n = Math.max(1, Math.ceil(dt / 0.004))
         const hdt = dt / n
         for (let k = 0; k < n; k++) {
-          const acc = SMOOTH_OMEGA * SMOOTH_OMEGA * (raw - x) - 2 * SMOOTH_OMEGA * v
+          const acc = omega * omega * (raw - x) - 2 * omega * v
           v += acc * hdt
           x += v * hdt
         }
@@ -488,6 +527,16 @@ export default function SimplePage() {
       const ty = Math.min(parallaxY, edgeY)
       const baseY = desk ? h * 0.48 : h * 0.5
       box.style.transform = `translate(-50%, -50%) translate(${(hx - w / 2).toFixed(1)}px, ${(ty - baseY).toFixed(1)}px)`
+      // once the robot has ridden out of the top of the screen with the
+      // hero, its canvas stops drawing (the WebGL frames were still being
+      // rendered behind section 2 and the pinned projects window — on a
+      // phone that is a large share of every frame's budget); it picks up
+      // again the moment it comes back into view
+      const robotOn = ty + robotHalfH > -8
+      if (robotOn !== lastRobotOn) {
+        lastRobotOn = robotOn
+        setRobotOn(robotOn)
+      }
 
       // section 2's cards: they reveal with the scroll from the moment the
       // row comes up over the bottom of the screen, and stand complete when
@@ -578,13 +627,13 @@ export default function SimplePage() {
             className="absolute left-1/2 top-[50%] h-[min(52vh,440px)] w-[min(80vw,340px)] will-change-transform lg:top-[48%] lg:h-[min(76vh,680px)] lg:w-[min(40vw,520px)]"
             style={{ transform: 'translate(-50%, -50%)' }}
           >
-            <Robot3D scrollProgress={progress} onReady={() => setRobotReady(true)} />
+            <MemoRobot scrollProgress={progress} active={robotOn || !robotReady} onReady={onRobotReady} />
           </div>
         </div>
 
         {/* ——— section 2 (in normal flow) + trail part B ——— */}
         <div ref={secondRef} className="relative z-[1]">
-          <SimpleSecond progress={progress} reveal={reveal} onProjects={goProjects} />
+          <MemoSecond progress={progress} reveal={reveal} onProjects={goProjects} />
           <div
                 ref={trailBRef}
                 className="pointer-events-none absolute inset-0 z-[5]"
@@ -607,8 +656,12 @@ export default function SimplePage() {
             </div>
 
         {/* ——— the pin: section 3 arrives and holds while it plays ——— */}
-        <div ref={pinWrapRef} id="projects" className="relative">
-          <div ref={stageRef} className="sticky top-0 z-0 h-[100svh] overflow-hidden" style={{ backgroundColor: THIRD_BG }}>
+        {/* the stage is one viewport tall — 100vh, the steady height (on a
+            phone: with the browser's bar retracted, as the page is seen once
+            it is scrolling); the wrapper wears the same orange, so nothing
+            else can show at its edge while the bar is still in place */}
+        <div ref={pinWrapRef} id="projects" className="relative" style={{ backgroundColor: THIRD_BG }}>
+          <div ref={stageRef} className="sticky top-0 z-0 h-screen overflow-hidden" style={{ backgroundColor: THIRD_BG }}>
             {/* section 3 — the desktop, the window, the heading, the ring's turn, the closing line */}
             <MemoThird q1={third.q1} q2={third.q2} qSpin={third.qSpin} qEnd={third.qEnd} onOpen={openProject} />
           </div>
@@ -622,7 +675,7 @@ export default function SimplePage() {
         <MemoFooter />
 
         {/* the project sheet: a build from the ring, opened */}
-        <ProjectSheet project={openIdx === null ? null : PROJECTS[openIdx]} index={openIdx ?? 0} onClose={closeProject} />
+        <MemoSheet project={openIdx === null ? null : PROJECTS[openIdx]} index={openIdx ?? 0} onClose={closeProject} />
       </>
     </div>
   )

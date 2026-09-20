@@ -68,6 +68,7 @@ const OFFERS: Offer[] = [
 
 export default function SimpleSecond({ progress, reveal, onProjects }: Props) {
   const c = clamp01(progress)
+  const soft = typeof window === 'undefined' || window.innerWidth >= 1024
   const typeIn = outCubic(clamp01((c - 0.1) / 0.3))
   const r = clamp01(reveal)
   // the cards rise one after the other, the first a beat ahead of the
@@ -316,7 +317,10 @@ export default function SimpleSecond({ progress, reveal, onProjects }: Props) {
                         WebkitBackdropFilter: 'blur(16px) saturate(160%)',
                         // the reveal, on the scroll: blur + lift out, settling into place
                         opacity: clamp01(q * 2).toFixed(3),
-                        filter: q < 0.999 ? `blur(${((1 - q) * 14).toFixed(2)}px)` : 'none',
+                        // (the blur part of the reveal is desktop only: a
+                        // per-frame blur on a glass card is what makes a
+                        // phone stick on the way down to the projects)
+                        filter: soft && q < 0.999 ? `blur(${((1 - q) * 14).toFixed(2)}px)` : 'none',
                         transform: `translate3d(0, ${((1 - q) * 34).toFixed(1)}px, 0) scale(${(0.97 + 0.03 * q).toFixed(4)})`,
                         transition: 'background 500ms ease, border-color 500ms ease, box-shadow 500ms ease',
                         willChange: 'opacity, transform, filter',
