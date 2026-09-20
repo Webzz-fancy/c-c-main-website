@@ -216,6 +216,19 @@ const SMOOTH_OMEGA = 12
  *  is a few dozen px, gone within a tenth of a second) */
 const SMOOTH_OMEGA_TOUCH = 40
 
+/**
+ * Where the model actually stands inside its canvas, as fractions of the
+ * box's height — measured off the rendered frame at two very different box
+ * sizes (the camera keeps a fixed vertical field, so the fraction does not
+ * move with the box). It is what lets the robot be placed by where it
+ * actually appears, not by the empty top of its canvas.
+ */
+const ROBOT_INK_TOP = 0.18
+/** clear air kept between the hero copy and the robot, px */
+const ROBOT_GAP = 24
+/** clearance kept between the robot's box and the hero's bottom edge, px */
+const ROBOT_FOOT = 12
+
 export default function SimplePage() {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const heroRef = useRef<HTMLDivElement>(null)
@@ -243,6 +256,10 @@ export default function SimplePage() {
     spinEnd: 3,
     endEnd: 4,
     pinPx: 100,
+    /** phones: the robot's box, and the y its centre rests at, sized so the
+     *  robot stands clear of the hero copy (see the sizing in build()) */
+    robotBoxH: 0,
+    robotRest: 0,
   })
   const [progress, setProgress] = useState(0)
   const [reveal, setReveal] = useState(0)
@@ -358,6 +375,32 @@ export default function SimplePage() {
       const cardsRect = cards?.getBoundingClientRect()
       const cardsTop = cardsRect ? cardsRect.top + window.scrollY : heroH + secH * 0.5
       const cardsH = cardsRect ? Math.max(1, cardsRect.height) : 1
+      // ---- the robot's box on phones ------------------------------------
+      // The robot must never cover the hero copy. Its canvas is not all
+      // robot: the model starts 18 % down the box's height (measured off the
+      // rendered frame), so the box is sized and placed from the copy's own
+      // bottom edge — as tall as the room between the copy and the hero's
+      // bottom allows, and set low enough that where the model starts clears
+      // the copy. Two poses have to clear: at rest, and the tightest pose of
+      // the parallax, where the hero's bottom edge carries the box up with
+      // it (the gap in that pose does not depend on the scroll at all, so
+      // solving for it solves for every frame between). Desktop: untouched.
+      const deskNow = w >= 1024
+      const copyEl = hero.querySelector<HTMLElement>('[data-hero-copy]')
+      const copyBottom = copyEl ? copyEl.getBoundingClientRect().bottom - hero.getBoundingClientRect().top : 0
+      let robotBoxH = deskNow ? 0 : Math.min(0.52 * h, 440)
+      let robotRest = deskNow ? h * 0.5 : h * 0.71
+      if (!deskNow && copyBottom > 0) {
+        const allowed = (heroH - copyBottom - ROBOT_FOOT - ROBOT_GAP) / (1 - ROBOT_INK_TOP)
+        robotBoxH = Math.max(140, Math.min(robotBoxH, allowed))
+        robotRest = Math.max(robotRest, copyBottom + ROBOT_GAP + (0.5 - ROBOT_INK_TOP) * robotBoxH)
+      }
+      // the box is styled from the phone layout; the height is pinned to the
+      // measured value (a rebuild — a rotated phone, a loaded font — must not
+      // read back the pixels set last time)
+      const robotBox = robotBoxRef.current
+      if (robotBox) robotBox.style.height = deskNow ? '' : `${Math.round(robotBoxH)}px`
+
       const g = buildTrail(w, heroH)
       trailGeom.current = g
       lastA.current = -1
@@ -377,6 +420,8 @@ export default function SimplePage() {
         total: g.total,
         Lb: g.Lb,
         switchY: g.switchY,
+        robotBoxH,
+        robotRest,
         enterLead: budget.enterLead,
         enterEnd: budget.enterEnd,
         headEnd: budget.headEnd,
@@ -437,7 +482,12 @@ export default function SimplePage() {
    *     rises at a fraction of the scroll speed (depth) and turns a little
    *     toward the type; when the hero's bottom edge catches up with it, it
    *     rides out of the top with the hero — gone exactly as section 2
-   *     arrives (and back the same way). It is NEVER scaled down.
+   *     arrives (and back the same way). It is never scaled down on desktop.
+   *     On a phone the copy takes the top of the hero and the robot stands
+   *     under it: there the box is sized to the room left between the copy's
+   *     own bottom edge and the hero's, so the model starts clear of the
+   *     type — which, on those screens, means it travels with the hero
+   *     rather than drifting against it.
    *   · section 2 scrolls like any section; its cards reveal with the scroll.
    *     Section 3 follows and pins; the projects window rises.
    *
@@ -520,7 +570,7 @@ export default function SimplePage() {
       // and when the hero's bottom edge catches up with it, it rides out of
       // the top with the hero
       const hx = desk ? w * 0.72 : w * 0.5
-      const hy = desk ? h * 0.5 : h * 0.71
+      const hy = desk ? h * 0.5 : G.robotRest || h * 0.71
       const robotHalfH = box.offsetHeight / 2
       const parallaxY = hy - px * 0.35
       const edgeY = G.heroH - px - robotHalfH - 12

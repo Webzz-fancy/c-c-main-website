@@ -1,6 +1,6 @@
 import { useLayoutEffect, useState } from 'react'
 import { projectShot, projectShotSmall } from './ProjectSheet'
-import { viewportH } from './viewport'
+import { layoutH, viewportH } from './viewport'
 import {
   CARD_ASPECT,
   PROJECTS,
@@ -113,21 +113,36 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
   // the stage is one viewport tall (100vh), so everything in it is measured
   // against that same, steady height — on a phone innerHeight changes with
   // the address bar mid scroll, and re-laying the ring out to it would make
-  // the window jump while the ring is turning
-  const [vp, setVp] = useState(() => (typeof window === 'undefined' ? { w: 1440, h: 900 } : { w: window.innerWidth, h: window.innerHeight }))
+  // the window jump while the ring is turning.
+  //
+  // The window and the ring are laid out against `lh`, the part of that
+  // stage that is on screen even while the browser's own bars are showing
+  // (100svh, less the device's bottom inset). 100vh is the height with the
+  // bars RETRACTED: on a phone that shows its bars the last of the stage sits
+  // behind them, and the window's bottom edge — with the orange ground under
+  // it — would be cut off. Anchored to the top of the stage inside 100svh,
+  // the whole window is visible whatever the bars are doing. They are the
+  // same number on desktop, and on any phone once the bars are away.
+  const [vp, setVp] = useState(() =>
+    typeof window === 'undefined' ? { w: 1440, h: 900, lh: 900 } : { w: window.innerWidth, h: viewportH(), lh: layoutH() },
+  )
   useLayoutEffect(() => {
     const onResize = () => {
-      const next = { w: window.innerWidth, h: viewportH() }
-      setVp((cur) => (cur.w === next.w && cur.h === next.h ? cur : next))
+      const next = { w: window.innerWidth, h: viewportH(), lh: layoutH() }
+      setVp((cur) => (cur.w === next.w && cur.h === next.h && cur.lh === next.lh ? cur : next))
     }
     onResize()
     window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
+    window.addEventListener('orientationchange', onResize)
+    return () => {
+      window.removeEventListener('resize', onResize)
+      window.removeEventListener('orientationchange', onResize)
+    }
   }, [])
 
-  const { w, h } = vp
-  const win = windowRect(w, h)
-  const ring = ringGeom(w, h)
+  const { w, h, lh } = vp
+  const win = windowRect(w, lh)
+  const ring = ringGeom(w, lh)
   const cardW = ringCardW(w)
   const desk = win.desk
   // the "out of focus" part of the reveals is a real blur filter on
