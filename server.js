@@ -80,10 +80,14 @@ app.post('/api/drop-problem', (req, res) => {
 // Static site
 // ---------------------------------------------------------------------------
 
-// One indexable URL per page: / and /simple/. /complex/ is intentionally
-// noindex until the operations page opens. The old bare paths and index.html
-// aliases must REDIRECT, not serve a second copy of the same HTML with 200.
-// Preserve query strings so bookmarks and campaign links still work.
+// One preferred URL per page: / and /simple. /complex is intentionally
+// noindex until that offer opens. All internal links and metadata use the
+// slashless subpage URLs. Older visitors may still have a cached permanent
+// redirect FROM /simple TO /simple/, so we serve both addresses with a 200
+// and a canonical pointing to /simple rather than reversing the redirect
+// (which would trap those visitors in a loop). No links or sitemap entries
+// point to the slash alias. The app cleans up the address bar without a trip
+// to the server when someone lands on that legacy URL.
 function redirectToPage(req, res, pathname) {
   const search = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : ''
   res.redirect(301, `${pathname}${search}`)
@@ -98,11 +102,25 @@ app.use((req, res, next) => {
   next()
 })
 
-app.get(/^\/(simple|complex)$/i, (req, res) => redirectToPage(req, res, `/${req.params[0].toLowerCase()}/`))
+app.get(/^\/(simple|complex)$/i, (req, res) => {
+  const page = req.params[0].toLowerCase()
+  if (req.path !== `/${page}`) return redirectToPage(req, res, `/${page}`)
+  res.set('Cache-Control', 'no-cache')
+  return res.sendFile(path.join(distDir, page, 'index.html'))
+})
 app.get(['/index.html', '/simple/index.html', '/complex/index.html'], (req, res) => {
   const page = req.path.split('/')[1].toLowerCase()
-  redirectToPage(req, res, page === 'index.html' ? '/' : `/${page}/`)
+  redirectToPage(req, res, page === 'index.html' ? '/' : `/${page}`)
 })
+
+// If the 404 document itself is requested, it is still a 404, never a
+// successful indexable page just because its HTML file exists on disk.
+function notFound(_req, res) {
+  res.set('Cache-Control', 'no-cache')
+  res.set('X-Robots-Tag', 'noindex')
+  res.status(404).sendFile(path.join(distDir, '404.html'))
+}
+app.get('/404.html', notFound)
 
 // Hashed assets are immutable; HTML and the crawler files revalidate.
 app.use(
@@ -118,24 +136,9 @@ app.use(
 
 app.use('/api', (_req, res) => res.status(404).json({ ok: false, error: 'Not found' }))
 
-// The former catch-all returned the HOME page with a 200 response for every
-// nonexistent URL (including old /about-us/ and misspelled project paths).
-// Crawlers then saw dozens of "pages" with identical content, a common
-// source of duplicate and soft-404 indexing reports. A missing URL must be
-// a genuine 404, not the home page or another project's SEO head.
-app.use((_req, res) => {
-  res.set('Cache-Control', 'no-cache')
-  res.set('X-Robots-Tag', 'noindex')
-  res.status(404).type('html').send(`<!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Page not found | Clause &amp; Code</title><meta name="robots" content="noindex, follow"></head>
-<body style="margin:0;background:#F8F5F0;color:#1B1A17;font:16px/1.6 system-ui,sans-serif">
-<main style="min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;max-width:640px;margin:auto;padding:48px 24px">
-<p style="color:#2D6D8B;font-weight:600">Clause &amp; Code</p><h1 style="font-size:clamp(32px,6vw,52px);line-height:1.1;margin:8px 0 16px">We couldn’t find that page.</h1>
-<p>It may have moved or no longer be available. You can start from our home page or explore our websites.</p>
-<nav style="display:flex;flex-wrap:wrap;gap:20px;margin-top:24px"><a style="color:#1B1A17" href="/">Go home</a><a style="color:#1B1A17" href="/simple/">Explore our websites</a></nav>
-</main></body></html>`)
-})
+// Nonexistent URLs return the same branded document with a genuine HTTP 404,
+// not the home page's HTML or SEO head under a misleading 200 status.
+app.use(notFound)
 
 // Surface crashes in the host's log instead of dying silently.
 process.on('unhandledRejection', (err) => console.error('[unhandledRejection]', err))
