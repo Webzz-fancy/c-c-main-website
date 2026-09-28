@@ -104,13 +104,11 @@ const faqHtml = (items: { q: string; a: string }[]) =>
 const contactHtml = () =>
   `<footer><p>${esc(site.name)} · ${esc(site.tagline)}</p><p>Email <a href="mailto:${site.contact.email}">${site.contact.email}</a> · Phone <a href="tel:${site.contact.phone.replace(/\s/g, '')}">${esc(site.contact.phone)}</a></p><nav aria-label="Pages"><a href="/">Home</a> · <a href="/simple/">Websites &amp; AI discoverability</a> · <a href="${AI_URL}">AI Client Engine</a></nav></footer>`
 
-/** the page's content as plain HTML, hidden from sighted users only until
- *  React mounts (React replaces the whole #root) */
+/** The plain HTML stays in the DOM during the JS loading screen, then is
+ *  removed when the matching React page is ready. Without JS it is the page:
+ *  readable content, not an invisible search-only duplicate. */
 export function staticHtml(page: PageSeo): string {
-  // the wrapper keeps the crawler copy from flashing under the loading
-  // screen: it is in the document (read by crawlers) but drawn under the
-  // page's cream, and React replaces it on mount
-  const open = `<div data-prerender style="position:absolute;inset:0;overflow:hidden;opacity:0;pointer-events:none" aria-hidden="true"><main>`
+  const open = `<div data-prerender><main>`
   const close = `</main>${contactHtml()}</div>`
 
   if (page === PAGES.simple) {

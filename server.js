@@ -80,14 +80,28 @@ app.post('/api/drop-problem', (req, res) => {
 // Static site
 // ---------------------------------------------------------------------------
 
-// One canonical URL per page: the pre-rendered pages live at /simple/ and
-// /complex/ (dist/simple/index.html …), so the bare path redirects there.
-// Everything else with a trailing slash that is not a pre-rendered page is
-// left alone.
-const PRERENDERED = ['simple', 'complex']
-app.get(/^\/(simple|complex)$/, (req, res) => {
-  const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''
-  res.redirect(301, `${req.path}/${qs}`)
+// One indexable URL per page: / and /simple/. /complex/ is intentionally
+// noindex until the operations page opens. The old bare paths and index.html
+// aliases must REDIRECT, not serve a second copy of the same HTML with 200.
+// Preserve query strings so bookmarks and campaign links still work.
+function redirectToPage(req, res, pathname) {
+  const search = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : ''
+  res.redirect(301, `${pathname}${search}`)
+}
+
+// Consolidate the www and non-www hosts when requests reach this app. The
+// public site, its sitemap, and every page's canonical use the non-www host.
+app.use((req, res, next) => {
+  if (req.get('host')?.split(':')[0]?.toLowerCase() === 'www.clauseandcode.com') {
+    return res.redirect(301, `https://clauseandcode.com${req.originalUrl}`)
+  }
+  next()
+})
+
+app.get(/^\/(simple|complex)$/i, (req, res) => redirectToPage(req, res, `/${req.params[0].toLowerCase()}/`))
+app.get(['/index.html', '/simple/index.html', '/complex/index.html'], (req, res) => {
+  const page = req.path.split('/')[1].toLowerCase()
+  redirectToPage(req, res, page === 'index.html' ? '/' : `/${page}/`)
 })
 
 // Hashed assets are immutable; HTML and the crawler files revalidate.
@@ -102,18 +116,26 @@ app.use(
   }),
 )
 
-// SPA fallback — any non-API route returns the closest pre-rendered page
-// (its own head + crawler copy), so deep links and unknown paths still
-// render the app.
-app.get(/^\/(?!api\/).*/, (req, res) => {
-  const first = req.path.split('/')[1]
-  const page = PRERENDERED.includes(first) ? first : ''
-  const file = path.join(distDir, page, 'index.html')
-  res.setHeader('Cache-Control', 'no-cache')
-  res.sendFile(fs.existsSync(file) ? file : path.join(distDir, 'index.html'))
-})
-
 app.use('/api', (_req, res) => res.status(404).json({ ok: false, error: 'Not found' }))
+
+// The former catch-all returned the HOME page with a 200 response for every
+// nonexistent URL (including old /about-us/ and misspelled project paths).
+// Crawlers then saw dozens of "pages" with identical content, a common
+// source of duplicate and soft-404 indexing reports. A missing URL must be
+// a genuine 404, not the home page or another project's SEO head.
+app.use((_req, res) => {
+  res.set('Cache-Control', 'no-cache')
+  res.set('X-Robots-Tag', 'noindex')
+  res.status(404).type('html').send(`<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page not found | Clause &amp; Code</title><meta name="robots" content="noindex, follow"></head>
+<body style="margin:0;background:#F8F5F0;color:#1B1A17;font:16px/1.6 system-ui,sans-serif">
+<main style="min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;max-width:640px;margin:auto;padding:48px 24px">
+<p style="color:#2D6D8B;font-weight:600">Clause &amp; Code</p><h1 style="font-size:clamp(32px,6vw,52px);line-height:1.1;margin:8px 0 16px">We couldn’t find that page.</h1>
+<p>It may have moved or no longer be available. You can start from our home page or explore our websites.</p>
+<nav style="display:flex;flex-wrap:wrap;gap:20px;margin-top:24px"><a style="color:#1B1A17" href="/">Go home</a><a style="color:#1B1A17" href="/simple/">Explore our websites</a></nav>
+</main></body></html>`)
+})
 
 // Surface crashes in the host's log instead of dying silently.
 process.on('unhandledRejection', (err) => console.error('[unhandledRejection]', err))

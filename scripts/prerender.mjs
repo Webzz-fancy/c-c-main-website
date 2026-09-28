@@ -91,7 +91,12 @@ function pageHtml(page) {
   html = html.replace(/\s*<title>[\s\S]*?<\/title>/, '')
   html = html.replace(/\s*<meta\s+name="description"[\s\S]*?\/>/, '')
   html = html.replace('<!--head-->', '\n' + headFor(page))
-  html = html.replace('<div id="root"></div>', `<div id="root">${staticHtml(page)}</div>`)
+  // Keep the actual content OUTSIDE the React root: the home page delays its
+  // React content until the loader finishes. If the prerender lived inside
+  // #root, a JS crawler arriving during that loader would see only "0%".
+  // App removes #prerender once the real page has mounted. Without JS, the
+  // copy stays readable as a genuine fallback.
+  html = html.replace('<div id="root"></div>', `<div id="prerender">${staticHtml(page)}</div><div id="root"></div>`)
   return html
 }
 

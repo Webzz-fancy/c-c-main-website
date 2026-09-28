@@ -33,12 +33,12 @@ const NAV: NavItem[] = [
     children: [
       {
         label: 'Simple',
-        href: '/simple',
+        href: '/simple/',
         description: 'Websites and AI discoverability. Simple on the outside, built like a system underneath.',
       },
       {
         label: 'Complex',
-        href: '/complex',
+        href: '/complex/',
         description: 'Operations and scale systems. The next chapter, coming soon.',
       },
     ],
