@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, type RefObject } from 'react'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import ScrollRope from '../components/ScrollRope'
+import HeroNetwork from '../components/complex/HeroNetwork'
 import { COMPLEX } from '../content/complex'
 import { site } from '../config/site'
 import './complex.css'
@@ -9,25 +10,20 @@ import './complex.css'
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
 
 /**
- * Everything on this page follows the reader's scroll position, not a timer.
- * Set CSS variables on the few moving elements in a single rAF; scrolling
- * back reverses every reveal. Ordinary content stays in the document flow.
+ * The method and project reveals follow the reader's scroll position. The
+ * hero network has its own looping timeline and is intentionally not touched
+ * here. Ordinary content stays in the document flow.
  */
 function useComplexScroll(ref: RefObject<HTMLDivElement>) {
   useLayoutEffect(() => {
     const root = ref.current
     if (!root) return
 
-    const hero = root.querySelector<HTMLElement>('[data-complex-hero]')
-    const path = root.querySelector<SVGPathElement>('[data-complex-path]')
     const method = root.querySelector<HTMLElement>('[data-complex-method]')
     const cases = Array.from(root.querySelectorAll<HTMLElement>('[data-complex-case]'))
     const reveals = Array.from(root.querySelectorAll<HTMLElement>('[data-complex-reveal]'))
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
-    if (!hero || !path || !method) return
-
-    const length = path.getTotalLength()
-    path.style.strokeDasharray = `${length}`
+    if (!method) return
     let frame = 0
     let active = true
 
@@ -35,14 +31,9 @@ function useComplexScroll(ref: RefObject<HTMLDivElement>) {
       frame = 0
       if (motion.matches) return
       const vh = window.innerHeight
-      const heroRect = hero.getBoundingClientRect()
       const methodRect = method.getBoundingClientRect()
       const caseRects = cases.map((el) => el.getBoundingClientRect())
       const revealRects = reveals.map((el) => el.getBoundingClientRect())
-
-      const heroP = clamp01(-heroRect.top / Math.max(1, heroRect.height * 0.52))
-      path.style.strokeDashoffset = `${(length * (1 - heroP)).toFixed(2)}`
-      hero.style.setProperty('--hero-lift', `${((1 - heroP) * 15).toFixed(1)}px`)
 
       const methodP = clamp01((vh * 0.28 - methodRect.top) / Math.max(1, methodRect.height + vh * 0.35))
       method.style.setProperty('--method-progress', methodP.toFixed(3))
@@ -67,19 +58,12 @@ function useComplexScroll(ref: RefObject<HTMLDivElement>) {
     const schedule = () => { if (active && !frame) frame = requestAnimationFrame(draw) }
     const preference = () => {
       root.dataset.complexMotion = motion.matches ? 'off' : 'on'
-      if (motion.matches) {
-        path.style.strokeDasharray = ''
-        path.style.strokeDashoffset = ''
-      } else {
-        path.style.strokeDasharray = `${length}`
-        schedule()
-      }
+      if (!motion.matches) schedule()
     }
 
     root.dataset.complexMotion = motion.matches ? 'off' : 'on'
     draw()
     const observer = new ResizeObserver(schedule)
-    observer.observe(hero)
     observer.observe(method)
     cases.forEach((el) => observer.observe(el))
     document.fonts?.ready.then(schedule).catch(() => {})
@@ -97,33 +81,6 @@ function useComplexScroll(ref: RefObject<HTMLDivElement>) {
   }, [ref])
 }
 
-function HeroMap() {
-  return (
-    <div className="complex-map" aria-hidden="true">
-      <span className="complex-map__grid" />
-      <span className="complex-map__seal">A clearer way through</span>
-      <svg viewBox="0 0 600 500" preserveAspectRatio="xMidYMid meet" className="complex-map__lines">
-        <path className="complex-map__ghost" d="M210 138 H284 V102 H370 M454 144 V254 H310 V326" />
-        <path data-complex-path className="complex-map__ink" d="M210 138 H284 V102 H370 M454 144 V254 H310 V326" />
-        <circle cx="284" cy="138" r="4" />
-        <circle cx="454" cy="254" r="4" />
-      </svg>
-      <div className="complex-map__note complex-map__note--one">
-        <span>01 / NOTICE</span>
-        <strong>People</strong>
-      </div>
-      <div className="complex-map__note complex-map__note--two">
-        <span>02 / UNDERSTAND</span>
-        <strong>The work</strong>
-      </div>
-      <div className="complex-map__note complex-map__note--three">
-        <span>03 / MAKE SPACE</span>
-        <strong>What happens next</strong>
-      </div>
-    </div>
-  )
-}
-
 export default function ComplexPage() {
   const rootRef = useRef<HTMLDivElement>(null)
   useComplexScroll(rootRef)
@@ -133,7 +90,7 @@ export default function ComplexPage() {
       <Header />
       <ScrollRope />
       <main>
-        <section id="complex-hero" className="complex-hero" data-complex-hero>
+        <section id="complex-hero" className="complex-hero">
           <div className="complex-hero__texture" aria-hidden="true" />
           <div className="complex-hero__inner">
             <div className="complex-hero__copy">
@@ -144,9 +101,8 @@ export default function ComplexPage() {
                 See the thinking <span aria-hidden="true">↘</span>
               </a>
             </div>
-            <HeroMap />
+            <HeroNetwork />
           </div>
-          <div className="complex-hero__foot" aria-hidden="true"><span>Scroll to connect the dots</span><span>↓</span></div>
         </section>
 
         <section id="complex-approach" className="complex-method" data-complex-method aria-labelledby="complex-method-title">

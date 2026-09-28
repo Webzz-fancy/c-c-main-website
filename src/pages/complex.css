@@ -1,5 +1,5 @@
 /* Complex / operations. The diagrams are editorial maps of the work, never
-   imitations of private admin screens. Motion is scrubbed by ComplexPage.tsx. */
+   imitations of private admin screens. Only the later sections scrub with scroll. */
 .complex-page {
   overflow: clip;
   background: #f8f5f0;
@@ -91,82 +91,147 @@
   font-weight: 300;
   line-height: 1.75;
 }
-.complex-hero__foot {
-  position: absolute;
-  right: 6%;
-  bottom: 32px;
-  left: 6%;
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  color: #6f6b62;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: .2em;
-  text-transform: uppercase;
-}
-.complex-hero__foot span:last-child { font-size: 18px; font-weight: 300; letter-spacing: 0; }
-
-/* A little process map made of paper, lines and breathing room. */
+/* A compact, original module network. Its light runs on its own timeline. */
 .complex-map {
   position: relative;
-  width: min(100%, 550px);
-  aspect-ratio: 6 / 5;
+  isolation: isolate;
+  width: min(100%, 580px);
+  aspect-ratio: 740 / 540;
   margin-left: auto;
-  --hero-lift: 15px;
 }
 .complex-map__grid {
   position: absolute;
-  inset: 5% 0 3%;
-  background-image: radial-gradient(rgba(45,109,139,.16) 1px, transparent 1px);
-  background-size: 21px 21px;
-  -webkit-mask-image: radial-gradient(ellipse, #000 29%, transparent 76%);
-  mask-image: radial-gradient(ellipse, #000 29%, transparent 76%);
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(45,109,139,.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45,109,139,.07) 1px, transparent 1px);
+  background-size: 27px 27px;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 12%, transparent 75%);
+  mask-image: radial-gradient(ellipse at center, #000 12%, transparent 75%);
 }
-.complex-map__seal {
-  position: absolute;
-  top: 4%;
-  left: 8%;
-  color: #2d6d8b;
-  font-size: 10px;
+.complex-map__svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
+.complex-map__svg--mobile { display: none; }
+.complex-map__wire, .complex-map__charge, .complex-map__spark {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.complex-map__wire { stroke: rgba(45,109,139,.32); stroke-width: 1.4; }
+.complex-map__charge {
+  stroke: #c69431;
+  stroke-width: 2.2;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px rgba(225,173,52,.7));
+}
+.complex-map__spark {
+  stroke: #f0c756;
+  stroke-width: 3.8;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px #e1ad34) drop-shadow(0 0 9px rgba(225,173,52,.85));
+}
+.complex-map__charge--split { animation: complex-charge-split 8s linear infinite; }
+.complex-map__charge--merge { animation: complex-charge-merge 8s linear infinite; }
+.complex-map__charge--finish { animation: complex-charge-finish 8s linear infinite; }
+.complex-map__spark--split { animation: complex-spark-split 8s linear infinite; }
+.complex-map__spark--merge { animation: complex-spark-merge 8s linear infinite; }
+.complex-map__spark--finish { animation: complex-spark-finish 8s linear infinite; }
+
+.complex-map__halo { fill: #e1ad34; opacity: 0; filter: blur(10px); }
+.complex-map__paper {
+  fill: rgba(255,255,255,.96);
+  stroke: rgba(45,109,139,.34);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 9px 12px rgba(27,26,23,.12));
+}
+.complex-map__module--result .complex-map__paper { fill: #fdf7e9; stroke: rgba(180,129,36,.62); }
+.complex-map__highlight { fill: #e1ad34; opacity: 0; }
+.complex-map__label {
+  fill: #5f6c70;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: .2em;
-  text-transform: uppercase;
+  letter-spacing: .17em;
 }
-.complex-map__lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; fill: none; }
-.complex-map__ghost { stroke: rgba(45,109,139,.2); stroke-width: 2; }
-.complex-map__ink { stroke: #b48124; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-.complex-map__lines circle { fill: #e1ad34; stroke: #f8f5f0; stroke-width: 2; }
-.complex-map__note {
-  position: absolute;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 17%;
-  padding: clamp(12px, 1.65vw, 20px);
-  border: 1px solid rgba(27,26,23,.14);
-  border-radius: 3px;
-  background: rgba(255,255,255,.88);
-  box-shadow: 0 24px 54px -36px rgba(27,26,23,.34);
-}
-.complex-map__note span {
-  color: #6f6b62;
-  font-size: clamp(8px, .67vw, 10px);
-  font-weight: 600;
-  letter-spacing: .14em;
-}
-.complex-map__note strong {
-  margin-top: 9px;
+.complex-map__title {
+  fill: #1b1a17;
   font-family: 'Instrument Serif', Georgia, serif;
-  font-size: clamp(23px, 2vw, 33px);
+  font-size: 23px;
   font-weight: 400;
   letter-spacing: -.02em;
-  line-height: 1;
 }
-.complex-map__note--one { top: 18%; left: 5%; width: 30%; transform: translateY(var(--hero-lift)) rotate(-2deg); }
-.complex-map__note--two { top: 11%; right: 9%; width: 30%; transform: translateY(var(--hero-lift)) rotate(2deg); }
-.complex-map__note--three { top: 65%; left: 36%; width: 35%; transform: translateY(var(--hero-lift)) rotate(-1deg); }
+.complex-map__module--result .complex-map__label { fill: #96712c; }
+.complex-map__module--result .complex-map__title { font-size: 22px; }
+.complex-map__module--source :is(.complex-map__halo, .complex-map__highlight) { animation: complex-node-source 8s ease-in-out infinite; }
+.complex-map__module--branch :is(.complex-map__halo, .complex-map__highlight) { animation: complex-node-branch 8s ease-in-out infinite; }
+.complex-map__module--combine :is(.complex-map__halo, .complex-map__highlight) { animation: complex-node-combine 8s ease-in-out infinite; }
+.complex-map__module--result :is(.complex-map__halo, .complex-map__highlight) { animation: complex-node-result 8s ease-in-out infinite; }
+
+/* The short bright dash travels along each wire; a quieter trail stays lit
+   until the network resets. Each destination illuminates on arrival. */
+@keyframes complex-charge-split {
+  0%, 4% { stroke-dashoffset: 100; opacity: 0; }
+  6% { opacity: .67; }
+  28%, 90% { stroke-dashoffset: 0; opacity: .67; }
+  98%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes complex-charge-merge {
+  0%, 32% { stroke-dashoffset: 100; opacity: 0; }
+  34% { opacity: .67; }
+  56%, 90% { stroke-dashoffset: 0; opacity: .67; }
+  98%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes complex-charge-finish {
+  0%, 60% { stroke-dashoffset: 100; opacity: 0; }
+  62% { opacity: .67; }
+  77%, 90% { stroke-dashoffset: 0; opacity: .67; }
+  98%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes complex-spark-split {
+  0%, 4% { stroke-dashoffset: 10; opacity: 0; }
+  6% { stroke-dashoffset: 10; opacity: 1; }
+  28% { stroke-dashoffset: -100; opacity: 1; }
+  29%, 100% { stroke-dashoffset: -100; opacity: 0; }
+}
+@keyframes complex-spark-merge {
+  0%, 32% { stroke-dashoffset: 10; opacity: 0; }
+  34% { stroke-dashoffset: 10; opacity: 1; }
+  56% { stroke-dashoffset: -100; opacity: 1; }
+  57%, 100% { stroke-dashoffset: -100; opacity: 0; }
+}
+@keyframes complex-spark-finish {
+  0%, 60% { stroke-dashoffset: 10; opacity: 0; }
+  62% { stroke-dashoffset: 10; opacity: 1; }
+  77% { stroke-dashoffset: -100; opacity: 1; }
+  78%, 100% { stroke-dashoffset: -100; opacity: 0; }
+}
+@keyframes complex-node-source {
+  0%, 2% { opacity: 0; }
+  5% { opacity: .47; }
+  9%, 90% { opacity: .18; }
+  98%, 100% { opacity: 0; }
+}
+@keyframes complex-node-branch {
+  0%, 27% { opacity: 0; }
+  30% { opacity: .55; }
+  35%, 90% { opacity: .2; }
+  98%, 100% { opacity: 0; }
+}
+@keyframes complex-node-combine {
+  0%, 55% { opacity: 0; }
+  58% { opacity: .6; }
+  63%, 90% { opacity: .22; }
+  98%, 100% { opacity: 0; }
+}
+@keyframes complex-node-result {
+  0%, 76% { opacity: 0; }
+  80% { opacity: .73; }
+  85%, 91% { opacity: .34; }
+  99%, 100% { opacity: 0; }
+}
+
 /* 02 · Mapping the work, with a scroll-following rail. */
 .complex-method {
   position: relative;
@@ -500,7 +565,6 @@
 @media (max-width: 1050px) {
   .complex-hero__inner { gap: 25px; }
   .complex-hero__copy h1 { font-size: clamp(52px, 5.25vw, 68px); }
-  .complex-map__note { padding: 12px; }
   .complex-case__copy { padding: clamp(32px, 4vw, 55px); }
 }
 
@@ -514,10 +578,9 @@
   }
   .complex-hero__copy h1 { max-width: 650px; font-size: clamp(51px, 7.9vw, 67px); }
   .complex-hero__intro { margin: 23px 0 25px; }
-  .complex-map { width: min(100%, 500px); margin: 0 auto; }
-  .complex-map__note strong { font-size: clamp(22px, 4vw, 31px); }
-  .complex-map__note span { font-size: 8px; }
-  .complex-hero__foot { position: static; margin: 0 6% 30px; }
+  .complex-map { width: min(100%, 430px); aspect-ratio: 380 / 400; margin: 0 auto; }
+  .complex-map__svg--desktop { display: none; }
+  .complex-map__svg--mobile { display: block; }
   .complex-method__inner { grid-template-columns: 1fr; gap: 60px; padding: 95px 6% 105px; }
   .complex-method__intro { position: static; }
   .complex-method__list li { min-height: 150px; }
@@ -537,10 +600,6 @@
   .complex-hero__copy h1 { margin-top: 17px; font-size: clamp(44px, 11.6vw, 59px); line-height: .95; }
   .complex-hero__intro { max-width: calc(100% - 43px); font-size: 15px; line-height: 1.65; }
   .complex-map { width: min(100%, 410px); }
-  .complex-map__seal { font-size: 8px; }
-  .complex-map__note { min-height: 18%; padding: 8px 9px; }
-  .complex-map__note strong { margin-top: 4px; font-size: clamp(17px, 5.2vw, 24px); }
-  .complex-map__note span { font-size: 6px; letter-spacing: .06em; }
   .complex-method__inner { gap: 44px; padding: 79px max(6%, 59px) 89px 6%; }
   .complex-method__intro h2 { font-size: clamp(43px, 10.8vw, 54px); }
   .complex-method__intro > p:last-child { font-size: 15px; }
@@ -580,8 +639,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .complex-page [data-complex-reveal], .complex-map__note { opacity: 1 !important; transform: none !important; }
-  .complex-map__ink { stroke-dasharray: none !important; stroke-dashoffset: 0 !important; }
+  .complex-page [data-complex-reveal] { opacity: 1 !important; transform: none !important; }
+  .complex-map :is(.complex-map__charge, .complex-map__spark, .complex-map__halo, .complex-map__highlight) { animation: none !important; }
+  .complex-map__charge { stroke-dashoffset: 0 !important; opacity: .55 !important; }
+  .complex-map__spark, .complex-map__halo { display: none; }
+  .complex-map__highlight { opacity: .12 !important; }
+  .complex-map__module--result .complex-map__highlight { opacity: .24 !important; }
   .complex-flow__track span, .complex-method__track span { transform: none !important; }
   .complex-link, .complex-link span { transition: none !important; }
 }
