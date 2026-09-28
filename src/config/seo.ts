@@ -60,14 +60,14 @@ export const PAGES: Record<'home' | 'simple' | 'complex', PageSeo> = {
   },
   complex: {
     path: '/complex',
-    title: 'Operations, SOPs, Systems and Automation | Clause & Code',
+    title: 'Operations and Custom Systems | Clause & Code',
     description:
-      'The operations side of Clause & Code: process mapping, SOPs, custom systems and automation for businesses that have outgrown how they run. Opening soon.',
+      'Clause & Code maps how work moves and builds custom systems around it. See two real projects: an expert bidding workflow and a community operations hub.',
     type: 'website',
     image: DEFAULT_IMAGE,
-    imageAlt: 'Clause & Code: operations, SOPs, systems and automation',
-    noindex: true,
-    summary: 'Placeholder for the operations offer (SOPs, systems, automation). Not yet open.',
+    imageAlt: 'Clause & Code: custom systems for work behind the business',
+    summary:
+      'Our operations work: process mapping and custom systems, shown through an expert bidding workflow and the internal admin system for Laha Space.',
   },
 }
 
@@ -287,6 +287,20 @@ export function jsonLdFor(page: PageSeo): JsonLd {
         })),
       },
       faqPage(FAQ.simple, url),
+      breadcrumbs(page),
+    )
+  } else if (page === PAGES.complex) {
+    graph.push(
+      webPage(page),
+      {
+        '@type': 'Service',
+        '@id': `${url}#custom-systems`,
+        name: 'Process mapping and custom operational systems',
+        serviceType: 'Business process mapping, custom systems and workflow design',
+        provider: { '@id': ORG_ID },
+        areaServed: ['AE', 'Worldwide'],
+        url,
+      },
       breadcrumbs(page),
     )
   } else {

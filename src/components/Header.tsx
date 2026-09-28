@@ -39,7 +39,7 @@ const NAV: NavItem[] = [
       {
         label: 'Complex',
         href: '/complex',
-        description: 'Operations and scale systems. The next chapter, coming soon.',
+        description: 'Process mapping and custom systems, built around how the work actually moves.',
       },
     ],
   },
