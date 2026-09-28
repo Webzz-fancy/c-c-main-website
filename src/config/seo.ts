@@ -15,7 +15,7 @@ import { site } from './site'
  */
 
 export type PageSeo = {
-  /** the URL path, with a trailing slash for sub pages ("/", "/simple/") */
+  /** preferred URL path: root "/" or a subpage without a trailing slash */
   path: string
   title: string
   description: string
@@ -48,7 +48,7 @@ export const PAGES: Record<'home' | 'simple' | 'complex', PageSeo> = {
       'Company home page: our four step approach (process mapping, creation and customization, adoption and implementation, AI readiness and automation), how to work with us, and the free business foundation check up.',
   },
   simple: {
-    path: '/simple/',
+    path: '/simple',
     title: 'Websites and AI Discoverability | Clause & Code',
     description:
       'Websites built to a higher standard, and the system that gets them found: fast, structured sites, visible to search, ChatGPT and Gemini, every enquiry captured.',
@@ -59,7 +59,7 @@ export const PAGES: Record<'home' | 'simple' | 'complex', PageSeo> = {
       'Our websites and AI discoverability offer: how we build sites (mapped before design, fast, structured for people and AI), the AI Client Engine at ai.clauseandcode.com, and six recent interactive builds.',
   },
   complex: {
-    path: '/complex/',
+    path: '/complex',
     title: 'Operations, SOPs, Systems and Automation | Clause & Code',
     description:
       'The operations side of Clause & Code: process mapping, SOPs, custom systems and automation for businesses that have outgrown how they run. Opening soon.',

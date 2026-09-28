@@ -102,7 +102,7 @@ const faqHtml = (items: { q: string; a: string }[]) =>
     .join('')}</dl></section>`
 
 const contactHtml = () =>
-  `<footer><p>${esc(site.name)} · ${esc(site.tagline)}</p><p>Email <a href="mailto:${site.contact.email}">${site.contact.email}</a> · Phone <a href="tel:${site.contact.phone.replace(/\s/g, '')}">${esc(site.contact.phone)}</a></p><nav aria-label="Pages"><a href="/">Home</a> · <a href="/simple/">Websites &amp; AI discoverability</a> · <a href="${AI_URL}">AI Client Engine</a></nav></footer>`
+  `<footer><p>${esc(site.name)} · ${esc(site.tagline)}</p><p>Email <a href="mailto:${site.contact.email}">${site.contact.email}</a> · Phone <a href="tel:${site.contact.phone.replace(/\s/g, '')}">${esc(site.contact.phone)}</a></p><nav aria-label="Pages"><a href="/">Home</a> · <a href="/simple">Websites &amp; AI discoverability</a> · <a href="${AI_URL}">AI Client Engine</a></nav></footer>`
 
 /** The plain HTML stays in the DOM during the JS loading screen, then is
  *  removed when the matching React page is ready. Without JS it is the page:
@@ -127,7 +127,7 @@ export function staticHtml(page: PageSeo): string {
     )
   }
   if (page === PAGES.complex) {
-    return open + `<header><p>${esc(COMPLEX.label)}</p><h1>${esc(COMPLEX.h1)}</h1><p>${esc(COMPLEX.p)}</p><a href="/simple/">See Websites &amp; AI discoverability</a></header>` + close
+    return open + `<header><p>${esc(COMPLEX.label)}</p><h1>${esc(COMPLEX.h1)}</h1><p>${esc(COMPLEX.p)}</p><a href="/simple">See Websites &amp; AI discoverability</a></header>` + close
   }
   return (
     open +
@@ -135,7 +135,7 @@ export function staticHtml(page: PageSeo): string {
     `<section id="approach"><p>${esc(HOME.approach.label)}</p><h2>${esc(HOME.approach.h2)}</h2><p>${esc(HOME.approach.intro)}</p><ol>${HOME.approach.steps
       .map(([t, b]) => `<li><h3>${esc(t)}</h3><p>${esc(b)}</p></li>`)
       .join('')}</ol></section>` +
-    `<section id="projects"><p>${esc(HOME.projects.label)}</p><h2>${esc(HOME.projects.h2)}</h2><p>${esc(HOME.projects.p)}</p><p><a href="/simple/">Websites &amp; AI discoverability</a></p></section>` +
+    `<section id="projects"><p>${esc(HOME.projects.label)}</p><h2>${esc(HOME.projects.h2)}</h2><p>${esc(HOME.projects.p)}</p><p><a href="/simple">Websites &amp; AI discoverability</a></p></section>` +
     `<section id="ways-we-help"><p>${esc(HOME.ways.label)}</p><h2>${esc(HOME.ways.h2)}</h2><ul>${HOME.ways.options
       .map(([t, b]) => `<li><h3>${esc(t)}</h3><p>${esc(b)}</p></li>`)
       .join('')}</ul></section>` +

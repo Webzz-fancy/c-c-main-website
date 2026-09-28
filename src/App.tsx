@@ -16,11 +16,16 @@ import { applyHead } from './lib/head'
 
 type Page = 'home' | 'simple' | 'complex'
 function getPage(path: string): Page {
-  // The bare paths still work when running Vite locally; production sends
-  // them to the slash-terminated canonical URLs before the app loads.
   if (path === '/simple' || path === '/simple/') return 'simple'
   if (path === '/complex' || path === '/complex/') return 'complex'
   return 'home'
+}
+
+function removeLegacySlash() {
+  const path = window.location.pathname
+  if (path === '/simple/' || path === '/complex/') {
+    window.history.replaceState(window.history.state, '', path.slice(0, -1) + window.location.search + window.location.hash)
+  }
 }
 
 export default function App() {
@@ -29,6 +34,11 @@ export default function App() {
   const [page, setPage] = useState<Page>(() =>
     typeof window !== 'undefined' ? getPage(window.location.pathname) : 'home',
   )
+
+  // An old permanent redirect to /simple/ may still be cached in a browser.
+  // The server keeps that address working, and this cleans up the displayed
+  // URL without sending the browser around a redirect loop.
+  useEffect(() => { removeLegacySlash() }, [])
 
   // The build embeds a readable copy outside #root. Leave it present while
   // the home loader runs (so crawlers do not see just "0%"); remove it only
@@ -44,7 +54,10 @@ export default function App() {
   }, [page])
 
   useEffect(() => {
-    const onPop = () => setPage(getPage(window.location.pathname))
+    const onPop = () => {
+      removeLegacySlash()
+      setPage(getPage(window.location.pathname))
+    }
     window.addEventListener('popstate', onPop)
     // Keep in-app navigation on the canonical page URLs. Unknown/old paths
     // must reach the server for a real 404, not become a duplicate SPA page.
@@ -56,7 +69,7 @@ export default function App() {
       if (!href || !href.startsWith('/')) return
       const target = new URL(href, window.location.href)
       if (target.origin !== window.location.origin) return
-      const isProjectRoute = target.pathname === '/simple/' || target.pathname === '/complex/'
+      const isProjectRoute = target.pathname === '/simple' || target.pathname === '/complex'
       if (!isProjectRoute && target.pathname !== '/') return
       if (page === 'home' && !isProjectRoute) return
       if (target.pathname === window.location.pathname) return

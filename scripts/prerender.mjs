@@ -9,12 +9,13 @@
  *   · the page's own <title>, description, canonical, robots, Open Graph and
  *     Twitter card, and the JSON-LD graph (from src/config/seo.ts), so the
  *     right metadata is in the raw HTML;
- *   · a plain, semantic copy of the page's content inside #root (headings,
+ *   · a plain, semantic copy of the page's content beside #root (headings,
  *     paragraphs, lists, links) — what the page says, in reading order.
- *     React replaces it on mount; a crawler reads it as the page.
+ *     React removes it when the real page mounts; crawlers can read it even
+ *     while the home page's loading screen is running.
  *
- * dist/index.html  →  /            dist/simple/index.html  →  /simple/
- *                                    dist/complex/index.html →  /complex/
+ * dist/index.html  →  /            dist/simple/index.html  →  /simple
+ *                                    dist/complex/index.html →  /complex
  *
  * Also writes sitemap.xml, robots.txt and llms.txt.
  */

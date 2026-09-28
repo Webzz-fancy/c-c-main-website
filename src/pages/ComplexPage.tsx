@@ -17,7 +17,7 @@ export default function ComplexPage() {
           Complex — operations, SOPs, systems & automation — will open here. Check back soon.
         </p>
         <div className="mt-8 flex gap-3">
-          <a href="/simple/" className="rounded-full bg-ink px-6 py-3 text-sm font-semibold text-white">
+          <a href="/simple" className="rounded-full bg-ink px-6 py-3 text-sm font-semibold text-white">
             See Simple
           </a>
           <a href="/" className="rounded-full border border-ink/15 bg-white px-6 py-3 text-sm font-semibold text-ink">
