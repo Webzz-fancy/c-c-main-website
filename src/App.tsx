@@ -16,8 +16,10 @@ import { applyHead } from './lib/head'
 
 type Page = 'home' | 'simple' | 'complex'
 function getPage(path: string): Page {
-  if (path.startsWith('/simple')) return 'simple'
-  if (path.startsWith('/complex')) return 'complex'
+  // The bare paths still work when running Vite locally; production sends
+  // them to the slash-terminated canonical URLs before the app loads.
+  if (path === '/simple' || path === '/simple/') return 'simple'
+  if (path === '/complex' || path === '/complex/') return 'complex'
   return 'home'
 }
 
@@ -28,6 +30,13 @@ export default function App() {
     typeof window !== 'undefined' ? getPage(window.location.pathname) : 'home',
   )
 
+  // The build embeds a readable copy outside #root. Leave it present while
+  // the home loader runs (so crawlers do not see just "0%"); remove it only
+  // after the real content mounts. The project pages mount immediately.
+  useEffect(() => {
+    if (page !== 'home' || ready) document.getElementById('prerender')?.remove()
+  }, [page, ready])
+
   // the document head follows the page: title, description, canonical,
   // social card and JSON-LD (the build pre-renders the same for each URL)
   useEffect(() => {
@@ -37,25 +46,24 @@ export default function App() {
   useEffect(() => {
     const onPop = () => setPage(getPage(window.location.pathname))
     window.addEventListener('popstate', onPop)
-    // lightweight SPA for /simple and /complex without touching main page
+    // Keep in-app navigation on the canonical page URLs. Unknown/old paths
+    // must reach the server for a real 404, not become a duplicate SPA page.
     const onClick = (e: MouseEvent) => {
-      const a = (e.target as HTMLElement).closest('a')
-      if (!a) return
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+      const a = (e.target as Element).closest('a')
+      if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download')) return
       const href = a.getAttribute('href')
       if (!href || !href.startsWith('/')) return
-      const isProjectRoute = href.startsWith('/simple') || href.startsWith('/complex')
-      const isOnProjectRoute = page !== 'home'
-      if (isProjectRoute || isOnProjectRoute) {
-        if (href === window.location.pathname) return
-        // only intercept known project routes + home
-        if (!['/','/simple','/complex'].some((p) => href === p || href.startsWith(p + '/'))) {
-          if (!isProjectRoute) return
-        }
-        e.preventDefault()
-        window.history.pushState(null, '', href)
-        setPage(getPage(href))
-        window.scrollTo(0, 0)
-      }
+      const target = new URL(href, window.location.href)
+      if (target.origin !== window.location.origin) return
+      const isProjectRoute = target.pathname === '/simple/' || target.pathname === '/complex/'
+      if (!isProjectRoute && target.pathname !== '/') return
+      if (page === 'home' && !isProjectRoute) return
+      if (target.pathname === window.location.pathname) return
+      e.preventDefault()
+      window.history.pushState(null, '', target.pathname + target.search + target.hash)
+      setPage(getPage(target.pathname))
+      window.scrollTo(0, 0)
     }
     document.addEventListener('click', onClick)
     return () => {

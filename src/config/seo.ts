@@ -72,8 +72,8 @@ export const PAGES: Record<'home' | 'simple' | 'complex', PageSeo> = {
 }
 
 export function pageForPath(pathname: string): PageSeo {
-  if (pathname.startsWith('/simple')) return PAGES.simple
-  if (pathname.startsWith('/complex')) return PAGES.complex
+  if (pathname === '/simple' || pathname === '/simple/') return PAGES.simple
+  if (pathname === '/complex' || pathname === '/complex/') return PAGES.complex
   return PAGES.home
 }
 

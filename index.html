@@ -10,6 +10,17 @@
     <meta name="color-scheme" content="light" />
     <meta name="author" content="Clause & Code" />
     <link rel="manifest" href="/site.webmanifest" />
+    <!-- The prerendered copy is a readable no-JS fallback. When JS is on,
+         cover it with the loader's cream until React mounts the real page. -->
+    <script>document.documentElement.classList.add('cc-js')</script>
+    <style>
+      html.cc-js #prerender { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+      html.cc-js #prerender::after { content: ''; position: fixed; inset: 0; z-index: 100; background: #F8F5F0; }
+      html:not(.cc-js) #prerender { max-width: 72rem; margin: auto; padding: 48px 24px; line-height: 1.65; }
+      html:not(.cc-js) #prerender h1 { font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.1; }
+      html:not(.cc-js) #prerender h2 { font-size: 1.75rem; margin-top: 2rem; }
+      html:not(.cc-js) #prerender a { color: #2D6D8B; text-decoration: underline; }
+    </style>
     <title>Clause &amp; Code | Systems, SOPs and Automation for Growth</title>
     <meta
       name="description"
