@@ -87,8 +87,12 @@ export default function ComplexPage() {
 
         <MethodJourney />
 
-        <section id="complex-work" className="complex-work" aria-label={COMPLEX.work.label}>
-          <p className="complex-eyebrow complex-work__marker" data-complex-reveal>02 / {COMPLEX.work.label}</p>
+        <section id="complex-work" className="complex-work" aria-labelledby="complex-work-title">
+          <div className="complex-work__head" data-complex-reveal>
+            <p className="complex-eyebrow">02 / {COMPLEX.work.label}</p>
+            <h2 id="complex-work-title">{COMPLEX.work.heading}</h2>
+            <p className="complex-work__intro">{COMPLEX.work.intro}</p>
+          </div>
           {COMPLEX.projects.map((project) => (
             <ProjectStory key={project.id} project={project} />
           ))}
@@ -99,9 +103,18 @@ export default function ComplexPage() {
             <p className="complex-eyebrow">03 / {COMPLEX.close.label}</p>
             <h2 id="complex-close-title">{COMPLEX.close.heading}</h2>
             <p>{COMPLEX.close.body}</p>
-            <a className="complex-link complex-link--brand" href={`mailto:${site.contact.email}?subject=Operations%20conversation`}>
-              {COMPLEX.close.action} <span aria-hidden="true">↗</span>
-            </a>
+            <div className="complex-close__actions">
+              <p className="complex-close__note">
+                <svg viewBox="0 0 12 14" aria-hidden="true" focusable="false">
+                  <path d="M2 6V4.2a4 4 0 0 1 8 0V6" />
+                  <rect x=".8" y="5.8" width="10.4" height="7.4" rx="1.4" />
+                </svg>
+                {COMPLEX.close.assurance}
+              </p>
+              <a className="complex-link complex-link--brand" href={`mailto:${site.contact.email}?subject=Operations%20conversation`}>
+                {COMPLEX.close.action} <span aria-hidden="true">↗</span>
+              </a>
+            </div>
           </div>
         </section>
       </main>

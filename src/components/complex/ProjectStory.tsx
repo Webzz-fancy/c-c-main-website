@@ -114,14 +114,14 @@ function WorkflowMap({ project, layout }: { project: ComplexProject; layout: Map
                 {lane.axis === 'x' ? (
                   <>
                     <line x1={lane.at} y1={lane.from} x2={lane.at} y2={lane.to} />
-                    <text className="complex-project__lane-near" x={lane.at - 14} y={lane.from - 8}>{lane.near}</text>
-                    <text className="complex-project__lane-far" x={lane.at + 14} y={lane.from - 8}>{lane.far}</text>
+                    <text className="complex-project__lane-near" textAnchor="end" x={lane.at - 14} y={lane.from - 8}>{lane.near}</text>
+                    <text className="complex-project__lane-far" textAnchor="start" x={lane.at + 14} y={lane.from - 8}>{lane.far}</text>
                   </>
                 ) : (
                   <>
                     <line x1={lane.from} y1={lane.at} x2={lane.to} y2={lane.at} />
-                    <text className="complex-project__lane-near" x={lane.from + 8} y={lane.at - 13}>{lane.near}</text>
-                    <text className="complex-project__lane-far" x={lane.from + 8} y={lane.at + 24}>{lane.far}</text>
+                    <text className="complex-project__lane-near" textAnchor="start" x={lane.from + 8} y={lane.at - 15}>{lane.near}</text>
+                    <text className="complex-project__lane-far" textAnchor="start" x={lane.from + 8} y={lane.at + 26}>{lane.far}</text>
                   </>
                 )}
               </g>
@@ -177,6 +177,42 @@ function WorkflowMap({ project, layout }: { project: ComplexProject; layout: Map
 }
 
 /**
+ * The same map on a narrow screen: the flow stood upright, one chip per step,
+ * wired top to bottom and marked with the side of the boundary each step sits
+ * on. It reads before the copy, so the drawing is never a decoration.
+ */
+function NarrowMap({ project, layout }: { project: ComplexProject; layout: MapLayout }) {
+  return (
+    <figure className="complex-project__figure complex-project__figure--narrow">
+      <div className="complex-project__chrome">
+        <span>{layout.caption}</span>
+        <span>{`01 / ${String(project.stops.length).padStart(2, '0')}`}</span>
+      </div>
+      <ol className="complex-project__rail">
+        {project.stops.map((stop, index) => (
+          <li key={stop.node} className="complex-project__rail-step" data-side={stop.side}>
+            <span className="complex-project__rail-link" aria-hidden="true" />
+            <span className="complex-project__rail-node">
+              <span className="complex-project__rail-head">
+                <span className="complex-project__rail-index">{`0${index + 1}`}</span>
+                <span className="complex-project__rail-title">{stop.node}</span>
+              </span>
+              <span className="complex-project__rail-detail">{stop.detail}</span>
+              <span className="complex-project__rail-side">
+                {stop.side === 'near' ? layout.lane.near : layout.lane.far}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ol>
+      <div className="complex-project__chrome complex-project__chrome--foot">
+        <span>{layout.note}</span>
+      </div>
+    </figure>
+  )
+}
+
+/**
  * One project, told as the workflow it actually is. The map pins beside the
  * copy: it opens wide, zooms to the first stop, follows the light from stop to
  * stop, then pulls back to the whole system. On narrow or reduced-motion
@@ -210,25 +246,34 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
     // A comfortable zoom: the active stop reads on its own, its neighbours hint
     // at the edge of the frame.
     const ZOOM = 2
+    // How much of the remaining distance the drawing covers per frame. The map
+    // trails the scroll slightly instead of snapping to it, which is what makes
+    // a long pan read as one movement.
+    const EASE = 0.14
 
     let frame = 0
     let active = true
+    let shown = 0
+    // Set while the story is off screen, so the next draw starts from the
+    // reader's position rather than easing in from where the map was left.
+    let resume = true
 
-    const draw = (force = false) => {
-      frame = 0
-      if (section.dataset.project !== 'on') return
-
+    /** The timeline position the scroll is asking for, or null if off screen. */
+    const read = (force = false) => {
       const rect = section.getBoundingClientRect()
       // Nothing to redraw while the story is off screen, but never leave the
       // panels stacked before the first draw.
-      if (!force && (rect.bottom < -80 || rect.top > window.innerHeight + 80)) return
+      if (!force && (rect.bottom < -80 || rect.top > window.innerHeight + 80)) return null
       const progress = clamp01(-rect.top / Math.max(1, rect.height - window.innerHeight))
-      const t = progress * units
+      return progress * units
+    }
+
+    const draw = (t: number) => {
       const stopCount = stops.length
 
       // Timeline: open wide → zoom to the first stop → one window per stop →
       // pull back to the whole system. Scrolling back retraces it exactly.
-      const zoomIn = smoothstep((t - 0.55) / 0.5)
+      const zoomIn = smoothstep((t - 0.5) / 0.62)
       const after = Math.max(0, t - (1 + stopCount))
       const wideBlend = t < 1 ? 1 - zoomIn : smoothstep((after - 0.35) / 0.85)
 
@@ -239,7 +284,7 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
         const current = Math.min(stopCount - 1, Math.floor(local))
         const within = local - current
         // The last stop has nowhere left to travel.
-        travel = current >= stopCount - 1 ? 0 : smoothstep((within - 0.74) / 0.26)
+        travel = current >= stopCount - 1 ? 0 : smoothstep((within - 0.68) / 0.32)
         focusIndex = current + travel
       } else if (t >= 1 + stopCount) {
         focusIndex = stopCount - 1
@@ -268,7 +313,7 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
       wires.forEach((wire, k) => {
         // Wire k lights as the reader leaves stop k and arrives at stop k + 1.
         const local = t - 1 - k
-        const lit = local >= 1 ? 1 : clamp01(smoothstep((local - 0.6) / 0.32))
+        const lit = local >= 1 ? 1 : clamp01(smoothstep((local - 0.54) / 0.4))
         const trace = wire.querySelector<SVGPathElement>('[data-wire-trace]')
         const spark = wire.querySelector<SVGPathElement>('[data-wire-spark]')
         if (trace) trace.style.strokeDashoffset = `${((1 - lit) * 100).toFixed(2)}`
@@ -301,7 +346,33 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
       if (meter) meter.style.setProperty('--meter-progress', clamp01((t - 1) / stopCount).toFixed(3))
     }
 
-    const schedule = () => { if (active && !frame) frame = requestAnimationFrame(() => draw()) }
+    /** Follow the scroll: step toward it, repaint, and stop once it settles. */
+    const tick = () => {
+      frame = 0
+      if (!active || section.dataset.project !== 'on') return
+      const next = read()
+      if (next === null) {
+        resume = true
+        return
+      }
+      if (resume) {
+        resume = false
+        shown = next
+        draw(shown)
+        return
+      }
+      const delta = next - shown
+      if (Math.abs(delta) < 0.001) {
+        shown = next
+        draw(shown)
+        return
+      }
+      shown += delta * EASE
+      draw(shown)
+      frame = requestAnimationFrame(tick)
+    }
+
+    const schedule = () => { if (active && !frame) frame = requestAnimationFrame(tick) }
 
     const settle = () => {
       // With no scroll timeline, the map is shown whole and every stop is lit.
@@ -324,8 +395,12 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
       const enabled = !motion.matches && window.innerWidth >= 1120 && window.innerHeight >= 640
       section.dataset.project = enabled ? 'on' : 'off'
       if (enabled) {
-        section.style.height = `${(units * 62).toFixed(1)}svh`
-        draw(true)
+        // More scroll per stop than the map's own length, so the sequence is
+        // walked rather than skimmed.
+        section.style.height = `${(units * 76).toFixed(1)}svh`
+        shown = read(true) ?? 0
+        resume = false
+        draw(shown)
       } else {
         section.style.removeProperty('height')
         settle()
@@ -352,6 +427,7 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
     <article ref={ref} className={`complex-project complex-project--${project.id}`} data-project="off">
       <div className="complex-project__stage">
         <WorkflowMap project={project} layout={layout} />
+        <NarrowMap project={project} layout={layout} />
         <div className="complex-project__copy">
           <header className="complex-project__head">
             <p className="complex-project__eyebrow">
