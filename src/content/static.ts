@@ -133,7 +133,7 @@ export function staticHtml(page: PageSeo): string {
           .map((stop) => `<li><h3>${esc(stop.title)}</h3><p>${esc(stop.body)}</p><p>${esc(stop.guard)}</p></li>`)
           .join('')}</ol><p>${esc(project.result)}</p></article>`)
         .join('')}</section>` +
-      `<section><p>${esc(COMPLEX.close.label)}</p><h2>${esc(COMPLEX.close.heading)}</h2><p>${esc(COMPLEX.close.body)}</p><p>${esc(COMPLEX.close.assurance)}</p><a href="mailto:${site.contact.email}?subject=Operations%20conversation">${esc(COMPLEX.close.action)}</a></section>` +
+      `<section><p>${esc(COMPLEX.close.label)}</p><h2>${esc(COMPLEX.close.heading)}</h2><p>${esc(COMPLEX.close.body)}</p><a href="mailto:${site.contact.email}?subject=Operations%20conversation">${esc(COMPLEX.close.action)}</a></section>` +
       close
     )
   }

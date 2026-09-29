@@ -38,7 +38,7 @@ export type ComplexContent = {
   method: { label: string; heading: string[]; intro: string; steps: { phase: string; title: string; body: string }[] }
   work: { label: string; heading: string; intro: string }
   projects: ComplexProject[]
-  close: { label: string; heading: string; body: string; assurance: string; action: string }
+  close: { label: string; heading: string; body: string; action: string }
 }
 
 export const COMPLEX: ComplexContent = {
@@ -196,8 +196,7 @@ export const COMPLEX: ComplexContent = {
   close: {
     label: 'Your turn',
     heading: 'Got a system to build?',
-    body: 'Bring the process that slows your team down, messy parts included. We start by mapping how the work actually moves before anything gets built.',
-    assurance: 'We don’t compromise on security.',
+    body: 'From a system that does not exist yet to one that has outgrown how it is run: we map the work first, and we don’t compromise on security.',
     action: 'Talk it through',
   },
 }

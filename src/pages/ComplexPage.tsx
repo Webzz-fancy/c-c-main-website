@@ -103,17 +103,21 @@ export default function ComplexPage() {
             <p className="complex-eyebrow">03 / {COMPLEX.close.label}</p>
             <h2 id="complex-close-title">{COMPLEX.close.heading}</h2>
             <p>{COMPLEX.close.body}</p>
+            {/* The robot stands beside the invitation and rests its hand on it. */}
             <div className="complex-close__actions">
-              <p className="complex-close__note">
-                <svg viewBox="0 0 12 14" aria-hidden="true" focusable="false">
-                  <path d="M2 6V4.2a4 4 0 0 1 8 0V6" />
-                  <rect x=".8" y="5.8" width="10.4" height="7.4" rx="1.4" />
-                </svg>
-                {COMPLEX.close.assurance}
-              </p>
               <a className="complex-link complex-link--brand" href={`mailto:${site.contact.email}?subject=Operations%20conversation`}>
                 {COMPLEX.close.action} <span aria-hidden="true">↗</span>
               </a>
+              <img
+                className="complex-close__robot"
+                src="/robot-leaning.webp"
+                alt=""
+                aria-hidden="true"
+                width={296}
+                height={560}
+                loading="lazy"
+                decoding="async"
+              />
             </div>
           </div>
         </section>

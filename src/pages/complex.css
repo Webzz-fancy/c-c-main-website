@@ -1027,7 +1027,7 @@
   position: relative;
   width: min(1200px, 88%);
   margin: 0 auto;
-  padding: clamp(100px, 10vw, 150px) 0 clamp(106px, 11vw, 168px);
+  padding: clamp(96px, 9.6vw, 142px) 0 clamp(96px, 9vw, 126px);
 }
 .complex-close .complex-eyebrow { color: #a67821; }
 .complex-close h2 {
@@ -1047,33 +1047,24 @@
   font-weight: 300;
   line-height: 1.7;
 }
+/* The robot stands to the right of the invitation, its raised hand resting on
+   the button, feet on the section floor. The lift brings the hand down to the
+   button's middle instead of its top. */
 .complex-close__actions {
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: flex-start;
-  gap: 28px;
-  margin-top: 38px;
+  margin-top: 40px;
 }
-.complex-close__note {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  margin: 0;
-  padding: 11px 18px;
-  border: 1px dashed rgba(150, 113, 44, .42);
-  border-radius: 100px;
-  color: #4a4740;
-  font-size: 14.5px;
-  line-height: 1.4;
-}
-.complex-close__note svg {
+.complex-close__robot {
   flex: none;
-  width: 12px;
-  height: 14px;
-  fill: none;
-  stroke: #a67821;
-  stroke-width: 1.2;
-  stroke-linecap: round;
+  width: clamp(110px, 9.4vw, 136px);
+  height: auto;
+  margin-left: -16px;
+  margin-top: calc(-1 * clamp(30px, 2.8vw, 40px));
+  filter: drop-shadow(0 26px 26px rgba(31, 46, 52, .16));
+  pointer-events: none;
+  user-select: none;
 }
 
 /* These are scroll-scrubbed, not timed entrances. Content remains visible
@@ -1238,8 +1229,9 @@
   .complex-close__inner { padding: 84px 0 92px; }
   .complex-close h2 { margin: 16px 0 20px; font-size: clamp(46px, 11.4vw, 66px); }
   .complex-close__inner > p:not(.complex-eyebrow) { font-size: 15px; }
-  .complex-close__actions { gap: 22px; margin-top: 30px; }
-  .complex-close__note { padding: 10px 15px; font-size: 13px; }
+  .complex-close__actions { margin-top: 32px; }
+  .complex-close__robot { width: 96px; margin-left: -12px; margin-top: -14px; }
+  .complex-close__inner { overflow: visible; }
 }
 
 @media (max-width: 360px) {
