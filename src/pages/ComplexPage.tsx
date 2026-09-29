@@ -100,24 +100,29 @@ export default function ComplexPage() {
 
         <section className="complex-close" aria-labelledby="complex-close-title">
           <div className="complex-close__inner" data-complex-reveal>
-            <p className="complex-eyebrow">03 / {COMPLEX.close.label}</p>
-            <h2 id="complex-close-title">{COMPLEX.close.heading}</h2>
-            <p>{COMPLEX.close.body}</p>
-            {/* The robot stands beside the invitation and rests its hand on it. */}
+            <div className="complex-close__text">
+              <p className="complex-eyebrow">03 / {COMPLEX.close.label}</p>
+              <h2 id="complex-close-title">{COMPLEX.close.heading}</h2>
+              <p>{COMPLEX.close.body}</p>
+            </div>
+            {/* The robot stands to the right of the invitation and rests its
+                hand on the button, the way you would lean on a counter. */}
             <div className="complex-close__actions">
-              <a className="complex-link complex-link--brand" href={`mailto:${site.contact.email}?subject=Operations%20conversation`}>
-                {COMPLEX.close.action} <span aria-hidden="true">↗</span>
-              </a>
-              <img
-                className="complex-close__robot"
-                src="/robot-leaning.webp"
-                alt=""
-                aria-hidden="true"
-                width={296}
-                height={560}
-                loading="lazy"
-                decoding="async"
-              />
+              <span className="complex-close__button">
+                <a className="complex-link complex-link--brand" href={`mailto:${site.contact.email}?subject=Operations%20conversation`}>
+                  {COMPLEX.close.action} <span aria-hidden="true">↗</span>
+                </a>
+                <img
+                  className="complex-close__robot"
+                  src="/robot-leaning.webp"
+                  alt=""
+                  aria-hidden="true"
+                  width={515}
+                  height={1040}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </span>
             </div>
           </div>
         </section>

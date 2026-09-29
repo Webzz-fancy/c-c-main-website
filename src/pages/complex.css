@@ -1039,7 +1039,7 @@
   letter-spacing: -.04em;
   line-height: .94;
 }
-.complex-close__inner > p:not(.complex-eyebrow) {
+.complex-close__text > p:not(.complex-eyebrow) {
   max-width: 560px;
   margin: 0;
   color: #4a4740;
@@ -1047,24 +1047,56 @@
   font-weight: 300;
   line-height: 1.7;
 }
-/* The robot stands to the right of the invitation, its raised hand resting on
-   the button, feet on the section floor. The lift brings the hand down to the
-   button's middle instead of its top. */
+/* The robot stands to the right of the invitation and leans on the button with
+   its near hand, the other hand on its hip, feet on the section floor. It is
+   positioned from its resting hand, which sits in the art 17.86% across and
+   59.23% down, so that hand lands on the button's top edge at any size. */
 .complex-close__actions {
-  position: relative;
+  /* One place sets the robot's height, because the gap above the invitation is
+     the room its head needs: on one column it never stands over the text. */
+  --robot-h: clamp(140px, 18vh, 176px);
   display: flex;
   align-items: flex-start;
-  margin-top: 40px;
+  margin-top: calc(26px + .6 * var(--robot-h));
 }
+.complex-close__button {
+  position: relative;
+  display: inline-flex;
+}
+/* A wider invitation than the page's other buttons, so the leaning hand has a
+   flat top to rest on rather than the crown of a pill. */
+.complex-close__button .complex-link { padding-right: 46px; padding-left: 48px; gap: 30px; }
 .complex-close__robot {
-  flex: none;
-  width: clamp(110px, 9.4vw, 136px);
-  height: auto;
-  margin-left: -16px;
-  margin-top: calc(-1 * clamp(30px, 2.8vw, 40px));
-  filter: drop-shadow(0 26px 26px rgba(31, 46, 52, .16));
+  position: absolute;
+  top: calc(4px - .5923 * var(--robot-h));
+  left: calc(100% - 44px - .0884 * var(--robot-h));
+  width: calc(.4952 * var(--robot-h));
+  height: var(--robot-h);
+  filter: drop-shadow(0 22px 24px rgba(31, 46, 52, .14));
   pointer-events: none;
   user-select: none;
+}
+
+/* Wide screens: the invitation and the robot stand as a pair under the copy, on
+   the right, so the robot never crosses the heading. Its own width is reserved
+   in the grid track, so it can lean out over the button without being clipped. */
+@media (min-width: 1120px) {
+  .complex-close__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: clamp(36px, 4vw, 76px);
+    width: min(1150px, 86%);
+  }
+  .complex-close h2 { max-width: 100%; }
+  .complex-close__actions {
+    margin-top: 0;
+    justify-self: end;
+    /* Room for the robot to stand to the right of the button. */
+    padding-right: calc(.4072 * clamp(258px, 33vh, 344px) + 26px);
+  }
+  .complex-close__actions { --robot-h: clamp(258px, 33vh, 344px); margin-top: 0; }
+  .complex-close__button .complex-link { padding-right: 54px; padding-left: 56px; }
 }
 
 /* These are scroll-scrubbed, not timed entrances. Content remains visible
@@ -1228,10 +1260,8 @@
   .complex-project__result { font-size: 22px; }
   .complex-close__inner { padding: 84px 0 92px; }
   .complex-close h2 { margin: 16px 0 20px; font-size: clamp(46px, 11.4vw, 66px); }
-  .complex-close__inner > p:not(.complex-eyebrow) { font-size: 15px; }
-  .complex-close__actions { margin-top: 32px; }
-  .complex-close__robot { width: 96px; margin-left: -12px; margin-top: -14px; }
-  .complex-close__inner { overflow: visible; }
+  .complex-close__text > p:not(.complex-eyebrow) { font-size: 15px; }
+  .complex-close__actions { --robot-h: clamp(136px, 17vh, 168px); margin-top: calc(24px + .6 * var(--robot-h)); }
 }
 
 @media (max-width: 360px) {
