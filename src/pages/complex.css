@@ -1054,7 +1054,7 @@
 .complex-close__actions {
   /* One place sets the robot's height, because the gap above the invitation is
      the room its head needs: on one column it never stands over the text. */
-  --robot-h: clamp(140px, 18vh, 176px);
+  --robot-h: clamp(120px, 15vh, 148px);
   display: flex;
   align-items: flex-start;
   margin-top: calc(26px + .6 * var(--robot-h));
@@ -1093,9 +1093,9 @@
     margin-top: 0;
     justify-self: end;
     /* Room for the robot to stand to the right of the button. */
-    padding-right: calc(.4072 * clamp(258px, 33vh, 344px) + 26px);
+    padding-right: calc(.4072 * clamp(178px, 22vh, 236px) + 26px);
   }
-  .complex-close__actions { --robot-h: clamp(258px, 33vh, 344px); margin-top: 0; }
+  .complex-close__actions { --robot-h: clamp(178px, 22vh, 236px); margin-top: 0; }
   .complex-close__button .complex-link { padding-right: 54px; padding-left: 56px; }
 }
 
@@ -1261,7 +1261,7 @@
   .complex-close__inner { padding: 84px 0 92px; }
   .complex-close h2 { margin: 16px 0 20px; font-size: clamp(46px, 11.4vw, 66px); }
   .complex-close__text > p:not(.complex-eyebrow) { font-size: 15px; }
-  .complex-close__actions { --robot-h: clamp(136px, 17vh, 168px); margin-top: calc(24px + .6 * var(--robot-h)); }
+  .complex-close__actions { --robot-h: clamp(116px, 14vh, 138px); margin-top: calc(24px + .6 * var(--robot-h)); }
 }
 
 @media (max-width: 360px) {
