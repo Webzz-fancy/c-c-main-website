@@ -9,15 +9,15 @@ const smoothstep = (value: number) => {
 
 const ROUTES = {
   desktop: {
-    first: 'M132 108 C139 178 250 203 226 302',
-    full: 'M132 108 C139 178 250 203 226 302 C195 393 95 408 132 500',
-    stops: [[132, 108], [226, 302], [132, 500]],
+    first: 'M132 500 C128 416 187 395 187 300',
+    full: 'M132 500 C128 416 187 395 187 300 C187 205 134 187 132 100',
+    stops: [[132, 500], [187, 300], [132, 100]],
     viewBox: '0 0 360 600',
   },
   mobile: {
-    first: 'M44 151 C97 152 113 57 190 95',
-    full: 'M44 151 C97 152 113 57 190 95 C257 128 281 175 336 129',
-    stops: [[44, 151], [190, 95], [336, 129]],
+    first: 'M43 142 C100 145 132 129 190 124',
+    full: 'M43 142 C100 145 132 129 190 124 C248 118 292 106 337 104',
+    stops: [[43, 142], [190, 124], [337, 104]],
     viewBox: '0 0 380 220',
   },
 } as const
@@ -35,22 +35,22 @@ function Road({ variant }: { variant: 'desktop' | 'mobile' }) {
       <path data-road-path className="complex-journey__road-trace" d={route.full} />
       {[start, middle].map(([x, y], index) => (
         <g key={index} className="complex-journey__stop" transform={`translate(${x} ${y})`}>
-          <circle className="complex-journey__stop-ring" r="22" />
-          <circle className="complex-journey__stop-core" r="3" />
-          <text x="27" y="-16">0{index + 1}</text>
+          <circle className="complex-journey__stop-ring" r="18" />
+          <circle className="complex-journey__stop-core" r="2.5" />
+          <text x="23" y="-14">0{index + 1}</text>
         </g>
       ))}
       <g data-road-traveler className="complex-journey__traveler" transform={`translate(${start[0]} ${start[1]})`}>
-        <circle className="complex-journey__traveler-glow" r="30" />
-        <circle className="complex-journey__traveler-ring" r="15" />
-        <circle className="complex-journey__traveler-core" r="6" />
+        <circle className="complex-journey__traveler-glow" r="23" />
+        <circle className="complex-journey__traveler-ring" r="11" />
+        <circle className="complex-journey__traveler-core" r="4" />
       </g>
       <g className="complex-journey__goal" transform={`translate(${finish[0]} ${finish[1]})`}>
-        <circle className="complex-journey__goal-glow" r="30" />
-        <circle className="complex-journey__goal-disc" r="22" />
-        <path className="complex-journey__goal-pole" d="M-7 13 V-14" />
-        <path className="complex-journey__goal-flag" d="M-6 -13 C0 -17 8 -10 14 -13 V-2 C8 1 0 -6 -6 -3 Z" />
-        <path className="complex-journey__goal-fold" d="M4 -14 V-4 M14 -13 V-2" />
+        <circle className="complex-journey__goal-glow" r="24" />
+        <circle className="complex-journey__goal-disc" r="18" />
+        <path className="complex-journey__goal-pole" d="M-7 12 V-13" />
+        <path className="complex-journey__goal-flag" d="M-6 -12 H12 V-2 H-6 Z" />
+        <path className="complex-journey__goal-fold" d="M-6 -12 H3 V-7 H-6 Z M3 -7 H12 V-2 H3 Z" />
       </g>
     </svg>
   )
@@ -179,13 +179,13 @@ export default function MethodJourney() {
         <div className="complex-method__story">
           <span className="complex-method__start" data-journey-start aria-hidden="true" />
           <div className="complex-journey" data-journey-stage>
-            <div className="complex-journey__chrome" aria-hidden="true"><span>THE PROCESS, MAPPED</span><span>01 — 03</span></div>
+            <div className="complex-journey__chrome" aria-hidden="true"><span>01 — 03</span></div>
             <Road variant="desktop" />
             <Road variant="mobile" />
             <ol className="complex-journey__cards">
               {COMPLEX.method.steps.map((step, index) => (
                 <li key={step.title} className="complex-journey__card" data-journey-card>
-                  <span className="complex-journey__card-step">0{index + 1} / {index === 2 ? 'THE OUTCOME' : 'THE APPROACH'}</span>
+                  <span className="complex-journey__card-step">0{index + 1} / {step.phase}</span>
                   <h3>{step.title}</h3>
                   <p>{step.body}</p>
                 </li>
@@ -193,7 +193,6 @@ export default function MethodJourney() {
             </ol>
             <div className="complex-journey__footer" aria-hidden="true">
               <span className="complex-journey__meter"><span /></span>
-              <span>Built around the way work moves.</span>
             </div>
           </div>
         </div>

@@ -20,6 +20,8 @@ function useComplexScroll(ref: RefObject<HTMLDivElement>) {
     if (!root) return
 
     const cases = Array.from(root.querySelectorAll<HTMLElement>('[data-complex-case]'))
+    const milestones = cases.map((el) => Array.from(el.querySelectorAll<HTMLElement>('[data-case-milestone]')))
+    const nodes = cases.map((el) => Array.from(el.querySelectorAll<HTMLElement>('[data-complex-node]')))
     const reveals = Array.from(root.querySelectorAll<HTMLElement>('[data-complex-reveal]'))
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     let frame = 0
@@ -27,17 +29,27 @@ function useComplexScroll(ref: RefObject<HTMLDivElement>) {
 
     const draw = () => {
       frame = 0
-      if (motion.matches) return
+      if (motion.matches) {
+        cases.forEach((el, i) => {
+          el.style.setProperty('--case-progress', '1')
+          nodes[i].forEach((node) => node.style.setProperty('--lit', '1'))
+        })
+        return
+      }
       const vh = window.innerHeight
-      const caseRects = cases.map((el) => el.getBoundingClientRect())
       const revealRects = reveals.map((el) => el.getBoundingClientRect())
 
       cases.forEach((el, i) => {
-        const rect = caseRects[i]
-        const progress = clamp01((vh * 0.68 - rect.top) / Math.max(1, rect.height + vh * 0.35))
+        // Four concrete milestones in the text advance the four nodes in the
+        // sticky workflow map. This keeps the diagram in step with the story.
+        const positions = milestones[i].map((item) => item.getBoundingClientRect().top)
+        const progress = clamp01((vh * 0.54 - positions[0]) / Math.max(1, positions[positions.length - 1] - positions[0]))
         el.style.setProperty('--case-progress', progress.toFixed(3))
-        el.querySelectorAll<HTMLElement>('[data-complex-node]').forEach((node, index, list) => {
-          node.style.setProperty('--lit', clamp01((progress - index / list.length * 0.78) * list.length * 1.7).toFixed(3))
+        nodes[i].forEach((node, index) => {
+          node.style.setProperty('--lit', clamp01(progress * (nodes[i].length - 1) - index + 1).toFixed(3))
+        })
+        milestones[i].forEach((item, index) => {
+          item.style.setProperty('--stage-focus', clamp01(1 - Math.abs(positions[index] - vh * 0.54) / (vh * 0.7)).toFixed(3))
         })
       })
 
@@ -52,7 +64,7 @@ function useComplexScroll(ref: RefObject<HTMLDivElement>) {
     const schedule = () => { if (active && !frame) frame = requestAnimationFrame(draw) }
     const preference = () => {
       root.dataset.complexMotion = motion.matches ? 'off' : 'on'
-      if (!motion.matches) schedule()
+      schedule()
     }
 
     root.dataset.complexMotion = motion.matches ? 'off' : 'on'
@@ -114,13 +126,31 @@ export default function ComplexPage() {
                     <div className="complex-case__eyebrow"><span>{project.number}</span><span aria-hidden="true" /><span>{project.label}</span></div>
                     <h3>{project.title}</h3>
                     <p className="complex-case__body">{project.body}</p>
-                    <div className="complex-case__outcome">
-                      <span>What this makes possible</span>
+                    <section className="complex-case__requirement" data-case-milestone data-complex-reveal>
+                      <h4>The requirement</h4>
+                      <p>{project.requirement}</p>
+                    </section>
+                    <section className="complex-case__process" aria-label="How we worked">
+                      <h4>How we worked</h4>
+                      <ol>
+                        {project.process.map((step, i) => (
+                          <li key={step.title} data-case-milestone data-complex-reveal>
+                            <span className="complex-case__phase-number" aria-hidden="true">0{i + 1}</span>
+                            <div>
+                              <h5>{step.title}</h5>
+                              <p>{step.body}</p>
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                    </section>
+                    <section className="complex-case__outcome" data-complex-reveal>
+                      <h4>The result</h4>
                       <p>{project.outcome}</p>
-                    </div>
+                    </section>
                   </div>
                   <div className="complex-case__visual" data-complex-reveal aria-hidden="true">
-                    <div className="complex-case__visual-top"><span>A flow at a glance</span><span>{project.number} / 02</span></div>
+                    <div className="complex-case__visual-top"><span>The working path</span><span>{project.number} / 02</span></div>
                     <div className="complex-flow">
                       <span className="complex-flow__track"><span /></span>
                       <ol>
@@ -129,11 +159,12 @@ export default function ComplexPage() {
                             <span className="complex-flow__marker"><span /></span>
                             <span className="complex-flow__ordinal">0{i + 1}</span>
                             <strong>{stage}</strong>
+                            <span className="complex-flow__detail">{project.flowDetails[i]}</span>
                           </li>
                         ))}
                       </ol>
                     </div>
-                    <div className="complex-case__visual-bottom"><span>One connected way of working</span><span aria-hidden="true">↗</span></div>
+                    <div className="complex-case__visual-bottom"><span>{project.visualNote}</span><span aria-hidden="true">↗</span></div>
                   </div>
                 </div>
               </article>

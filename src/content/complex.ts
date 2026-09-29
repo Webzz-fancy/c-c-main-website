@@ -16,23 +16,26 @@ export const COMPLEX = {
     intro: 'The answer is not always another tool. It starts with knowing what happens, who is involved and what should happen next.',
     steps: [
       {
-        title: 'Map the real process.',
-        body: 'Follow the work from the first request to the final decision. Find the handoffs that slow it down.',
+        phase: 'UNDERSTAND',
+        title: 'Find the real path.',
+        body: 'First, we follow a request through its handoffs and decisions. That shows us where work slows down and what the system actually needs to solve.',
       },
       {
-        title: 'Build for the people in it.',
-        body: 'Give each person a clear place to do their part, shaped around the way the team actually works.',
+        phase: 'DESIGN',
+        title: 'Design for the team.',
+        body: 'Then we use that map to design roles, screens and next steps, so each person can do their part without working around the tool.',
       },
       {
-        title: 'Keep the next step clear.',
-        body: 'Bring the moving parts together so the work can keep moving as the business grows.',
+        phase: 'BUILD',
+        title: 'Connect the whole flow.',
+        body: 'Finally, we build the workflow end to end, linking decisions and follow-up. The team can see what happened, who owns the next step and where the work stands.',
       },
     ],
   },
   work: {
     label: 'The work',
     heading: 'Two teams. Two different systems.',
-    intro: 'The problems were different. The starting point was the same: understand the work before building the solution.',
+    intro: 'Different requirements, same starting point: understand what the team needs to run before deciding what to build. Here is the work behind both systems.',
   },
   projects: [
     {
@@ -40,18 +43,52 @@ export const COMPLEX = {
       number: '01',
       label: 'Expert bidding · Private system',
       title: 'From project brief to a clear decision.',
-      body: 'We mapped how a project reaches the right experts, how bids come back, and how the team chooses a way forward. Then we built one private place to manage that whole journey.',
-      outcome: 'One clear path from assignment to bid to decision.',
+      body: 'A private bidding process, not an open marketplace. The brief, invitation, bid and final assignment all needed to follow one controlled path.',
+      requirement: 'The team needed to create project briefs, invite only relevant experts and collect bids without showing them to other experts. It also needed to choose an expert and follow the project after that decision.',
+      process: [
+        {
+          title: 'Separate the roles.',
+          body: 'We defined an admin view for projects, experts and bids, and an expert view limited to assigned projects. That access model kept the bidding process private from the start.',
+        },
+        {
+          title: 'Build the invitation path.',
+          body: 'We connected briefs and categories to selected expert assignments. Invited experts receive the project, see their own brief and can place a bid within the allowed range.',
+        },
+        {
+          title: 'Close the decision loop.',
+          body: 'We brought incoming bids into the admin view, then added expert selection and project status so the team could carry an open bid into ongoing work and completion.',
+        },
+      ],
+      outcome: 'One role-aware workspace for briefs, invitations, private bids and assignments. Experts see only their own projects; the team can make a selection and follow its status through completion.',
       flow: ['Brief', 'Experts', 'Bids', 'Decision'],
+      flowDetails: ['Project scoped', 'Selected invites', 'Private responses', 'Expert assigned'],
+      visualNote: 'Private bids · tracked decisions',
     },
     {
       id: 'laha',
       number: '02',
       label: 'Laha Space · Internal operations',
       title: 'The work behind every booking.',
-      body: 'Behind each booked session is a team reviewing teacher applications, preparing profiles and managing availability. We built the admin side to keep that work and the bookings in one place.',
-      outcome: 'From first application to booked session, one view for the team.',
+      body: 'The public teacher listing was only the visible end of a longer operation. The Laha team needed a place to manage the work before and after it went live.',
+      requirement: 'The team needed to take a teacher from application through a structured review before publishing a profile. Once live, they also had to manage availability, bookings and public reviews without losing track of the admin work behind them.',
+      process: [
+        {
+          title: 'Follow the application.',
+          body: 'We mapped the seven review stages, notes and documents the team uses to assess a teacher. Applicant details and uploads needed to stay inside the private admin workflow.',
+        },
+        {
+          title: 'Build the review workspace.',
+          body: 'We gave the team a place to move an applicant through stages, keep notes and protected documents, then create a draft profile and decide when it goes public.',
+        },
+        {
+          title: 'Connect profile to booking.',
+          body: 'We linked published profiles to weekly availability and generated slots, and brought bookings, reviews and community moderation into the admin area.',
+        },
+      ],
+      outcome: 'One operational path from application to published teacher and booked session. The Laha team can oversee each stage and control what goes public and when.',
       flow: ['Apply', 'Review', 'Publish', 'Book'],
+      flowDetails: ['Teacher applies', 'Seven-stage review', 'Profile goes live', 'Slot is booked'],
+      visualNote: 'Vetting · publishing · sessions',
     },
   ],
   close: {
