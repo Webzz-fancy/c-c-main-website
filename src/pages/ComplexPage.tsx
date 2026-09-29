@@ -117,8 +117,8 @@ export default function ComplexPage() {
                   src="/robot-leaning.webp"
                   alt=""
                   aria-hidden="true"
-                  width={515}
-                  height={1040}
+                  width={302}
+                  height={533}
                   loading="lazy"
                   decoding="async"
                 />
