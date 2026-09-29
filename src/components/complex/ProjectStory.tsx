@@ -110,7 +110,7 @@ function WorkflowMap({ project, layout }: { project: ComplexProject; layout: Map
               aria-hidden="true"
               focusable="false"
             >
-              <g className="complex-project__lane">
+              <g className="complex-project__lane" data-project-lane>
                 {lane.axis === 'x' ? (
                   <>
                     <line x1={lane.at} y1={lane.from} x2={lane.at} y2={lane.to} />
@@ -233,6 +233,7 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
     const wires = Array.from(section.querySelectorAll<SVGGElement>('[data-wire]'))
     const panels = Array.from(section.querySelectorAll<HTMLElement>('[data-panel]'))
     const counter = section.querySelector<HTMLElement>('[data-project-counter]')
+    const laneGroup = section.querySelector<SVGGElement>('[data-project-lane]')
     const meter = section.querySelector<HTMLElement>('[data-project-meter]')
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     if (!canvas || !layout) return
@@ -244,8 +245,9 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
     ]
     const wide = fraction(layout.centre)
     // A comfortable zoom: the active stop reads on its own, its neighbours hint
-    // at the edge of the frame.
-    const ZOOM = 2
+    // at the edge of the frame. On a small screen the module is only a couple
+    // of hundred pixels wide to begin with, so it has to come up further.
+    let zoom = 2
     // How much of the remaining distance the drawing covers per frame. The map
     // trails the scroll slightly instead of snapping to it, which is what makes
     // a long pan read as one movement.
@@ -303,7 +305,11 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
 
       canvas.style.setProperty('--fx', fx.toFixed(4))
       canvas.style.setProperty('--fy', fy.toFixed(4))
-      canvas.style.setProperty('--zoom', ((1 + (ZOOM - 1) * (1 - wideBlend)) * (1 - Math.sin(Math.PI * travel) * 0.07)).toFixed(4))
+      // The side labels are read once, on the whole map; while zoomed into a
+      // module they would be cropped, so they step back with the zoom.
+      if (laneGroup) laneGroup.style.opacity = wideBlend.toFixed(3)
+
+      canvas.style.setProperty('--zoom', ((1 + (zoom - 1) * (1 - wideBlend)) * (1 - Math.sin(Math.PI * travel) * 0.07)).toFixed(4))
 
       nodes.forEach((node, i) => {
         const prominence = Math.max(wideBlend, clamp01(1 - Math.abs(i - focusIndex) * 0.62))
@@ -376,6 +382,7 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
 
     const settle = () => {
       // With no scroll timeline, the map is shown whole and every stop is lit.
+      if (laneGroup) laneGroup.style.removeProperty('opacity')
       canvas.style.removeProperty('--fx')
       canvas.style.removeProperty('--fy')
       canvas.style.removeProperty('--zoom')
@@ -390,19 +397,45 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
       if (counter) counter.textContent = `01 / ${String(stops.length).padStart(2, '0')}`
     }
 
+    /** The tallest stop panel, measured without transforms, so the copy block
+     *  keeps one height while the panels crossfade inside it. */
+    const measureCopy = () => {
+      const panelBox = section.querySelector<HTMLElement>('[data-project-panels]')
+      const head = section.querySelector<HTMLElement>('[data-project-head]')
+      if (!panelBox) return
+      let tallest = 0
+      panelBox.querySelectorAll<HTMLElement>('[data-panel]').forEach((panel) => {
+        const kids = Array.from(panel.children) as HTMLElement[]
+        if (!kids.length) return
+        const bottom = Math.max(...kids.map((kid) => kid.offsetTop + kid.offsetHeight))
+        const top = Math.min(...kids.map((kid) => kid.offsetTop))
+        tallest = Math.max(tallest, bottom - top)
+      })
+      const headHeight = head ? head.offsetHeight : 0
+      section.style.setProperty('--panels-h', `${Math.ceil(tallest)}px`)
+      section.style.setProperty('--copy-h', `${Math.ceil(tallest + headHeight + 12)}px`)
+    }
+
     const preference = () => {
-      // The pinned map needs a wide, tall enough viewport to stay legible.
-      const enabled = !motion.matches && window.innerWidth >= 1120 && window.innerHeight >= 640
+      // The pinned map needs a viewport tall enough to hold the drawing and the
+      // copy it belongs to. Everything from a small phone up gets the timeline;
+      // shorter than that, the ordered rail reads the same stops.
+      const narrow = window.innerWidth < 1120
+      const enabled = !motion.matches && window.innerWidth >= 320 && window.innerHeight >= (narrow ? 596 : 640)
+      zoom = narrow ? 2.4 : 2
       section.dataset.project = enabled ? 'on' : 'off'
       if (enabled) {
         // More scroll per stop than the map's own length, so the sequence is
         // walked rather than skimmed.
-        section.style.height = `${(units * 76).toFixed(1)}svh`
+        section.style.height = `${(units * (narrow ? 70 : 76)).toFixed(1)}svh`
+        measureCopy()
         shown = read(true) ?? 0
         resume = false
         draw(shown)
       } else {
         section.style.removeProperty('height')
+        section.style.removeProperty('--panels-h')
+        section.style.removeProperty('--copy-h')
         settle()
       }
     }
@@ -429,7 +462,7 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
         <WorkflowMap project={project} layout={layout} />
         <NarrowMap project={project} layout={layout} />
         <div className="complex-project__copy">
-          <header className="complex-project__head">
+          <header className="complex-project__head" data-project-head>
             <p className="complex-project__eyebrow">
               <span>{project.number}</span>
               <span aria-hidden="true" />
@@ -437,7 +470,7 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
             </p>
             <h2>{project.title}</h2>
           </header>
-          <div className="complex-project__panels">
+          <div className="complex-project__panels" data-project-panels>
             <section className="complex-project__panel complex-project__panel--intro" data-panel="intro">
               <p className="complex-project__lede">{project.lede}</p>
             </section>
