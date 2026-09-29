@@ -3,6 +3,7 @@ import Header from '../components/Header'
 import Footer from '../components/Footer'
 import ScrollRope from '../components/ScrollRope'
 import HeroNetwork from '../components/complex/HeroNetwork'
+import MethodJourney from '../components/complex/MethodJourney'
 import { COMPLEX } from '../content/complex'
 import { site } from '../config/site'
 import './complex.css'
@@ -10,20 +11,17 @@ import './complex.css'
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
 
 /**
- * The method and project reveals follow the reader's scroll position. The
- * hero network has its own looping timeline and is intentionally not touched
- * here. Ordinary content stays in the document flow.
+ * Project and section reveals follow the reader's scroll position. The hero
+ * loop and pinned method journey keep their own independent timelines.
  */
 function useComplexScroll(ref: RefObject<HTMLDivElement>) {
   useLayoutEffect(() => {
     const root = ref.current
     if (!root) return
 
-    const method = root.querySelector<HTMLElement>('[data-complex-method]')
     const cases = Array.from(root.querySelectorAll<HTMLElement>('[data-complex-case]'))
     const reveals = Array.from(root.querySelectorAll<HTMLElement>('[data-complex-reveal]'))
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
-    if (!method) return
     let frame = 0
     let active = true
 
@@ -31,12 +29,8 @@ function useComplexScroll(ref: RefObject<HTMLDivElement>) {
       frame = 0
       if (motion.matches) return
       const vh = window.innerHeight
-      const methodRect = method.getBoundingClientRect()
       const caseRects = cases.map((el) => el.getBoundingClientRect())
       const revealRects = reveals.map((el) => el.getBoundingClientRect())
-
-      const methodP = clamp01((vh * 0.28 - methodRect.top) / Math.max(1, methodRect.height + vh * 0.35))
-      method.style.setProperty('--method-progress', methodP.toFixed(3))
 
       cases.forEach((el, i) => {
         const rect = caseRects[i]
@@ -64,7 +58,6 @@ function useComplexScroll(ref: RefObject<HTMLDivElement>) {
     root.dataset.complexMotion = motion.matches ? 'off' : 'on'
     draw()
     const observer = new ResizeObserver(schedule)
-    observer.observe(method)
     cases.forEach((el) => observer.observe(el))
     document.fonts?.ready.then(schedule).catch(() => {})
     window.addEventListener('scroll', schedule, { passive: true })
@@ -105,29 +98,7 @@ export default function ComplexPage() {
           </div>
         </section>
 
-        <section id="complex-approach" className="complex-method" data-complex-method aria-labelledby="complex-method-title">
-          <div className="complex-method__inner">
-            <div className="complex-method__intro" data-complex-reveal>
-              <p className="complex-eyebrow">01 / {COMPLEX.method.label}</p>
-              <h2 id="complex-method-title">{COMPLEX.method.heading[0]}{' '}<br /><em>{COMPLEX.method.heading[1]}</em></h2>
-              <p>{COMPLEX.method.intro}</p>
-            </div>
-            <div className="complex-method__list">
-              <span className="complex-method__track" aria-hidden="true"><span /></span>
-              <ol>
-                {COMPLEX.method.steps.map((step, i) => (
-                  <li key={step.title} data-complex-reveal>
-                    <span className="complex-method__number">0{i + 1}</span>
-                    <div>
-                      <h3>{step.title}</h3>
-                      <p>{step.body}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
-        </section>
+        <MethodJourney />
 
         <section id="complex-work" className="complex-work" aria-labelledby="complex-work-title">
           <div className="complex-work__intro" data-complex-reveal>

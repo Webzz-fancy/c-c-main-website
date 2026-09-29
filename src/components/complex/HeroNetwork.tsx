@@ -16,19 +16,19 @@ type Link = { id: string; phase: Phase; d: string }
 
 type Layout = { viewBox: string; modules: Module[]; links: Link[] }
 
-// An original illustration of one input branching into three considerations,
-// becoming two pieces of work, and arriving at one useful system. The paper
+// An original illustration of a brief becoming three operational inputs,
+// a workflow map and system design, then a tailored working system. The paper
 // modules and right-angle paths are our own, not the reference stock image.
 const desktop: Layout = {
   viewBox: '0 0 740 540',
   modules: [
-    { id: 'source', phase: 'source', label: 'INPUT', title: 'The work', x: 20, y: 240, w: 112, h: 64 },
-    { id: 'people', phase: 'branch', label: '01', title: 'People', x: 210, y: 70, w: 123, h: 72 },
-    { id: 'process', phase: 'branch', label: '02', title: 'Process', x: 210, y: 235, w: 123, h: 72 },
-    { id: 'decisions', phase: 'branch', label: '03', title: 'Decisions', x: 210, y: 400, w: 123, h: 72 },
-    { id: 'map', phase: 'combine', label: '04', title: 'Map', x: 415, y: 150, w: 120, h: 72 },
-    { id: 'build', phase: 'combine', label: '05', title: 'Build', x: 415, y: 330, w: 120, h: 72 },
-    { id: 'result', phase: 'result', label: 'OUTPUT', title: 'One system', x: 612, y: 236, w: 125, h: 80 },
+    { id: 'source', phase: 'source', label: 'INPUT', title: 'Client brief', x: 20, y: 240, w: 112, h: 64 },
+    { id: 'people', phase: 'branch', label: '01', title: 'Team roles', x: 210, y: 70, w: 123, h: 72 },
+    { id: 'process', phase: 'branch', label: '02', title: 'Handoffs', x: 210, y: 235, w: 123, h: 72 },
+    { id: 'decisions', phase: 'branch', label: '03', title: 'Approvals', x: 210, y: 400, w: 123, h: 72 },
+    { id: 'map', phase: 'combine', label: '04', title: 'Workflow map', x: 415, y: 150, w: 120, h: 72 },
+    { id: 'build', phase: 'combine', label: '05', title: 'System design', x: 415, y: 330, w: 120, h: 72 },
+    { id: 'result', phase: 'result', label: 'OUTPUT', title: 'Tailored system', x: 612, y: 236, w: 125, h: 80 },
   ],
   links: [
     { id: 'input-people', phase: 'split', d: 'M132 272 H170 V106 H210' },
@@ -46,13 +46,13 @@ const desktop: Layout = {
 const mobile: Layout = {
   viewBox: '0 0 380 400',
   modules: [
-    { id: 'source', phase: 'source', label: 'INPUT', title: 'The work', x: 132, y: 8, w: 116, h: 52 },
-    { id: 'people', phase: 'branch', label: '01', title: 'People', x: 10, y: 103, w: 106, h: 54 },
-    { id: 'process', phase: 'branch', label: '02', title: 'Process', x: 137, y: 103, w: 106, h: 54 },
-    { id: 'decisions', phase: 'branch', label: '03', title: 'Decisions', x: 264, y: 103, w: 106, h: 54 },
-    { id: 'map', phase: 'combine', label: '04', title: 'Map', x: 75, y: 211, w: 108, h: 56 },
-    { id: 'build', phase: 'combine', label: '05', title: 'Build', x: 197, y: 211, w: 108, h: 56 },
-    { id: 'result', phase: 'result', label: 'OUTPUT', title: 'One system', x: 123, y: 315, w: 134, h: 62 },
+    { id: 'source', phase: 'source', label: 'INPUT', title: 'Client brief', x: 132, y: 8, w: 116, h: 52 },
+    { id: 'people', phase: 'branch', label: '01', title: 'Team roles', x: 10, y: 103, w: 106, h: 54 },
+    { id: 'process', phase: 'branch', label: '02', title: 'Handoffs', x: 137, y: 103, w: 106, h: 54 },
+    { id: 'decisions', phase: 'branch', label: '03', title: 'Approvals', x: 264, y: 103, w: 106, h: 54 },
+    { id: 'map', phase: 'combine', label: '04', title: 'Workflow map', x: 75, y: 211, w: 108, h: 56 },
+    { id: 'build', phase: 'combine', label: '05', title: 'System design', x: 197, y: 211, w: 108, h: 56 },
+    { id: 'result', phase: 'result', label: 'OUTPUT', title: 'Tailored system', x: 123, y: 315, w: 134, h: 62 },
   ],
   links: [
     { id: 'input-people', phase: 'split', d: 'M190 60 V81 H63 V103' },
