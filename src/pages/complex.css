@@ -1156,7 +1156,22 @@
     .complex-project[data-project='on'] .complex-project__figure {
       padding: 15px 15px 12px;
       border-radius: 20px;
+      /* The map repaints on every scroll frame here. A backdrop blur would
+         re-read the page behind it each time, which is what makes phone
+         scrolling stutter, so the card is solid instead. Same look, no cost. */
+      background: linear-gradient(137deg, #ffffff 3%, #f7fbfb 58%, #fdfefe);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      box-shadow: 0 18px 34px -26px rgba(31, 63, 75, .5);
     }
+    .complex-project[data-project='on'] .complex-project__canvas {
+      will-change: transform;
+      backface-visibility: hidden;
+    }
+    .complex-project[data-project='on'] .complex-project__node-halo { filter: none; }
+    .complex-project[data-project='on'] .complex-project__node-paper { filter: drop-shadow(0 3px 5px rgba(27, 26, 23, .1)); }
+    .complex-project[data-project='on'] .complex-project__spark { filter: drop-shadow(0 0 5px #e1ad34); }
+    .complex-project[data-project='on'] .complex-project__trace { filter: none; }
     /* The drawing takes the height the copy does not need. On a phone the width
        is what limits it; on a taller screen it can grow. */
     .complex-project[data-project='on'] .complex-project__viewport {

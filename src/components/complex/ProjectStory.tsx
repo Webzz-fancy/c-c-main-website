@@ -248,10 +248,12 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
     // at the edge of the frame. On a small screen the module is only a couple
     // of hundred pixels wide to begin with, so it has to come up further.
     let zoom = 2
-    // How much of the remaining distance the drawing covers per frame. The map
-    // trails the scroll slightly instead of snapping to it, which is what makes
-    // a long pan read as one movement.
-    const EASE = 0.14
+    // The map trails the scroll slightly instead of snapping to it, which is
+    // what makes a long pan read as one movement. Expressed as a rate, not a
+    // per-frame fraction, so a 120Hz phone eases at the same speed as a 60Hz
+    // one instead of feeling twice as twitchy.
+    const EASE_RATE = 14
+    const easeFor = (dt: number) => 1 - Math.exp(-EASE_RATE * dt)
 
     let frame = 0
     let active = true
@@ -345,7 +347,10 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
           const distance = Math.abs(t - (1 + Number(panel.dataset.index) + 0.42))
           focus = 1 - smoothstep((distance - 0.28) / 0.5)
         }
-        panel.style.setProperty('--panel-focus', clamp01(focus).toFixed(3))
+        // Squared: the panel in hand stays at full strength, while the one
+        // arriving or leaving drops to nothing instead of lingering as a
+        // readable ghost underneath it.
+        panel.style.setProperty('--panel-focus', clamp01(focus * focus).toFixed(3))
       })
 
       if (counter) counter.textContent = `${String(Math.round(focusIndex) + 1).padStart(2, '0')} / ${String(stopCount).padStart(2, '0')}`
@@ -353,7 +358,8 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
     }
 
     /** Follow the scroll: step toward it, repaint, and stop once it settles. */
-    const tick = () => {
+    let last = 0
+    const tick = (now: number) => {
       frame = 0
       if (!active || section.dataset.project !== 'on') return
       const next = read()
@@ -361,6 +367,8 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
         resume = true
         return
       }
+      const dt = last ? Math.min((now - last) / 1000, 0.05) : 1 / 60
+      last = now
       if (resume) {
         resume = false
         shown = next
@@ -373,12 +381,16 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
         draw(shown)
         return
       }
-      shown += delta * EASE
+      shown += delta * easeFor(dt)
       draw(shown)
       frame = requestAnimationFrame(tick)
     }
 
-    const schedule = () => { if (active && !frame) frame = requestAnimationFrame(tick) }
+    const schedule = () => {
+      if (!active || frame) return
+      last = 0 // a fresh gesture starts a fresh clock, so the first step is small
+      frame = requestAnimationFrame(tick)
+    }
 
     const settle = () => {
       // With no scroll timeline, the map is shown whole and every stop is lit.
