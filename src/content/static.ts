@@ -128,8 +128,10 @@ export function staticHtml(page: PageSeo): string {
       `<section id="complex-approach"><p>${esc(COMPLEX.method.label)}</p><h2>${esc(COMPLEX.method.heading.join(' '))}</h2><p>${esc(COMPLEX.method.intro)}</p><ol>${COMPLEX.method.steps
         .map((step) => `<li><h3>${esc(step.title)}</h3><p>${esc(step.body)}</p></li>`)
         .join('')}</ol></section>` +
-      `<section id="complex-work"><p>${esc(COMPLEX.work.label)}</p><h2>${esc(COMPLEX.work.heading)}</h2><p>${esc(COMPLEX.work.intro)}</p>${COMPLEX.projects
-        .map((project) => `<article><p>${esc(project.label)}</p><h3>${esc(project.title)}</h3><p>${esc(project.body)}</p><h4>The requirement</h4><p>${esc(project.requirement)}</p><h4>How we worked</h4><ol>${project.process.map((step) => `<li><h5>${esc(step.title)}</h5><p>${esc(step.body)}</p></li>`).join('')}</ol><h4>The result</h4><p>${esc(project.outcome)}</p></article>`)
+      `<section id="complex-work" aria-label="${esc(COMPLEX.work.label)}"><p>${esc(COMPLEX.work.label)}</p>${COMPLEX.projects
+        .map((project) => `<article><p>${esc(project.label)}</p><h2>${esc(project.title)}</h2><p>${esc(project.lede)}</p><ol>${project.stops
+          .map((stop) => `<li><h3>${esc(stop.title)}</h3><p>${esc(stop.body)}</p><p>${esc(stop.guard)}</p></li>`)
+          .join('')}</ol><p>${esc(project.result)}</p></article>`)
         .join('')}</section>` +
       `<section><p>${esc(COMPLEX.close.label)}</p><h2>${esc(COMPLEX.close.heading)}</h2><p>${esc(COMPLEX.close.body)}</p><a href="mailto:${site.contact.email}?subject=Operations%20conversation">${esc(COMPLEX.close.action)}</a></section>` +
       close
@@ -187,9 +189,9 @@ export function llmsTxt(): string {
     ``,
     ...COMPLEX.projects.flatMap((project) => [
       `### ${project.label}`,
-      `Need: ${project.requirement}`,
-      ...project.process.map((step, i) => `${i + 1}. ${step.title} ${step.body}`),
-      `Result: ${project.outcome}`,
+      project.lede,
+      ...project.stops.map((stop, i) => `${i + 1}. ${stop.title} ${stop.body} ${stop.guard}`),
+      `Result: ${project.result}`,
       ``,
     ]),
     ``,

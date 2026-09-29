@@ -1,9 +1,41 @@
 /**
  * Copy shared by the interactive page and its readable, no-JS prerender.
- * The bidding client stays anonymous throughout the public site. The flows
- * are editorial diagrams of the work, not screenshots of private software.
+ *
+ * The bidding client stays anonymous throughout the public site. The workflow
+ * maps are editorial diagrams of the work, not screenshots of private
+ * software, and every claim here comes from the systems themselves.
  */
-export const COMPLEX = {
+
+export type ComplexStop = {
+  /** Short title printed inside the workflow map. */
+  node: string
+  /** The line under it in the map, in the client's own vocabulary. */
+  detail: string
+  /** Panel heading. */
+  title: string
+  body: string
+  guard: string
+}
+
+export type ComplexProject = {
+  id: string
+  number: string
+  label: string
+  title: string
+  lede: string
+  stops: ComplexStop[]
+  result: string
+}
+
+export type ComplexContent = {
+  hero: { label: string; firstLine: string; secondLine: string; intro: string }
+  method: { label: string; heading: string[]; intro: string; steps: { phase: string; title: string; body: string }[] }
+  work: { label: string }
+  projects: ComplexProject[]
+  close: { label: string; heading: string; body: string; action: string }
+}
+
+export const COMPLEX: ComplexContent = {
   hero: {
     label: 'Our Projects · Systems & operations',
     firstLine: 'The work behind your business,',
@@ -34,61 +66,111 @@ export const COMPLEX = {
   },
   work: {
     label: 'The work',
-    heading: 'Two teams. Two different systems.',
-    intro: 'Different requirements, same starting point: understand what the team needs to run before deciding what to build. Here is the work behind both systems.',
   },
   projects: [
     {
       id: 'bidding',
       number: '01',
-      label: 'Expert bidding · Private system',
-      title: 'From project brief to a clear decision.',
-      body: 'A private bidding process, not an open marketplace. The brief, invitation, bid and final assignment all needed to follow one controlled path.',
-      requirement: 'The team needed to create project briefs, invite only relevant experts and collect bids without showing them to other experts. It also needed to choose an expert and follow the project after that decision.',
-      process: [
+      label: 'Expert bidding · Invitation only',
+      title: 'The shortlist was the whole point.',
+      lede: 'This team places work with experts it chooses itself. The brief, the invitations, the bids and the assignment all had to stay inside that circle.',
+      stops: [
         {
-          title: 'Separate the roles.',
-          body: 'We defined an admin view for projects, experts and bids, and an expert view limited to assigned projects. That access model kept the bidding process private from the start.',
+          node: 'Brief',
+          detail: 'scope · category · range',
+          title: 'One brief, written once.',
+          body: 'The project is described in the system: what the work covers, which category it sits in and the range it is worth. Every step after that reads from the same record instead of a version pasted into an email.',
+          guard: 'One source: the brief holds the scope and the range.',
         },
         {
-          title: 'Build the invitation path.',
-          body: 'We connected briefs and categories to selected expert assignments. Invited experts receive the project, see their own brief and can place a bid within the allowed range.',
+          node: 'Invitations',
+          detail: 'chosen expert by expert',
+          title: 'Invitations, not listings.',
+          body: 'The team decides which experts see which brief. There is no open board to search and no bid posted in public — an expert finds work in their account because someone chose them for it.',
+          guard: 'Selected access: nothing is published to a marketplace.',
         },
         {
-          title: 'Close the decision loop.',
-          body: 'We brought incoming bids into the admin view, then added expert selection and project status so the team could carry an open bid into ongoing work and completion.',
+          node: 'Expert view',
+          detail: 'their projects only',
+          title: 'An expert sees their own work, and stops there.',
+          body: 'An expert account reaches the projects it was invited to. Inside them it holds that person’s brief, that person’s bid and the outcome of their own invitation — nothing from anyone else on the list.',
+          guard: 'Isolated: no expert can reach another expert’s bid.',
+        },
+        {
+          node: 'Private bids',
+          detail: 'kept per expert',
+          title: 'Bids arrive inside the range.',
+          body: 'Each bid is checked against the range set on the brief, so the team reads numbers it can actually compare. When the responses are in, they sit together in one view rather than in a folder of replies.',
+          guard: 'Validated: a bid outside the brief’s range is refused.',
+        },
+        {
+          node: 'Decision',
+          detail: 'one expert selected',
+          title: 'One decision, made where it can be seen.',
+          body: 'The team compares the bids and selects an expert once, in the system. Bidding closes for everyone else, and the choice stays attached to the project rather than living in someone’s memory.',
+          guard: 'Recorded: one selection, and no second winner.',
+        },
+        {
+          node: 'Assigned',
+          detail: 'open → ongoing → done',
+          title: 'Then the work carries on.',
+          body: 'Selection opens the project, and its status moves from open to ongoing to completed. Access stays with the assigned expert, so the assignment is still visible long after the decision that created it.',
+          guard: 'Scoped: the assignment opens the project, not the account.',
         },
       ],
-      outcome: 'One role-aware workspace for briefs, invitations, private bids and assignments. Experts see only their own projects; the team can make a selection and follow its status through completion.',
-      flow: ['Brief', 'Experts', 'Bids', 'Decision'],
-      flowDetails: ['Project scoped', 'Selected invites', 'Private responses', 'Expert assigned'],
-      visualNote: 'Private bids · tracked decisions',
+      result: 'A private process that runs from brief to completed work without a single public listing. Who sees what is settled by the invitation, and by nothing else.',
     },
     {
       id: 'laha',
       number: '02',
       label: 'Laha Space · Internal operations',
-      title: 'The work behind every booking.',
-      body: 'The public teacher listing was only the visible end of a longer operation. The Laha team needed a place to manage the work before and after it went live.',
-      requirement: 'The team needed to take a teacher from application through a structured review before publishing a profile. Once live, they also had to manage availability, bookings and public reviews without losing track of the admin work behind them.',
-      process: [
+      title: 'A profile goes live on purpose.',
+      lede: 'The public side of Laha shows teachers who are ready to be booked. Behind it runs a review the team does itself, applicant by applicant.',
+      stops: [
         {
-          title: 'Follow the application.',
-          body: 'We mapped the seven review stages, notes and documents the team uses to assess a teacher. Applicant details and uploads needed to stay inside the private admin workflow.',
+          node: 'Application',
+          detail: 'submitted by a teacher',
+          title: 'Every application lands in one place.',
+          body: 'A teacher applies, and the application enters a queue the team can work through. The person, their details and their documents stay together from the first day instead of being spread across inboxes.',
+          guard: 'Held internally: an application is never public.',
         },
         {
-          title: 'Build the review workspace.',
-          body: 'We gave the team a place to move an applicant through stages, keep notes and protected documents, then create a draft profile and decide when it goes public.',
+          node: 'Review stages',
+          detail: 'seven steps · notes',
+          title: 'Review moves through stages, not opinions.',
+          body: 'Applicants are reviewed in defined stages, so each one is either in review or past it. Notes are written next to the application, which means a decision can still be explained months after it was taken.',
+          guard: 'On file: stage history and notes stay with the applicant.',
         },
         {
-          title: 'Connect profile to booking.',
-          body: 'We linked published profiles to weekly availability and generated slots, and brought bookings, reviews and community moderation into the admin area.',
+          node: 'Documents',
+          detail: 'private verification',
+          title: 'The documents nobody else sees.',
+          body: 'Verification documents are uploaded and read inside the admin area, behind the team’s own sign-in. Identity material is never left in a public folder or an open drive where it could be found by accident.',
+          guard: 'Protected: files are served to the team, not to the site.',
+        },
+        {
+          node: 'Draft → published',
+          detail: 'the team decides',
+          title: 'Draft first. Publish deliberately.',
+          body: 'A teacher who passes review becomes a draft profile the team can complete and edit. It appears on the site when they publish it, so going live is a decision rather than a side effect of applying.',
+          guard: 'Controlled: nothing is visible until it is published.',
+        },
+        {
+          node: 'Availability',
+          detail: 'weekly hours → slots',
+          title: 'Availability becomes time people can book.',
+          body: 'The teacher sets their week, and those hours become the slots students can book. What the calendar offers matches what the teacher can actually take, so a confirmed session holds.',
+          guard: 'Accurate: time that is not offered cannot be booked.',
+        },
+        {
+          node: 'Bookings',
+          detail: 'moderated by the team',
+          title: 'And the public space is kept in order.',
+          body: 'Bookings, reviews and community activity arrive in the same admin area for moderation. The team sees what is posted before it stands, and can take something down without hunting for the right screen.',
+          guard: 'Moderated: reviews and posts are removed by the team.',
         },
       ],
-      outcome: 'One operational path from application to published teacher and booked session. The Laha team can oversee each stage and control what goes public and when.',
-      flow: ['Apply', 'Review', 'Publish', 'Book'],
-      flowDetails: ['Teacher applies', 'Seven-stage review', 'Profile goes live', 'Slot is booked'],
-      visualNote: 'Vetting · publishing · sessions',
+      result: 'One operational path for every teacher on the platform: application, review, publication, availability, and the sessions that follow.',
     },
   ],
   close: {
@@ -97,4 +179,4 @@ export const COMPLEX = {
     body: 'Bring us the real process, messy parts included. We’ll help you find a clearer way forward.',
     action: 'Talk it through',
   },
-} as const
+}
