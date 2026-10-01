@@ -2,6 +2,10 @@
 // "Project screenshots" workflow (the sandbox cannot reach the sites).
 import { chromium } from 'playwright'
 import { mkdirSync } from 'node:fs'
+// sharp is installed by the workflow; the phone ring uses a 720px crop, so each
+// shot is written twice at the same aspect ratio as the desktop image.
+let sharp = null
+try { sharp = (await import('sharp')).default } catch { console.log('note: sharp unavailable, writing the large shot only') }
 
 // [slug, url, extra wait ms, scroll to] — The Yard's preview is its first
 // section after the film ("Loved by many", the raspberry cup), so the page
@@ -12,7 +16,7 @@ const ALL = [
   ['dana-habayeb', 'https://art-gallery-dana.netlify.app/', 0],
   ['yaseen-faez', 'https://yaseen-faez.netlify.app/', 0],
   ['alfajr', 'https://alfajr-watches.netlify.app/', 0],
-  ['rashtions', 'https://rashtions.netlify.app/', 0],
+  ['rashtions', 'https://rationsconcept.netlify.app/', 0],
 ]
 const only = (process.env.ONLY || '').split(',').filter(Boolean)
 const SITES = only.length ? ALL.filter(([slug]) => only.includes(slug)) : ALL
@@ -63,6 +67,12 @@ for (const [slug, url, extra, scrollTo] of SITES) {
     })
     await page.waitForTimeout(800)
     await page.screenshot({ path: `public/projects/${slug}.jpg`, type: 'jpeg', quality: 86 })
+    if (sharp) {
+      await sharp(`public/projects/${slug}.jpg`)
+        .resize({ width: 720 })
+        .jpeg({ quality: 84 })
+        .toFile(`public/projects/${slug}-720.jpg`)
+    }
     console.log('ok', slug)
   } catch (e) {
     console.log('FAILED', slug, e.message)

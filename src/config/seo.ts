@@ -95,7 +95,7 @@ export const PORTFOLIO = [
   { name: 'Dana Habayeb', tag: 'Art gallery website', url: 'https://art-gallery-dana.netlify.app/' },
   { name: 'Yaseen Faez', tag: 'Architecture portfolio website', url: 'https://yaseen-faez.netlify.app/' },
   { name: 'AlFajr', tag: 'Watch store website', url: 'https://alfajr-watches.netlify.app/' },
-  { name: 'Rashtions', tag: 'Food brand website', url: 'https://rashtions.netlify.app/' },
+  { name: 'Rashtions', tag: 'Food brand website', url: 'https://rationsconcept.netlify.app/' },
 ]
 
 /** the FAQ we answer on the pages (kept short and literal: this is what AI

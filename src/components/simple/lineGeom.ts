@@ -92,7 +92,7 @@ export const PROJECTS: Project[] = [
     slug: 'rashtions',
     name: 'Rashtions',
     tag: 'Food brand',
-    url: 'https://rashtions.netlify.app/',
+    url: 'https://rationsconcept.netlify.app/',
     lines: [
       'An Emirati snack built on dates and camel milk: four flavours, the six ingredients, and the bundle prices.',
       'A jar that turns over as you scroll, a cart with the discount applied on its own, and corporate gifting.',

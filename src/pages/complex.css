@@ -1066,11 +1066,12 @@
 /* A wider invitation than the page's other buttons, so the leaning hand has a
    flat top to rest on rather than the crown of a pill. */
 .complex-close__button .complex-link { padding-right: 46px; padding-left: 48px; gap: 30px; }
-/* Measured from the artwork: the resting hand sits 23.68% across and 65.29%
-   down, so the hand lands on the button's top edge at any robot height. */
+/* Measured from the artwork's alpha channel: the resting hand sits 10.43%
+   across and its underside is 56.85% down, so that hand lands on the button's
+   top edge at any robot height. */
 .complex-close__robot {
   position: absolute;
-  top: calc(4px - .6529 * var(--robot-h));
+  top: calc(3px - .5685 * var(--robot-h));
   left: calc(100% - 44px - .4324 * var(--robot-h));
   width: calc(.5666 * var(--robot-h));
   height: var(--robot-h);
