@@ -60,14 +60,14 @@ export const PAGES: Record<'home' | 'simple' | 'complex', PageSeo> = {
   },
   complex: {
     path: '/complex',
-    title: 'Operations and Custom Systems | Clause & Code',
+    title: 'Our Projects: Custom Systems | Clause & Code',
     description:
-      'Clause & Code maps how work moves and builds custom systems around it. See two real projects: an expert bidding workflow and a community operations hub.',
+      'Custom systems we have built: a private expert bidding platform, the operations behind Laha Space, and an academy management platform. Problem, build, result.',
     type: 'website',
     image: DEFAULT_IMAGE,
     imageAlt: 'Clause & Code: custom systems for work behind the business',
     summary:
-      'Our operations work: process mapping and custom systems, shown through an expert bidding workflow and the internal admin system for Laha Space.',
+      'Our projects: custom systems built after mapping how the work moves. Each shows the problem, what we built, who uses it and what changed: a private expert bidding platform, the internal operations system for Laha Space, and an academy management platform (registrations, classes, attendance, progress, payments and reports, in English and Arabic).',
   },
 }
 

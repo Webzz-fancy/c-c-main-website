@@ -3,7 +3,6 @@ import Header from '../components/Header'
 import Footer from '../components/Footer'
 import ScrollRope from '../components/ScrollRope'
 import HeroNetwork from '../components/complex/HeroNetwork'
-import MethodJourney from '../components/complex/MethodJourney'
 import ProjectStory from '../components/complex/ProjectStory'
 import { COMPLEX } from '../content/complex'
 import { site } from '../config/site'
@@ -77,15 +76,44 @@ export default function ComplexPage() {
               <p className="complex-eyebrow">{COMPLEX.hero.label}</p>
               <h1>{COMPLEX.hero.firstLine}{' '}<br /><em>{COMPLEX.hero.secondLine}</em></h1>
               <p className="complex-hero__intro">{COMPLEX.hero.intro}</p>
-              <a className="complex-link complex-link--brand" href="#complex-approach">
-                See the thinking <span aria-hidden="true">↘</span>
+              <a className="complex-link complex-link--brand" href="#complex-index">
+                {COMPLEX.hero.action} <span aria-hidden="true">↘</span>
               </a>
             </div>
             <HeroNetwork />
           </div>
         </section>
 
-        <MethodJourney />
+        {/* The proof first: every project on one screen, told in the same
+            four facts, so a reader can compare them before opening one. */}
+        <section id="complex-index" className="complex-index" aria-labelledby="complex-index-title">
+          <div className="complex-index__head" data-complex-reveal>
+            <p className="complex-eyebrow">01 / {COMPLEX.index.label}</p>
+            <h2 id="complex-index-title">{COMPLEX.index.heading}</h2>
+            <p className="complex-index__intro">{COMPLEX.index.intro}</p>
+          </div>
+          <ol className="complex-index__grid">
+            {COMPLEX.projects.map(({ id, number, card }) => (
+              <li key={id} data-complex-reveal>
+                <a className="complex-card" href={`#project-${id}`}>
+                  <p className="complex-card__meta">
+                    <span>{number}</span>
+                    <span>{card.kind}</span>
+                    <span>{card.sector}</span>
+                  </p>
+                  <h3>{card.name}</h3>
+                  <dl className="complex-card__facts">
+                    <div><dt>The problem</dt><dd>{card.problem}</dd></div>
+                    <div><dt>What we built</dt><dd>{card.built}</dd></div>
+                    <div><dt>Who uses it</dt><dd>{card.users}</dd></div>
+                    <div className="complex-card__outcome"><dt>What changed</dt><dd>{card.outcome}</dd></div>
+                  </dl>
+                  <span className="complex-card__go">Open the workflow <span aria-hidden="true">↓</span></span>
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
 
         <section id="complex-work" className="complex-work" aria-labelledby="complex-work-title">
           <div className="complex-work__head" data-complex-reveal>

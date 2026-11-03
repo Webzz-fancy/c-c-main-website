@@ -46,7 +46,7 @@ export default function Hero() {
         {/* ----- Copy ----- */}
         <div className="flex flex-col items-center text-center lg:items-start lg:justify-center lg:pb-[7vh] lg:text-left">
           <h1
-            className="animate-fade-up font-display text-[clamp(2rem,min(5.6vw,7vh),4.15rem)] font-normal leading-[1.04] tracking-[-0.02em] text-balance text-ink"
+            className="animate-fade-up font-display text-[clamp(2rem,min(5.6vw,7vh),4.15rem)] leading-[1.04] tracking-[-0.02em] text-balance text-ink"
             style={{ animationDelay: '80ms' }}
           >
             We build the{' '}

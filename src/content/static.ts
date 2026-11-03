@@ -125,11 +125,11 @@ export function staticHtml(page: PageSeo): string {
     return (
       open +
       `<header><p>${esc(COMPLEX.hero.label)}</p><h1>${esc(COMPLEX.hero.firstLine)} ${esc(COMPLEX.hero.secondLine)}</h1><p>${esc(COMPLEX.hero.intro)}</p></header>` +
-      `<section id="complex-approach"><p>${esc(COMPLEX.method.label)}</p><h2>${esc(COMPLEX.method.heading.join(' '))}</h2><p>${esc(COMPLEX.method.intro)}</p><ol>${COMPLEX.method.steps
-        .map((step) => `<li><h3>${esc(step.title)}</h3><p>${esc(step.body)}</p></li>`)
+      `<section id="complex-index"><p>${esc(COMPLEX.index.label)}</p><h2>${esc(COMPLEX.index.heading)}</h2><p>${esc(COMPLEX.index.intro)}</p><ol>${COMPLEX.projects
+        .map(({ id, card }) => `<li><h3><a href="#project-${id}">${esc(card.name)}</a></h3><p>${esc(card.kind)} · ${esc(card.sector)}</p><dl><dt>The problem</dt><dd>${esc(card.problem)}</dd><dt>What we built</dt><dd>${esc(card.built)}</dd><dt>Who uses it</dt><dd>${esc(card.users)}</dd><dt>What changed</dt><dd>${esc(card.outcome)}</dd></dl></li>`)
         .join('')}</ol></section>` +
       `<section id="complex-work" aria-labelledby="complex-work-title"><p>${esc(COMPLEX.work.label)}</p><h2 id="complex-work-title">${esc(COMPLEX.work.heading)}</h2><p>${esc(COMPLEX.work.intro)}</p>${COMPLEX.projects
-        .map((project) => `<article><p>${esc(project.label)}</p><h2>${esc(project.title)}</h2><p>${esc(project.lede)}</p><ol>${project.stops
+        .map((project) => `<article id="project-${project.id}"><p>${esc(project.label)}</p><h2>${esc(project.title)}</h2><p>${esc(project.lede)}</p><ol>${project.stops
           .map((stop) => `<li><h3>${esc(stop.title)}</h3><p>${esc(stop.body)}</p><p>${esc(stop.guard)}</p></li>`)
           .join('')}</ol><p>${esc(project.result)}</p></article>`)
         .join('')}</section>` +
@@ -185,10 +185,15 @@ export function llmsTxt(): string {
     ``,
     `## Operations and custom systems`,
     ``,
-    `${COMPLEX.hero.intro} ${COMPLEX.method.intro}`,
+    `${COMPLEX.hero.intro} ${COMPLEX.index.intro}`,
     ``,
     ...COMPLEX.projects.flatMap((project) => [
-      `### ${project.label}`,
+      `### ${project.card.name} (${project.card.sector})`,
+      `- Problem: ${project.card.problem}`,
+      `- What we built: ${project.card.built}`,
+      `- Who uses it: ${project.card.users}`,
+      `- What changed: ${project.card.outcome}`,
+      ``,
       project.lede,
       ...project.stops.map((stop, i) => `${i + 1}. ${stop.title} ${stop.body} ${stop.guard}`),
       `Result: ${project.result}`,

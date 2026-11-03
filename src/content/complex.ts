@@ -1,7 +1,7 @@
 /**
  * Copy shared by the interactive page and its readable, no-JS prerender.
  *
- * The bidding client stays anonymous throughout the public site. The workflow
+ * The bidding and academy clients stay anonymous throughout the public site. The workflow
  * maps are editorial diagrams of the work, not screenshots of private
  * software, and every claim here comes from the systems themselves.
  */
@@ -23,19 +23,35 @@ export type ComplexStop = {
   side: 'near' | 'far'
 }
 
+/**
+ * The same facts for every project, so the index reads as one comparable set.
+ * Outcomes are stated from what the system does; no invented figures.
+ */
+export type ComplexCard = {
+  /** What kind of work this was. More kinds (AI agents) join as they ship. */
+  kind: 'Custom system'
+  name: string
+  sector: string
+  problem: string
+  built: string
+  users: string
+  outcome: string
+}
+
 export type ComplexProject = {
   id: string
   number: string
   label: string
   title: string
   lede: string
+  card: ComplexCard
   stops: ComplexStop[]
   result: string
 }
 
 export type ComplexContent = {
-  hero: { label: string; firstLine: string; secondLine: string; intro: string }
-  method: { label: string; heading: string[]; intro: string; steps: { phase: string; title: string; body: string }[] }
+  hero: { label: string; firstLine: string; secondLine: string; intro: string; action: string }
+  index: { label: string; heading: string; intro: string }
   work: { label: string; heading: string; intro: string }
   projects: ComplexProject[]
   close: { label: string; heading: string; body: string; action: string }
@@ -47,33 +63,17 @@ export const COMPLEX: ComplexContent = {
     firstLine: 'The work behind your business,',
     secondLine: 'made easier to run.',
     intro: 'We map how the work actually moves between people and decisions. Then we build a custom system around the way your team needs to work.',
+    action: 'See the projects',
   },
-  method: {
-    label: 'How we work',
-    heading: ['First, understand the work.', 'Then build around it.'],
-    intro: 'The answer is not always another tool. It starts with knowing what happens, who is involved and what should happen next.',
-    steps: [
-      {
-        phase: 'UNDERSTAND',
-        title: 'Find the real path.',
-        body: 'First, we follow a request through its handoffs and decisions. That shows us where work slows down and what the system actually needs to solve.',
-      },
-      {
-        phase: 'DESIGN',
-        title: 'Design for the team.',
-        body: 'Then we use that map to design roles, screens and next steps, so each person can do their part without working around the tool.',
-      },
-      {
-        phase: 'BUILD',
-        title: 'Connect the whole flow.',
-        body: 'Finally, we build the workflow end to end, linking decisions and follow-up. The team can see what happened, who owns the next step and where the work stands.',
-      },
-    ],
+  index: {
+    label: 'The projects',
+    heading: 'Systems we have built, and what they changed.',
+    intro: 'Every project here started as a map of how the work actually moves. Then we built the system around it. Each one shows the problem, what we built, who uses it and what runs differently now.',
   },
   work: {
-    label: 'The work',
-    heading: 'Systems around the work you already do.',
-    intro: 'Both systems below are live products: one runs a private bidding process, the other the operation behind a booking platform. Each began as a map of how the work moves, and in both, what a person can reach is decided by their role.',
+    label: 'Inside the work',
+    heading: 'Open each system, one step at a time.',
+    intro: 'Scroll through each workflow the way its team runs it. In every one, what a person can reach is decided by their role, and the drawing shows where that line sits.',
   },
   projects: [
     {
@@ -82,6 +82,15 @@ export const COMPLEX: ComplexContent = {
       label: 'Expert bidding · Invitation only',
       title: 'The shortlist was the whole point.',
       lede: 'This team places work with experts it chooses itself. The brief, the invitations, the bids and the assignment all had to stay inside that circle.',
+      card: {
+        kind: 'Custom system',
+        name: 'Private expert bidding',
+        sector: 'Expert network',
+        problem: 'Briefs, invitations and bids moved through email, with no real control over who saw what.',
+        built: 'An invitation only bidding system: one brief, chosen experts, private bids checked against the range, and one recorded decision.',
+        users: 'Admin team · invited experts',
+        outcome: 'Work goes from brief to completion without a single public listing.',
+      },
       stops: [
         {
           node: 'Brief',
@@ -140,6 +149,15 @@ export const COMPLEX: ComplexContent = {
       label: 'Laha Space · Internal operations',
       title: 'A profile goes live on purpose.',
       lede: 'The public side of Laha shows teachers who are ready to be booked. Behind it runs a review the team does itself, applicant by applicant.',
+      card: {
+        kind: 'Custom system',
+        name: 'Laha Space operations',
+        sector: 'Education marketplace',
+        problem: 'Teacher applications, ID documents and review notes were spread across inboxes.',
+        built: 'The admin system behind the booking platform: staged review, private documents, deliberate publishing, availability and moderation.',
+        users: 'Laha team · teachers · students',
+        outcome: 'Every teacher follows one path from application to a bookable profile.',
+      },
       stops: [
         {
           node: 'Application',
@@ -191,6 +209,73 @@ export const COMPLEX: ComplexContent = {
         },
       ],
       result: 'One operational path for every teacher on the platform: application, review, publication, availability, and the sessions that follow.',
+    },
+    {
+      id: 'academy',
+      number: '03',
+      label: 'Academy management · Two roles',
+      title: 'One office, one record per student.',
+      lede: 'A private academy ran enrolment, classes, attendance and fees in separate places. The office needed one system, and teachers needed only their part of it.',
+      card: {
+        kind: 'Custom system',
+        name: 'Academy management platform',
+        sector: 'Education · private academy',
+        problem: 'Enrolment, attendance, progress and fees lived in separate places, so nobody had the full picture of a student.',
+        built: 'One platform for registrations, programs and classes, attendance, progress, payments and reports, in English and Arabic.',
+        users: 'Admin office · teachers · families',
+        outcome: 'Set up, migrated and live in 10 to 16 business days, with the team trained on it.',
+      },
+      stops: [
+        {
+          node: 'Registration',
+          detail: 'public form · approval',
+          title: 'Every enrolment passes through the office.',
+          body: 'Families register through a public page. Nothing becomes a student record until an admin reviews and approves it, so the list of students is always one the office has agreed to.',
+          guard: 'Approved: a registration is not a student until the office says so.',
+          side: 'near',
+        },
+        {
+          node: 'Classes',
+          detail: 'fees · schedule · capacity',
+          title: 'Programs set the rules once.',
+          body: 'Each program carries its fee. Classes under it carry the schedule, the teacher and the capacity, and students are placed on a roster. Everything after reads from these records instead of a spreadsheet.',
+          guard: 'One source: fees and schedules live on the program.',
+          side: 'near',
+        },
+        {
+          node: 'Teacher view',
+          detail: 'assigned classes only',
+          title: 'A teacher sees their classes, and stops there.',
+          body: 'A teacher signs in to the classes they are assigned to teach. Fees, payments and the rest of the academy stay with the office, so each person has exactly what their job needs.',
+          guard: 'Scoped: a teacher reaches only their assigned classes.',
+          side: 'far',
+        },
+        {
+          node: 'Attendance',
+          detail: 'marks · quizzes · scores',
+          title: 'The day is recorded where it happens.',
+          body: 'Teachers mark each class present, absent, late or excused, and log quizzes and progress against the program. Every mark joins the student’s history rather than a sheet that gets lost.',
+          guard: 'On file: every mark stays in the student’s history.',
+          side: 'far',
+        },
+        {
+          node: 'Payments',
+          detail: 'admin only · receipts',
+          title: 'Fees are tracked by the office alone.',
+          body: 'Payments are recorded against the student with their method and status, and a PDF receipt is produced on the spot. Payment data and family contact details never appear in a teacher account.',
+          guard: 'Admin only: payment records never reach a teacher.',
+          side: 'near',
+        },
+        {
+          node: 'Reports',
+          detail: 'report cards · CSV · PDF',
+          title: 'The whole academy, in one export.',
+          body: 'Attendance, enrolment and progress summaries come out as CSV or PDF, along with report cards for families. The office answers questions from the system instead of rebuilding the numbers by hand.',
+          guard: 'Complete: reports read from the same records the team keeps.',
+          side: 'near',
+        },
+      ],
+      result: 'One system for the whole academy: enrolment, classes, attendance, progress and payments, in English and Arabic, with each role seeing only its part.',
     },
   ],
   close: {

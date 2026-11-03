@@ -78,7 +78,16 @@ const LAHA: MapLayout = {
   note: 'Notes and ID files stay behind the team’s sign-in.',
 }
 
-const LAYOUTS: Record<string, MapLayout> = { bidding: BIDDING, laha: LAHA }
+// The academy keeps the bidding shape: the office on the left of the line,
+// teachers on the right, with payments and reports coming back to the office.
+const ACADEMY: MapLayout = {
+  ...BIDDING,
+  lane: { ...BIDDING.lane, near: 'Admin office', far: 'Teachers' },
+  caption: 'One academy, two roles',
+  note: 'Payments and family contacts stay with the office.',
+}
+
+const LAYOUTS: Record<string, MapLayout> = { bidding: BIDDING, laha: LAHA, academy: ACADEMY }
 
 function Lock({ x, y }: { x: number; y: number }) {
   return (
@@ -469,7 +478,7 @@ export default function ProjectStory({ project }: { project: ComplexProject }) {
   const panelCount = stops.length
 
   return (
-    <article ref={ref} className={`complex-project complex-project--${project.id}`} data-project="off">
+    <article ref={ref} id={`project-${project.id}`} className={`complex-project complex-project--${project.id}`} data-project="off">
       <div className="complex-project__stage">
         <WorkflowMap project={project} layout={layout} />
         <NarrowMap project={project} layout={layout} />

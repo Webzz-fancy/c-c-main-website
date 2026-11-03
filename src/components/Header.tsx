@@ -11,6 +11,7 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { label: 'Home', href: '#home' },
+  { label: 'Our Projects', href: '/complex' },
   {
     label: 'Ways We Help',
     href: '#ways-we-help',
@@ -24,22 +25,6 @@ const NAV: NavItem[] = [
         label: 'Drop Your Problem',
         href: '#drop-problem',
         description: 'Tell us what’s broken, we’ll point the way.',
-      },
-    ],
-  },
-  {
-    label: 'Our Projects',
-    href: '#projects',
-    children: [
-      {
-        label: 'Simple',
-        href: '/simple',
-        description: 'Websites and AI discoverability. Simple on the outside, built like a system underneath.',
-      },
-      {
-        label: 'Complex',
-        href: '/complex',
-        description: 'Process mapping and custom systems, built around how the work actually moves.',
       },
     ],
   },
