@@ -137,6 +137,8 @@ export type ComplexAgents = {
   story: { label: string; steps: ComplexStoryStep[] }
   control: { label: string; steps: { level: string; what: string }[] }
   setup: { label: string; steps: { step: string; what: string }[] }
+  /** what an office does for any business, before one is picked */
+  general: { clients: string[]; operations: string[] }
   industries: { label: string; any: string; intro: string; note: string; items: ComplexIndustry[] }
   action: string
 }
@@ -209,6 +211,10 @@ export const COMPLEX: ComplexContent = {
         { step: 'Test', what: 'They run beside your team until the work is right.' },
         { step: 'Run', what: 'We keep them running and add agents as you grow.' },
       ],
+    },
+    general: {
+      clients: ['Answers enquiries and books calls, day and night', 'Researches leads and drafts each follow up', 'Sends updates, reminders and review requests on time'],
+      operations: ['Orders, invoices and payment reminders', 'Reports with targets and what slipped', 'Content drafted and checked before it goes out', 'Deadlines and renewals tracked'],
     },
     industries: {
       label: 'See it for your business',

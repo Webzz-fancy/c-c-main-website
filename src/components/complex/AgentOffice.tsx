@@ -229,13 +229,8 @@ export default function AgentOffice({ industry, onIndustry }: { industry: string
   const queue = picked ? picked.queue : agents.queue.items
   const story = picked ? picked.story : agents.story.steps
 
-  // a pick redraws the floor below the chips; bring it into view
   const floorRef = useRef<HTMLDivElement>(null)
-  const pick = (id: string | null) => {
-    onIndustry(id)
-    const el = floorRef.current
-    if (el && el.getBoundingClientRect().bottom > window.innerHeight) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }
+  const pick = (id: string | null) => onIndustry(id)
 
   return (
     <section id="agents" className="complex-agents" aria-labelledby="complex-agents-title">
@@ -264,22 +259,23 @@ export default function AgentOffice({ industry, onIndustry }: { industry: string
           </div>
         </div>
 
+        {/* what it would do for them comes first: it is what a visitor came to find out */}
+        <div className="complex-agents__plans" aria-live="polite">
+          <h3>What it would do for {picked ? `${/^[aeiou]/i.test(picked.label) ? 'an' : 'a'} ${picked.label.toLowerCase()}` : 'your business'}</h3>
+          <div>
+            <h4>With clients</h4>
+            <ul>{(picked ?? agents.general).clients.map((line) => <li key={line}>{line}</li>)}</ul>
+          </div>
+          <div>
+            <h4>Behind the scenes</h4>
+            <ul>{(picked ?? agents.general).operations.map((line) => <li key={line}>{line}</li>)}</ul>
+          </div>
+        </div>
+
+        <h3 className="complex-agents__watch">How it runs, one job at a time</h3>
         <div ref={floorRef}>
           <Office key={industry ?? 'any'} teams={teams} queue={queue} story={story} />
         </div>
-
-        {picked && (
-          <div className="complex-agents__plans" aria-live="polite">
-            <div className="complex-agents__panel">
-              <h3>With clients</h3>
-              <ul>{picked.clients.map((line) => <li key={line}>{line}</li>)}</ul>
-            </div>
-            <div className="complex-agents__panel">
-              <h3>Behind the scenes</h3>
-              <ul>{picked.operations.map((line) => <li key={line}>{line}</li>)}</ul>
-            </div>
-          </div>
-        )}
 
         <div className="complex-agents__trust">
           <h3>{agents.control.label}</h3>
