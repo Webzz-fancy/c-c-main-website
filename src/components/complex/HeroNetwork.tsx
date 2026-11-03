@@ -81,7 +81,7 @@ type Scenario = {
 // One loop per job our agents take on, keyed by the task in the search
 // (and `agents` for the whole office), so a search can bring up its own.
 const SCENARIOS: Record<string, Scenario> = {
-  agents: { source: 'Owner overload', a: 'Leads', b: 'Reports', c: 'Content', map: 'Director agent', build: 'Agent teams', result: 'AI agent office' },
+  agents: { source: 'Owner overload', a: 'Leads', b: 'Reports', c: 'Content', map: 'Director agent', build: 'Agent teams', result: 'Your AI agents' },
   enquiries: { source: 'Missed enquiries', a: 'Reads DMs', b: 'Answers', c: 'Qualifies', map: 'Reply agent', build: 'Hands to you', result: 'Nothing missed' },
   leads: { source: 'Leads go cold', a: 'Researches', b: 'Drafts', c: 'Follows up', map: 'Outreach agent', build: 'Your yes', result: 'Warm pipeline' },
   reports: { source: 'Reports by hand', a: 'Numbers', b: 'Targets', c: 'Slips', map: 'Report agent', build: 'Director', result: 'Daily report' },

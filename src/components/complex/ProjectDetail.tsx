@@ -104,7 +104,7 @@ export default function ProjectDetail({ project, onClose }: Props) {
           </div>
 
           <section className="complex-detail__section" aria-labelledby="complex-detail-roles">
-            <h3 id="complex-detail-roles">Who uses it</h3>
+            <h3 id="complex-detail-roles">Who does what</h3>
             <ul className="complex-detail__roles">
               {p.roles.map((role) => (
                 <li key={role.name}>
@@ -116,7 +116,7 @@ export default function ProjectDetail({ project, onClose }: Props) {
           </section>
 
           <section className="complex-detail__section" aria-labelledby="complex-detail-steps">
-            <h3 id="complex-detail-steps">How the work runs</h3>
+            <h3 id="complex-detail-steps">{p.walk}</h3>
             <WorkflowWalk project={p} scrollRoot={bodyRef} />
           </section>
 

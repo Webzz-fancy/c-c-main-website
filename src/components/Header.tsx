@@ -3,6 +3,7 @@ import { useScrolled } from '../hooks/useScrolled'
 import { useHomeLinks } from '../hooks/useHomeLinks'
 import { useRobotMood } from '../context/RobotMood'
 import { COMPLEX, PROJECT_GROUPS } from '../content/complex'
+import { site } from '../config/site'
 
 type NavItem = {
   label: string
@@ -22,14 +23,14 @@ const PROJECT_MENU: { label: string; items: ProjectLink[] }[] = PROJECT_GROUPS.m
     group.id === 'ai'
       ? [{
           id: 'agents',
-          label: 'AI agent office',
+          label: 'AI agents',
           href: '/complex#agents',
-          description: 'A director, agent teams and one queue of decisions',
+          description: 'An agent for each job, working beside your team',
         }, {
           id: COMPLEX.discoverability.id,
           label: COMPLEX.discoverability.name,
           href: COMPLEX.discoverability.url,
-          description: 'AI discoverability',
+          description: 'Found and recommended when people ask AI',
           external: true,
         }]
       : COMPLEX.projects
@@ -41,6 +42,18 @@ const PROJECT_MENU: { label: string; items: ProjectLink[] }[] = PROJECT_GROUPS.m
             description: project.card.area,
           })),
 }))
+
+// AI leads the left column and the next groups fill whichever column is
+// shorter, so both sides of the menu stay full
+const MENU_COLUMNS = PROJECT_MENU.reduce<(typeof PROJECT_MENU)[]>(
+  (columns, group, i) => {
+    const size = (column: typeof PROJECT_MENU) => column.reduce((n, g) => n + g.items.length + 1, 0)
+    const column = i === 0 ? 0 : i === 1 ? 1 : size(columns[0]) <= size(columns[1]) ? 0 : 1
+    columns[column].push(group)
+    return columns
+  },
+  [[], []],
+)
 
 function ProjectMenuLink({ item, onPick }: { item: ProjectLink; onPick: () => void }) {
   return (
@@ -70,12 +83,12 @@ const NAV: NavItem[] = [
     children: [
       {
         label: 'Book a Consultation',
-        href: '#book-consultation',
+        href: site.links.booking,
         description: 'A focused 1:1 session to map the fix.',
       },
       {
         label: 'Drop Your Problem',
-        href: '#drop-problem',
+        href: site.links.dropProblem,
         description: 'Tell us what’s broken, we’ll point the way.',
       },
     ],
@@ -242,18 +255,16 @@ export default function Header() {
                   >
                     <div className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white p-3 shadow-soft">
                       <div className="grid grid-cols-2 gap-x-3">
-                        <div>
-                          <p className="px-3 pb-1 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-glass">{PROJECT_MENU[0].label}</p>
-                          {PROJECT_MENU[0].items.map((p) => <ProjectMenuLink key={p.id} item={p} onPick={() => setOpenDropdown(null)} />)}
-                        </div>
-                        <div>
-                          {PROJECT_MENU.slice(1).map((group) => (
-                            <div key={group.label}>
-                              <p className="px-3 pb-1 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-glass">{group.label}</p>
-                              {group.items.map((p) => <ProjectMenuLink key={p.id} item={p} onPick={() => setOpenDropdown(null)} />)}
-                            </div>
-                          ))}
-                        </div>
+                        {MENU_COLUMNS.map((column, c) => (
+                          <div key={c}>
+                            {column.map((group) => (
+                              <div key={group.label}>
+                                <p className="px-3 pb-1 pt-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-glass">{group.label}</p>
+                                {group.items.map((p) => <ProjectMenuLink key={p.id} item={p} onPick={() => setOpenDropdown(null)} />)}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
                       </div>
                       <a
                         href={link(item.href)}
@@ -281,6 +292,7 @@ export default function Header() {
                         <a
                           key={child.label}
                           href={link(child.href)}
+                          {...(child.href.startsWith('http') ? { target: '_blank', rel: 'noopener' } : {})}
                           className="group/item flex flex-col gap-0.5 rounded-xl px-3.5 py-3 transition-colors duration-200 hover:bg-brand-50"
                         >
                           <span className="flex items-center justify-between text-[14px] font-semibold text-ink">
@@ -304,7 +316,7 @@ export default function Header() {
 
         <div className="flex items-center gap-2">
           <a
-            href={link('#contact')}
+            href={site.links.contact}
             {...moodHandlers('surprised')}
             className="hidden items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-[14px] font-semibold text-ink shadow-brand transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-300 hover:shadow-[0_18px_34px_-12px_rgba(225,173,52,0.8)] active:translate-y-0 sm:flex"
           >
@@ -350,7 +362,27 @@ export default function Header() {
         <nav className="flex flex-col p-3" aria-label="Mobile">
           {NAV.map((item) => (
             <div key={item.label} className="border-b border-black/[0.05] last:border-0">
-              {item.children || item.projects ? (
+              {item.projects ? (
+                // the name opens the projects page; the arrow beside it lists them
+                <div className="flex items-center justify-between">
+                  <a
+                    href={link(item.href)}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex-1 px-3 py-3 text-[15px] font-medium text-ink"
+                  >
+                    {item.label}
+                  </a>
+                  <button
+                    type="button"
+                    aria-label="Show every project"
+                    aria-expanded={mobileSub === item.label}
+                    onClick={() => setMobileSub((v) => (v === item.label ? null : item.label))}
+                    className="px-3 py-3 text-ink"
+                  >
+                    <ChevronIcon open={mobileSub === item.label} />
+                  </button>
+                </div>
+              ) : item.children ? (
                 <button
                   type="button"
                   aria-expanded={mobileSub === item.label}
@@ -413,6 +445,7 @@ export default function Header() {
                         <a
                           key={child.label}
                           href={link(child.href)}
+                          {...(child.href.startsWith('http') ? { target: '_blank', rel: 'noopener' } : {})}
                           onClick={() => setMobileOpen(false)}
                           className="block py-2 text-[14px] text-ink-muted"
                         >
@@ -426,7 +459,7 @@ export default function Header() {
             </div>
           ))}
           <a
-            href={link('#contact')}
+            href={site.links.contact}
             onClick={() => setMobileOpen(false)}
             className="mt-3 rounded-full bg-brand px-5 py-3 text-center text-[15px] font-semibold text-ink"
           >

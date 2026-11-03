@@ -188,7 +188,7 @@ export default function Approach() {
   const nodeThreshold = (i: number) => (anchors.length < 2 ? 0 : i / (anchors.length - 1))
 
   return (
-    <section id="approach" className="relative w-full bg-cream py-24 md:py-32">
+    <section id="approach" className="relative w-full bg-cream py-20 md:py-24">
       {/* ---------- Ambient background behind the glass ---------- */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute inset-0 grain opacity-60" />
@@ -214,10 +214,10 @@ export default function Approach() {
         />
       </div>
 
-      <div className="relative mx-auto w-full max-w-[1240px] px-5 sm:px-8">
+      <div className="relative mx-auto w-full max-w-[1240px] px-4 sm:px-8">
         {/* ---------- The glass box ---------- */}
         <div
-          className="relative isolate rounded-[28px] border border-white/70 px-5 py-12 shadow-[0_40px_100px_-40px_rgba(18,44,56,0.34),inset_0_1px_0_rgba(255,255,255,0.9)] sm:rounded-[36px] sm:px-10 md:px-14 md:py-16"
+          className="relative isolate rounded-[28px] border border-white/70 px-4 py-10 shadow-[0_40px_100px_-40px_rgba(18,44,56,0.34),inset_0_1px_0_rgba(255,255,255,0.9)] sm:rounded-[36px] sm:px-10 md:px-14 md:py-16"
           style={{
             background:
               'linear-gradient(145deg, rgba(255,255,255,0.56) 0%, rgba(45,109,139,0.045) 45%, rgba(45,109,139,0.06) 100%)',
@@ -245,7 +245,7 @@ export default function Approach() {
               <div className="lg:sticky lg:top-32">
                 <Eyebrow>How We Work</Eyebrow>
 
-                <h2 className="mt-6 font-display text-[clamp(2.2rem,4.4vw,3.6rem)] leading-[1.05] tracking-[-0.02em] text-ink">
+                <h2 className="mt-6 font-display text-[clamp(2.2rem,4.2vw,3.6rem)] leading-[1.05] tracking-[-0.02em] text-ink">
                   Our <span className="italic text-brand-600">Approach</span>
                 </h2>
 
@@ -256,7 +256,7 @@ export default function Approach() {
 
                 {/* Progress readout, tied to the same scroll value as the line */}
                 <div className="mt-9 hidden max-w-[280px] lg:block">
-                  <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
+                  <div className="flex items-center justify-between text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
                     <span>Progress</span>
                     <span className="tabular-nums text-brand-600">
                       {String(Math.min(STEPS.length, Math.floor(progress * STEPS.length) + 1)).padStart(2, '0')}
@@ -366,7 +366,7 @@ export default function Approach() {
               </div>
 
               {/* Cards */}
-              <ol className="relative z-10 space-y-6 pl-6 sm:pl-[clamp(72px,16%,150px)] md:space-y-8">
+              <ol className="relative z-10 space-y-5 pl-6 sm:pl-[clamp(72px,16%,150px)] md:space-y-8">
                 {STEPS.map((step, i) => (
                   <StepCard
                     key={step.number}
@@ -409,7 +409,7 @@ function StepCard({ step, index, reached, registerRef }: StepCardProps) {
         registerRef(el)
       }}
       className={[
-        'group relative rounded-2xl border p-6 transition-all duration-500 hover:-translate-y-0.5 sm:p-7',
+        'group relative rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-0.5 sm:p-7',
         index % 2 === 1 ? 'sm:ml-5 md:ml-8' : '',
         reached
           ? 'border-white/70 shadow-[0_24px_60px_-30px_rgba(18,44,56,0.4)]'
@@ -433,16 +433,18 @@ function StepCard({ step, index, reached, registerRef }: StepCardProps) {
       {/* Mobile node on the vertical rail */}
       <span
         className={[
-          'absolute -left-[23px] top-8 h-[9px] w-[9px] rounded-full border-2 transition-colors duration-500 sm:hidden',
+          'absolute -left-[23px] top-[34px] h-[9px] w-[9px] rounded-full border-2 transition-colors duration-500 sm:hidden',
           reached ? 'border-brand bg-brand' : 'border-black/15 bg-cream',
         ].join(' ')}
         aria-hidden="true"
       />
 
-      <div className="flex items-start gap-4">
+      {/* On a phone the number sits beside the title and the text runs the
+          full width of the card beneath them */}
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 sm:items-start sm:gap-x-4">
         <span
           className={[
-            'grid h-11 w-11 shrink-0 place-items-center rounded-xl font-display text-[17px] transition-all duration-500',
+            'grid h-9 w-9 shrink-0 text-[15px] sm:h-11 sm:w-11 place-items-center rounded-xl font-display sm:text-[17px] transition-all duration-500',
             reached
               ? 'bg-brand text-ink shadow-brand'
               : 'bg-white/70 text-ink-muted ring-1 ring-inset ring-black/[0.06]',
@@ -451,12 +453,12 @@ function StepCard({ step, index, reached, registerRef }: StepCardProps) {
           {step.number}
         </span>
 
-        <div className="min-w-0">
-          <h3 className="font-display text-[clamp(1.25rem,1.9vw,1.6rem)] leading-tight tracking-[-0.01em] text-ink">
-            {step.title}
-          </h3>
-          <p className="mt-2.5 text-[15px] font-light leading-relaxed text-ink-soft">{step.body}</p>
-        </div>
+        <h3 className="font-display text-[clamp(1.25rem,1.9vw,1.6rem)] leading-tight tracking-[-0.01em] text-ink">
+          {step.title}
+        </h3>
+        <p className="col-span-2 mt-3 text-[15px] font-light leading-relaxed text-ink-soft sm:col-span-1 sm:col-start-2 sm:mt-2.5">
+          {step.body}
+        </p>
       </div>
     </li>
   )

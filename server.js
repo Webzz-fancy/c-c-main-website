@@ -79,6 +79,11 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 // API
 // ---------------------------------------------------------------------------
 
+app.use('/api', (_req, res, next) => {
+  res.set('X-Robots-Tag', 'noindex')
+  next()
+})
+
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'clause-and-code', time: new Date().toISOString() })
 })
@@ -133,8 +138,7 @@ app.post('/api/drop-problem', (req, res) => {
 // Static site
 // ---------------------------------------------------------------------------
 
-// One preferred URL per page: / and /simple. /complex is intentionally
-// noindex until that offer opens. All internal links and metadata use the
+// One preferred URL per page: /, /simple, /complex and /contact. All internal links and metadata use the
 // slashless subpage URLs. Older visitors may still have a cached permanent
 // redirect FROM /simple TO /simple/, so we serve both addresses with a 200
 // and a canonical pointing to /simple rather than reversing the redirect
@@ -155,13 +159,13 @@ app.use((req, res, next) => {
   next()
 })
 
-app.get(/^\/(simple|complex)$/i, (req, res) => {
+app.get(/^\/(simple|complex|contact)$/i, (req, res) => {
   const page = req.params[0].toLowerCase()
   if (req.path !== `/${page}`) return redirectToPage(req, res, `/${page}`)
   res.set('Cache-Control', 'no-cache')
   return res.sendFile(path.join(distDir, page, 'index.html'))
 })
-app.get(['/index.html', '/simple/index.html', '/complex/index.html'], (req, res) => {
+app.get(['/index.html', '/simple/index.html', '/complex/index.html', '/contact/index.html'], (req, res) => {
   const page = req.path.split('/')[1].toLowerCase()
   redirectToPage(req, res, page === 'index.html' ? '/' : `/${page}`)
 })
@@ -175,19 +179,32 @@ function notFound(_req, res) {
 }
 app.get('/404.html', notFound)
 
-// Hashed assets are immutable; HTML and the crawler files revalidate.
+// Caching: vite's hashed bundles (/assets/) and the fonts never change under
+// the same name, so they are cached for a year. HTML and the crawler files
+// (sitemap, robots, llms.txt, the IndexNow key) revalidate every time. The
+// other public files (logo, robot images, OG cards) keep their names when
+// they are redesigned, so they are cached for a week, not a year.
+const ASSET_DIRS = [`${path.sep}assets${path.sep}`, `${path.sep}fonts${path.sep}`]
 app.use(
   express.static(distDir, {
-    maxAge: '1y',
+    maxAge: '7d',
     setHeaders(res, filePath) {
       if (/\.(html|xml|txt|webmanifest)$/.test(filePath)) {
         res.setHeader('Cache-Control', 'no-cache')
+      } else if (ASSET_DIRS.some((dir) => filePath.includes(dir))) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
       }
+      // markdown for language models, served as readable UTF-8 text
+      if (/llms(-full)?\.txt$/.test(filePath)) res.setHeader('Content-Type', 'text/plain; charset=utf-8')
     },
   }),
 )
 
-app.use('/api', (_req, res) => res.status(404).json({ ok: false, error: 'Not found' }))
+// API responses are never search results.
+app.use('/api', (_req, res) => {
+  res.set('X-Robots-Tag', 'noindex')
+  res.status(404).json({ ok: false, error: 'Not found' })
+})
 
 // Nonexistent URLs return the same branded document with a genuine HTTP 404,
 // not the home page's HTML or SEO head under a misleading 200 status.

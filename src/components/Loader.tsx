@@ -14,7 +14,7 @@ import { clamp, damp, prefersReducedMotion } from '../hooks/usePointer'
 const PRELOAD = [
   '/robot-hero-head.webp',
   '/robot-hero-body.webp',
-  '/robot-rope.webp',
+  '/robot-rope-idle.webp',
   '/robot-broom.webp',
   '/logo.png',
 ]

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import ScrollRope from './components/ScrollRope'
 import Header from './components/Header'
 import Hero from './components/Hero'
@@ -9,21 +9,25 @@ import Quiz from './components/Quiz'
 import Footer from './components/Footer'
 import Loader from './components/Loader'
 import { RobotMoodProvider } from './context/RobotMood'
-import SimplePage from './pages/SimplePage'
 import ComplexPage from './pages/ComplexPage'
+import ContactPage from './pages/ContactPage'
 import { pageForPath } from './config/seo'
 import { applyHead } from './lib/head'
 
-type Page = 'home' | 'simple' | 'complex'
+// the websites page carries the 3D robot (three.js); only that page loads it
+const SimplePage = lazy(() => import('./pages/SimplePage'))
+
+type Page = 'home' | 'simple' | 'complex' | 'contact'
 function getPage(path: string): Page {
   if (path === '/simple' || path === '/simple/') return 'simple'
   if (path === '/complex' || path === '/complex/') return 'complex'
+  if (path === '/contact' || path === '/contact/') return 'contact'
   return 'home'
 }
 
 function removeLegacySlash() {
   const path = window.location.pathname
-  if (path === '/simple/' || path === '/complex/') {
+  if (path === '/simple/' || path === '/complex/' || path === '/contact/') {
     window.history.replaceState(window.history.state, '', path.slice(0, -1) + window.location.search + window.location.hash)
   }
 }
@@ -69,7 +73,7 @@ export default function App() {
       if (!href || !href.startsWith('/')) return
       const target = new URL(href, window.location.href)
       if (target.origin !== window.location.origin) return
-      const isProjectRoute = target.pathname === '/simple' || target.pathname === '/complex'
+      const isProjectRoute = target.pathname === '/simple' || target.pathname === '/complex' || target.pathname === '/contact'
       if (!isProjectRoute && target.pathname !== '/') return
       if (page === 'home' && !isProjectRoute) return
       if (target.pathname === window.location.pathname) return
@@ -101,7 +105,16 @@ export default function App() {
   if (page === 'simple') {
     return (
       <RobotMoodProvider>
-        <SimplePage />
+        <Suspense fallback={null}>
+          <SimplePage />
+        </Suspense>
+      </RobotMoodProvider>
+    )
+  }
+  if (page === 'contact') {
+    return (
+      <RobotMoodProvider>
+        <ContactPage />
       </RobotMoodProvider>
     )
   }

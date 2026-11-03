@@ -4,7 +4,7 @@ import Footer from '../components/Footer'
 import ScrollRope from '../components/ScrollRope'
 import HeroNetwork from '../components/complex/HeroNetwork'
 import ProjectDetail from '../components/complex/ProjectDetail'
-import AgentOffice from '../components/complex/AgentOffice'
+import AgentLab, { AgentsVisual } from '../components/complex/AgentLab'
 import ProjectFinder, { type FinderMatch } from '../components/complex/ProjectFinder'
 import { ProjectVisual, ChannelsMiniMap } from '../components/complex/MiniMap'
 import { COMPLEX } from '../content/complex'
@@ -89,7 +89,7 @@ export default function ComplexPage() {
     setOpenId(null)
   }, [])
 
-  // arriving from the header's "AI agent office" link
+  // arriving from the header's "AI agents" link
   useEffect(() => {
     if (window.location.hash !== '#agents') return
     const id = window.setTimeout(() => document.getElementById('agents')?.scrollIntoView({ block: 'start' }), 80)
@@ -105,7 +105,7 @@ export default function ComplexPage() {
   // the finder's answer: matching projects come first, closest first, and
   // the rest stay on the page behind them
   const [found, setFound] = useState<FinderMatch | null>(null)
-  // the agent office's kind of business; naming one in the search sets it too
+  // the agents' kind of business; naming one in the search sets it too
   const [industry, setIndustry] = useState<string | null>(null)
   const onMatch = (match: FinderMatch | null) => {
     setFound(match)
@@ -117,45 +117,76 @@ export default function ComplexPage() {
     return at === -1 ? 'no' : at === 0 ? 'best' : 'yes'
   }
 
+  // the slider: which way there is more to see, and a step of one card
+  const trackRef = useRef<HTMLOListElement>(null)
+  const [slide, setSlide] = useState({ back: false, next: true })
+  const read = useCallback(() => {
+    const track = trackRef.current
+    if (!track) return
+    setSlide({ back: track.scrollLeft > 4, next: track.scrollLeft + track.clientWidth < track.scrollWidth - 4 })
+  }, [])
+  const move = (way: 1 | -1) => {
+    const track = trackRef.current
+    const first = track?.firstElementChild as HTMLElement | null
+    if (!track || !first) return
+    const step = first.offsetWidth + parseFloat(getComputedStyle(track).columnGap || '0')
+    track.scrollBy({ left: way * step, behavior: 'smooth' })
+  }
+  useEffect(() => {
+    read()
+    window.addEventListener('resize', read)
+    return () => window.removeEventListener('resize', read)
+  }, [read])
+  // a new answer from the finder: back to the first, closest match
+  useEffect(() => {
+    trackRef.current?.scrollTo({ left: 0 })
+    read()
+  }, [found, read])
+
+  // the agents section sits under the slider; its card leads the slider and goes down to it
+  const toAgents = (e: MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    document.getElementById('agents')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  // AI work leads the slider: the agents, then AI discoverability
   const cards = [
-    ...COMPLEX.projects.map((project) => ({
-      id: project.id,
+    {
+      id: 'agents',
       card: (
-        <a className="complex-card" href={`#project-${project.id}`} onClick={show(project.id)} aria-haspopup="dialog">
-          <span className="complex-card__visual"><ProjectVisual project={project} /></span>
-          <span className="complex-card__meta">
-            <span>{project.card.kind}</span>
-            <span>{project.card.area}</span>
-          </span>
-          <h3>{project.card.name}</h3>
-          <span className="complex-card__shift">
-            <span className="complex-card__before"><b>Before</b>{project.card.before}</span>
-            <span className="complex-card__after"><b>Now</b>{project.card.after}</span>
-          </span>
-          <span className="complex-card__users"><b>Who uses it</b> {project.card.users}</span>
-          <span className="complex-card__go">See the details <span aria-hidden="true">→</span></span>
+        <a className="complex-card complex-card--agents" href="#agents" onClick={toAgents}>
+          <span className="complex-card__visual"><AgentsVisual /></span>
+          <span className="complex-card__kind">{COMPLEX.index.agents.kind}</span>
+          <h3>{COMPLEX.index.agents.name}</h3>
+          <p className="complex-card__change">{COMPLEX.index.agents.change}</p>
+          <span className="complex-card__go">{COMPLEX.index.agents.action} <span aria-hidden="true">↓</span></span>
         </a>
       ),
-    })),
+    },
     {
       id: COMPLEX.discoverability.id,
       card: (
         <a className="complex-card complex-card--product" href={COMPLEX.discoverability.url} target="_blank" rel="noopener">
           <span className="complex-card__visual"><ChannelsMiniMap product={COMPLEX.discoverability} /></span>
-          <span className="complex-card__meta">
-            <span>AI discoverability</span>
-            <span>{COMPLEX.discoverability.sector}</span>
-          </span>
+          <span className="complex-card__kind">{COMPLEX.discoverability.kind}</span>
           <h3>{COMPLEX.discoverability.name}</h3>
-          <span className="complex-card__shift">
-            <span className="complex-card__before"><b>Before</b>{COMPLEX.discoverability.before}</span>
-            <span className="complex-card__after"><b>Now</b>{COMPLEX.discoverability.after}</span>
-          </span>
-          <span className="complex-card__users"><b>Who uses it</b> {COMPLEX.discoverability.users}</span>
+          <p className="complex-card__change">{COMPLEX.discoverability.after}</p>
           <span className="complex-card__go">{COMPLEX.discoverability.action} <span aria-hidden="true">↗</span></span>
         </a>
       ),
     },
+    ...COMPLEX.projects.map((project) => ({
+      id: project.id,
+      card: (
+        <a className="complex-card" href={`#project-${project.id}`} onClick={show(project.id)} aria-haspopup="dialog">
+          <span className="complex-card__visual"><ProjectVisual project={project} /></span>
+          <span className="complex-card__kind">{project.card.kind}</span>
+          <h3>{project.card.name}</h3>
+          <p className="complex-card__change">{project.card.after}</p>
+          <span className="complex-card__go">See the details <span aria-hidden="true">→</span></span>
+        </a>
+      ),
+    })),
   ]
   const ordered = found && !found.none
     ? [...cards].sort((x, y) => {
@@ -174,46 +205,41 @@ export default function ComplexPage() {
           <div className="complex-hero__texture" aria-hidden="true" />
           <div className="complex-hero__inner">
             <div className="complex-hero__copy">
-              <p className="complex-eyebrow">{COMPLEX.hero.label}</p>
               <h1>{COMPLEX.hero.firstLine}{' '}<em>{COMPLEX.hero.secondLine}</em></h1>
+              <p className="complex-hero__intro">{COMPLEX.hero.intro}</p>
               <ProjectFinder onMatch={onMatch} />
             </div>
             <HeroNetwork focus={found?.need ?? (found?.industry ? 'agents' : null)} />
           </div>
         </section>
 
-        <AgentOffice industry={industry} onIndustry={setIndustry} />
-
-        {/* The proof first: every project on one screen. A drawing of the
-            work, the kind of business, and how it ran before and now, so a
-            reader can find their own problem before opening anything. */}
+        {/* The work we have built, AI first: a drawing of each, its name, and
+            what it changed. The agents' card leads down to their section. */}
         <section id="complex-index" className="complex-index" aria-labelledby="complex-index-title">
           <div className="complex-index__head" data-complex-reveal>
-            <p className="complex-eyebrow">02 / {COMPLEX.index.label}</p>
+            <p className="complex-eyebrow">01 / {COMPLEX.index.label}</p>
             <h2 id="complex-index-title">{COMPLEX.index.heading}</h2>
             <p className="complex-index__intro">{COMPLEX.index.intro}</p>
-            <div className="complex-start">
-              <p className="complex-start__label">{COMPLEX.index.start.label}</p>
-              <ul>
-                {COMPLEX.index.start.items.map((item) => (
-                  <li key={item.offer}>
-                    <a href={item.href} {...external(item.href)}>
-                      <span>{item.need}</span>
-                      <b>{item.offer} <span aria-hidden="true">{item.href.startsWith('#') ? '↓' : '↗'}</span></b>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
           </div>
-          <ol id="complex-grid" className="complex-index__grid" data-filtered={found && !found.none ? '' : undefined}>
-            {ordered.map(({ id, card }) => (
-              <li key={id} data-match={rank(id)}>
-                {card}
-              </li>
-            ))}
-          </ol>
+          {/* the projects slide sideways, a few at a time; arrows on both sides say so */}
+          <div className="complex-slider">
+            <ol ref={trackRef} id="complex-grid" className="complex-index__grid" data-filtered={found && !found.none ? '' : undefined} onScroll={read}>
+              {ordered.map(({ id, card }) => (
+                <li key={id} data-match={rank(id)}>
+                  {card}
+                </li>
+              ))}
+            </ol>
+            <button type="button" className="complex-slider__arrow complex-slider__arrow--back" aria-label="Previous projects" aria-controls="complex-grid" disabled={!slide.back} onClick={() => move(-1)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+            </button>
+            <button type="button" className="complex-slider__arrow complex-slider__arrow--next" aria-label="Next projects" aria-controls="complex-grid" disabled={!slide.next} onClick={() => move(1)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+            </button>
+          </div>
         </section>
+
+        <AgentLab industry={industry ?? 'any'} onIndustry={setIndustry} />
 
         <section className="complex-close" aria-labelledby="complex-close-title">
           <div className="complex-close__inner" data-complex-reveal>
@@ -221,12 +247,8 @@ export default function ComplexPage() {
               <p className="complex-eyebrow">03 / {COMPLEX.close.label}</p>
               <h2 id="complex-close-title">{COMPLEX.close.heading}</h2>
               <p>{COMPLEX.close.body}</p>
-              <p className="complex-close__lead">{COMPLEX.close.quiz}</p>
-              <a className="complex-close__quiz" href={QUIZ} {...external(QUIZ)}>
-                Take the business quiz <span aria-hidden="true">→</span>
-              </a>
             </div>
-            {/* The robot stands to the right of the invitation and rests its
+            {/* Both ways forward on one line under the copy. The robot rests its
                 hand on the button, the way you would lean on a counter. */}
             <div className="complex-close__actions">
               <span className="complex-close__button">
@@ -242,6 +264,12 @@ export default function ComplexPage() {
                   decoding="async"
                 />
               </span>
+              <p className="complex-close__lead">
+                {COMPLEX.close.quiz}{' '}
+                <a className="complex-close__quiz" href={QUIZ} {...external(QUIZ)}>
+                  Get your business fix plan <span aria-hidden="true">→</span>
+                </a>
+              </p>
             </div>
           </div>
         </section>

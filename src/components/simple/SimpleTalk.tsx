@@ -319,6 +319,8 @@ export default function SimpleTalk() {
   const driftX = `${(-p * DRIFT * 100).toFixed(3)}%`
 
   const booking = site.links.booking
+  // the booking page lives off-site, so it opens in a new tab
+  const bookingTarget = /^https?:/.test(booking) ? { target: '_blank', rel: 'noopener' } : {}
   const rise = (delay: number) => ({
     opacity: shown ? 1 : 0,
     transform: shown ? 'translate3d(0,0,0)' : 'translate3d(0, 60px, 0)',
@@ -337,14 +339,14 @@ export default function SimpleTalk() {
 
       {/* the type */}
       <div className="relative mx-auto w-full max-w-[1240px] px-6 pt-[max(14svh,120px)] text-center">
-        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-ink/55" style={rise(0)}>
+        <p className="font-mono text-[12px] uppercase tracking-[0.22em] text-ink/55" style={rise(0)}>
           Contact
         </p>
-        <h2 id="talk-heading" className="mt-5 text-[clamp(2.4rem,5.6vw,5.4rem)] leading-[1.0] tracking-[-0.03em]">
-          <span className="block font-sans font-normal" style={rise(80)}>
+        <h2 id="talk-heading" className="mt-5 font-display text-[clamp(2.2rem,4.2vw,3.6rem)] leading-[1.05] tracking-[-0.02em]">
+          <span className="block" style={rise(80)}>
             Ready to get your
           </span>
-          <span className="mt-[0.06em] block font-display italic text-brand-600" style={rise(180)}>
+          <span className="mt-[0.06em] block italic text-brand-600" style={rise(180)}>
             business found?
           </span>
         </h2>
@@ -352,6 +354,28 @@ export default function SimpleTalk() {
           Treat it like a <em className="font-display italic text-ink">first conversation</em>. Thirty minutes, no obligation. We get to know your
           business, you get an honest read on what a Simple build would do for it.
         </p>
+
+        {/* the plain way in, for anyone who'd rather not play with the shape
+            (and for phones, where the shape is fiddly) */}
+        <div className="mt-8 flex flex-col items-center gap-4" style={rise(360)}>
+          <a
+            href={booking}
+            {...bookingTarget}
+            className="inline-flex items-center gap-2 rounded-full bg-brand px-7 py-3.5 text-[15px] font-semibold text-ink shadow-brand transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-300 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-glass focus-visible:ring-offset-4 focus-visible:ring-offset-cream"
+          >
+            Book a call
+            <span aria-hidden>↗</span>
+          </a>
+          <p className="text-[14px] font-light text-ink/65">
+            or email{' '}
+            <a
+              href={`mailto:${site.contact.email}`}
+              className="font-normal text-glass-600 underline decoration-glass/40 underline-offset-4 transition-colors hover:text-glass hover:decoration-glass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-glass focus-visible:ring-offset-2 focus-visible:ring-offset-cream"
+            >
+              {site.contact.email}
+            </a>
+          </p>
+        </div>
       </div>
 
       {/* the rule, the stations, the shape */}
@@ -396,7 +420,7 @@ export default function SimpleTalk() {
           {/* the hint — sits by the shape (under it on phones) until it has
               been moved */}
           <span
-            className="pointer-events-none absolute top-1/2 -translate-x-1/2 translate-y-[clamp(56px,7vw,72px)] whitespace-nowrap font-mono text-[10px] tracking-[0.2em] text-ink/55 lg:ml-[clamp(50px,6.4vw,124px)] lg:translate-x-0 lg:-translate-y-1/2 lg:text-[11px]"
+            className="pointer-events-none absolute top-1/2 -translate-x-1/2 translate-y-[clamp(56px,7vw,72px)] whitespace-nowrap font-mono text-[12px] tracking-[0.2em] text-ink/55 lg:ml-[clamp(50px,6.4vw,124px)] lg:translate-x-0 lg:-translate-y-1/2"
             style={{
               left: `${STATION_X[0] * 100}%`,
               opacity: shown && !touched ? 1 : 0,
@@ -413,8 +437,9 @@ export default function SimpleTalk() {
           <a
             ref={linkRef}
             href={booking}
+            {...bookingTarget}
             aria-label="Let’s talk. Book a free call"
-            className="group pointer-events-none absolute top-1/2 grid aspect-square w-[clamp(84px,10.4vw,200px)] -translate-x-1/2 -translate-y-1/2 select-none place-items-center outline-none focus-visible:ring-2 focus-visible:ring-ink/60 focus-visible:ring-offset-4 focus-visible:ring-offset-cream"
+            className="group pointer-events-none absolute top-1/2 grid aspect-square w-[clamp(84px,10.4vw,200px)] -translate-x-1/2 -translate-y-1/2 select-none place-items-center outline-none focus-visible:ring-2 focus-visible:ring-glass focus-visible:ring-offset-4 focus-visible:ring-offset-cream"
             style={{
               left,
               opacity: shown ? 1 : 0,

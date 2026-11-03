@@ -43,10 +43,12 @@ export type ComplexCard = {
 export type ComplexProject = {
   id: string
   /** where it sits in the header's projects menu */
-  group: 'systems' | 'automation'
+  group: 'systems' | 'automation' | 'websites'
   /** the drawing on its card, chosen to show the shape of the work */
-  visual: 'match' | 'stages' | 'roles' | 'phone' | 'pipeline' | 'funnel' | 'path'
+  visual: 'match' | 'stages' | 'roles' | 'phone' | 'pipeline' | 'funnel' | 'path' | 'journey'
   title: string
+  /** the heading over its step by step walk-through */
+  walk: string
   lede: string
   card: ComplexCard
   /** each role, and what it can reach */
@@ -67,6 +69,8 @@ export type ComplexProject = {
 export type ComplexProduct = {
   id: string
   name: string
+  /** the card's label, in plain words */
+  kind: string
   sector: string
   before: string
   after: string
@@ -88,14 +92,14 @@ export type ComplexNeed = {
   id: string
   label: string
   keywords: string[]
-  /** project ids, closest first; 'ai-client-engine' is the product card */
+  /** project ids, closest first; 'ai-client-engine' is the AI discoverability card */
   projects: string[]
   /** how we would approach it, in one sentence */
   plan: string
 }
 
 /**
- * What an agent office could do for one kind of business: the desks drawn on
+ * What a team of agents could do for one kind of business: the desks drawn on
  * the office floor, what waits on the owner, and the work the agents take on,
  * with clients and behind the scenes. Possibilities, not past projects.
  */
@@ -124,18 +128,18 @@ export type ComplexIndustry = {
   operations: string[]
 }
 
-/** The AI agent office we build, and run ourselves. */
+/** The AI agents we build, and run ourselves. */
 export type ComplexAgents = {
   label: string
   heading: string
   emphasis: string
   intro: string
-  definition: string
+  /** the agent on the page, introducing itself */
   director: { name: string; job: string }
   teams: { name: string; job: string; state: 'working' | 'reported' | 'needs-you' }[]
   queue: { label: string; items: string[] }
   story: { label: string; steps: ComplexStoryStep[] }
-  control: { label: string; steps: { level: string; what: string }[] }
+  control: { label: string; steps: { level: string; what: string; says: string }[] }
   setup: { label: string; steps: { step: string; what: string }[] }
   /** what an office does for any business, before one is picked */
   general: { clients: string[]; operations: string[] }
@@ -150,7 +154,8 @@ export type ComplexContent = {
     label: string
     heading: string
     intro: string
-    start: { label: string; items: { need: string; offer: string; href: string }[] }
+    /** the agents' card, first on the slider */
+    agents: { kind: string; name: string; change: string; action: string }
   }
   finder: { label: string; heading: string; placeholder: string; none: string; reset: string; needs: ComplexNeed[] }
   projects: ComplexProject[]
@@ -160,36 +165,36 @@ export type ComplexContent = {
 
 /** The header's projects menu: the groups, in order, and what each holds. */
 export const PROJECT_GROUPS: { id: ComplexProject['group'] | 'ai'; label: string }[] = [
+  { id: 'ai', label: 'AI' },
   { id: 'systems', label: 'Custom systems' },
   { id: 'automation', label: 'Automation and funnels' },
-  { id: 'ai', label: 'AI' },
+  { id: 'websites', label: 'Online user experience' },
 ]
 
 export const COMPLEX: ComplexContent = {
   agents: {
     label: 'AI agents',
-    heading: 'A team of AI agents, working in your business.',
+    heading: 'A team of AI agents.',
     emphasis: 'You approve. They do the rest.',
-    intro: 'We run our own company on one. We map how your work moves, build the agents around it, and keep them running.',
-    definition: 'Each agent does one job, such as research, drafting, checking or reporting, and reports back. A director agent runs the team. You make the calls.',
+    intro: 'Customised to your business. We map how your work moves, build the agents around it, and keep them running.',
     director: { name: 'Director agent', job: 'Plans the day · checks every report' },
     teams: [
       { name: 'Front desk', job: 'Answers enquiries · books calls', state: 'working' },
       { name: 'Sales', job: 'Researches leads · drafts follow ups', state: 'reported' },
       { name: 'Operations', job: 'Orders · invoices · deadlines', state: 'working' },
       { name: 'Reports', job: 'Numbers · targets · what slipped', state: 'reported' },
-      { name: 'Content and QA', job: 'Drafts · checked before it goes out', state: 'needs-you' },
+      { name: 'Content', job: 'Creates · schedules · manages posts', state: 'needs-you' },
     ],
     queue: {
       label: 'Waiting on you',
-      items: ['Approve 3 follow up emails', 'Invoice batch ready to send', 'Two posts passed QA'],
+      items: ['Approve 3 follow up emails', 'Invoice batch ready to send', '2 posts passed QA'],
     },
     story: {
       label: 'Watch one job go through',
       steps: [
         { at: 'director', level: 'Automatic', text: 'Morning: the director agent sets today’s three priorities and hands out the work.' },
         { at: 1, level: 'Automatic', text: 'Sales researches three new leads and drafts a personal follow up for each.' },
-        { at: 4, level: 'Checked', text: 'Content and QA checks every draft against your tone and the facts.' },
+        { at: 4, level: 'Checked', text: 'Content checks every draft against your tone and the facts.' },
         { at: 'queue', level: 'Your yes', text: 'The drafts wait in your queue. You approve, edit or reject them in one batch.' },
         { at: 'you', level: 'On record', text: 'Approved emails go out, and every step is saved with who approved it.' },
       ],
@@ -197,19 +202,19 @@ export const COMPLEX: ComplexContent = {
     control: {
       label: 'You stay in control',
       steps: [
-        { level: 'Automatic', what: 'Research, drafts and internal records.' },
-        { level: 'Checked', what: 'Routine work passes a separate quality check first.' },
-        { level: 'Your yes', what: 'Anything sent to a client or the public, and anything involving money or a commitment, waits for you.' },
-        { level: 'On record', what: 'Every job, report and decision is written down and kept.' },
+        { level: 'Automatic', what: 'Research, drafts and internal records.', says: 'Research, drafts and internal records, I get on with by myself.' },
+        { level: 'Checked', what: 'Routine work passes a separate quality check first.', says: 'Routine work goes through a separate quality check before it moves on.' },
+        { level: 'Your yes', what: 'Anything sent to a client or the public, and anything involving money or a commitment, waits for you.', says: 'Anything for a client or the public, or involving money or a commitment, waits for your yes.' },
+        { level: 'On record', what: 'Every job, report and decision is written down and kept.', says: 'Everything I do is written down, with who approved it.' },
       ],
     },
     setup: {
       label: 'How we set it up',
       steps: [
-        { step: 'Map', what: 'We sit with you and map how the work moves today.' },
-        { step: 'Build', what: 'We build the agents around your tools and your rules.' },
-        { step: 'Test', what: 'They run beside your team until the work is right.' },
-        { step: 'Run', what: 'We keep them running and add agents as you grow.' },
+        { step: 'Map', what: 'How your work moves today' },
+        { step: 'Build', what: 'Agents around your tools and rules' },
+        { step: 'Test', what: 'Beside your team until it’s right' },
+        { step: 'Run', what: 'Kept running, added to as you grow' },
       ],
     },
     general: {
@@ -219,13 +224,13 @@ export const COMPLEX: ComplexContent = {
     industries: {
       label: 'See it for your business',
       any: 'Any business',
-      intro: 'What an agent office could take on for',
+      intro: 'What AI agents could take on for',
       note: 'Every draft and decision waits for your yes.',
       items: [
         {
           id: 'law',
           label: 'Law firm',
-          keywords: ['law', 'lawyer', 'legal', 'solicitor', 'attorney', 'barrister', 'litigation', 'paralegal'],
+          keywords: ['law firm', 'law', 'lawyer', 'legal', 'solicitor', 'attorney', 'barrister', 'litigation', 'paralegal'],
           teams: [{ name: 'Intake', job: 'Intake questions · conflict check' }, { name: 'Documents', job: 'Drafts letters · for a lawyer to review' }, { name: 'Deadlines', job: 'Filing dates · court dates' }, { name: 'Billing', job: 'Time logs · invoice drafts' }],
           queue: ['Approve 2 engagement letters', 'New intake ready to review', 'Filing due on Friday'],
           story: [
@@ -293,7 +298,7 @@ export const COMPLEX: ComplexContent = {
         {
           id: 'agency',
           label: 'Agency or consultancy',
-          keywords: ['agency', 'consult', 'marketing agency', 'studio', 'freelance', 'advisory', 'firm'],
+          keywords: ['agency', 'consult', 'marketing agency', 'studio', 'freelance', 'advisory'],
           teams: [{ name: 'Sales', job: 'Researches leads · drafts outreach' }, { name: 'Proposals', job: 'Call notes into proposals' }, { name: 'Projects', job: 'Status · flags overruns' }, { name: 'Reports', job: 'Monthly client reports' }],
           queue: ['Proposal ready to review', 'Approve 3 outreach drafts', 'Client report passed QA'],
           story: [
@@ -360,7 +365,7 @@ export const COMPLEX: ComplexContent = {
         },
       ],
     },
-    action: 'Talk about your agent office',
+    action: 'Talk to us about your agents',
   },
   hero: {
     label: 'Our Projects',
@@ -372,18 +377,16 @@ export const COMPLEX: ComplexContent = {
   index: {
     label: 'The projects',
     heading: 'Work we have built, and what it changed.',
-    intro: 'Custom systems, process mapping, automation and AI discoverability (being found and recommended by ChatGPT and Google). Every project started with a map of how the work actually moves.',
-    start: {
-      label: 'Where to start',
-      items: [
-        { need: 'Every enquiry answered, day and night', offer: 'AI Client Engine', href: 'https://ai.clauseandcode.com/' },
-        { need: 'A team that does the admin and follow ups', offer: 'AI agent office', href: '#agents' },
-        { need: 'Software built around how you work', offer: 'Custom systems', href: '#complex-grid' },
-      ],
+    agents: {
+      kind: 'AI agents',
+      name: 'A team of AI agents',
+      change: 'An agent for each job in the business, working beside the team. Clause & Code runs on them, and anything that matters waits for a yes.',
+      action: 'See the agents at work',
     },
+    intro: 'AI agents, AI discoverability, custom systems and automation. Every project started with a map of how the work actually moves.',
   },
   finder: {
-    label: 'Search our work',
+    label: 'Search our work to find what’s right for you',
     heading: 'Search our work by the task you want handled',
     placeholder: 'Type a task, e.g. “answer enquiries at night”',
     none: 'Nothing here matches that exactly yet. Every system on this page started as a problem like yours, mapped first and built after. Tell us about it.',
@@ -473,6 +476,13 @@ export const COMPLEX: ComplexContent = {
         projects: ['orders', 'academy', 'membership'],
         plan: 'Tie quotes, invoices and payments to the same record, with reminders when something is late and nothing released until it is paid.',
       },
+      {
+        id: 'website',
+        label: 'A website people experience',
+        keywords: ['website', 'web site', 'web design', 'redesign', 'homepage', 'home page', 'seo', 'google', 'search engine', 'search result', 'get found', 'be found', 'visib', 'portfolio', 'gallery', 'artist', 'artisan', 'maker', 'handmade', 'craft', 'watch', 'jewel', 'commission', 'collector', 'first impression'],
+        projects: ['website-journey', 'ai-client-engine', 'quiz-funnel'],
+        plan: 'Map who visits and what they came to do, then build the site around it: the story in the scroll, the work up close, the facts to decide, and ordering or commissioning on the page.',
+      },
     ],
   },
   projects: [
@@ -481,6 +491,7 @@ export const COMPLEX: ComplexContent = {
       group: 'systems',
       visual: 'match',
       title: 'The right experts for every project, found by the system.',
+      walk: 'How a project finds its expert',
       lede: 'A team delivers projects through a network of independent experts. When a project comes in, the system finds the experts whose expertise fits, the team invites the ones it wants, and the bids, the choice and the work all stay inside that circle.',
       card: {
         name: 'Expert matching and bidding',
@@ -560,6 +571,7 @@ export const COMPLEX: ComplexContent = {
       group: 'systems',
       visual: 'stages',
       title: 'Only vetted teachers, matched to the right student.',
+      walk: 'How a teacher gets in and gets matched',
       lede: 'A learning community connects students with one on one teachers. Trust is the whole promise: every teacher clears seven stages before going live, and each student is then pointed to the teacher who fits.',
       card: {
         name: 'Teacher vetting and matching',
@@ -640,6 +652,7 @@ export const COMPLEX: ComplexContent = {
       group: 'systems',
       visual: 'roles',
       title: 'One office, one record per student.',
+      walk: 'How a student moves through the academy',
       lede: 'An academy ran enrolment, classes, attendance and fees in separate places. The office needed one system, and teachers needed only their part of it.',
       card: {
         name: 'Academy management platform',
@@ -720,6 +733,7 @@ export const COMPLEX: ComplexContent = {
       group: 'systems',
       visual: 'phone',
       title: 'Every appointment, from booking to the next one.',
+      walk: 'How an appointment runs',
       lede: 'A client app, an admin system for the team and a live dashboard for owners, built as one platform. The client is guided before the visit, looked after once it is over, and asked for a review and a referral at the right moment, without anyone on the team chasing it.',
       card: {
         name: 'Client journey platform',
@@ -800,6 +814,7 @@ export const COMPLEX: ComplexContent = {
       group: 'automation',
       visual: 'pipeline',
       title: 'B2B orders that move themselves to the next person.',
+      walk: 'How an order moves',
       lede: 'We mapped how B2B enquiries and orders actually moved through the business, found where they stalled, and rebuilt the process as one pipeline. Every handoff is now a status change that assigns the next person automatically.',
       card: {
         name: 'B2B order pipeline',
@@ -880,6 +895,7 @@ export const COMPLEX: ComplexContent = {
       group: 'automation',
       visual: 'funnel',
       title: 'A quiz that sells, onboards and delivers on its own.',
+      walk: 'How a quiz taker becomes a client',
       lede: 'A long online program existed only as written content: no page to sell it, no sign up flow and no way to deliver it. We built the funnel and the delivery around it, from a personality quiz on the landing page to the feedback form after the last session.',
       card: {
         name: 'Quiz funnel and program delivery',
@@ -960,6 +976,7 @@ export const COMPLEX: ComplexContent = {
       group: 'automation',
       visual: 'path',
       title: 'A complete membership system, built from the ground up.',
+      walk: 'How a member joins and stays',
       lede: 'A growing business needed a steadier model and a system to run it. We designed the membership and built the whole system behind it: the strategy and numbers, the site members sign up through, the workspace the team runs it from, the emails and payments, and every step from the first sign up to the welcome, so nothing depends on the founders doing it by hand.',
       card: {
         name: 'Membership system',
@@ -1035,13 +1052,96 @@ export const COMPLEX: ComplexContent = {
       ],
       result: 'The business runs on a membership system instead of one sale at a time: members come in, are approved, pay and are welcomed the same way every time, with a model to grow on and contracts it can rely on.',
     },
+    {
+      id: 'website-journey',
+      group: 'websites',
+      visual: 'journey',
+      title: 'Websites people experience, not just visit.',
+      walk: 'How a visit unfolds',
+      lede: 'For makers, artisans, artists and brands, the work sells when people can feel it: the detail, the story, how it is made. We design the whole online experience around what a visitor came to do, whether that is to look closely, walk through, order, buy or commission, and tell the story as they scroll.',
+      card: {
+        name: 'From first look to first order',
+        kind: 'Online user experience',
+        area: 'Story · close looks · the facts · ordering · found by AI',
+        before: 'Work that sells in person, where the detail and the story do the selling, but online only a flat page and a contact form.',
+        after: 'Sites built around what visitors come to do: look closely, walk through, order, buy or commission, told as a story in the scroll and structured so people and AI can find them.',
+        users: 'Visitors and buyers · the owner · search engines and AI assistants',
+      },
+      roles: [
+        { name: 'Visitor', access: 'Follows the story as they scroll, looks at each piece up close, finds the facts they need, and orders, reserves or enquires on the page.' },
+        { name: 'Owner', access: 'Has a site built around how the work is actually sold, easy to keep current as new pieces and collections arrive.' },
+        { name: 'Search and AI assistants', access: 'Read fast, structured pages, so the work can be found and recommended when people ask.' },
+      ],
+      stops: [
+        {
+          node: 'Mapped',
+          detail: 'who visits · what for',
+          title: 'Mapped before it is designed.',
+          body: 'We start with who visits and what they came to do: see a collection, order a meal, view an original, walk through a project. Every page is then built for that job, not for a template.',
+          guard: 'Purposeful: every page has one job for the visitor.',
+          side: 'near',
+        },
+        {
+          node: 'The story',
+          detail: 'scroll · motion',
+          title: 'The story told as they scroll.',
+          body: 'Motion with a reason: a product turning as you read, light moving from day to night across a building, the heat of a kitchen rising down the page. The brand’s story carries the visitor from the first screen to the work.',
+          guard: 'Purposeful motion: it explains, it never just decorates.',
+          side: 'near',
+        },
+        {
+          node: 'Close look',
+          detail: 'pieces · walkthroughs',
+          title: 'The work, up close.',
+          body: 'Each piece opens to be looked at properly. Collections show what sets each line apart, and spaces can be walked through in 360°, so the visitor gets as close to the work as they would in person.',
+          guard: 'Close: nothing important is a thumbnail.',
+          side: 'near',
+        },
+        {
+          node: 'The facts',
+          detail: 'sizes · prices · availability',
+          title: 'Everything a buyer needs to decide.',
+          body: 'Sizes, prices and availability on each original; the ingredients and flavours of each product; the credentials behind the practice. The answers sit beside the work, so nobody has to ask first.',
+          guard: 'Clear: the facts are on the page, not behind a message.',
+          side: 'far',
+        },
+        {
+          node: 'Act',
+          detail: 'order · reserve · commission',
+          title: 'The next step on the page itself.',
+          body: 'Build your own order, reserve a table, buy an original or commission a new one, add a bundle to a cart that applies its own discount, or enquire about corporate gifting, without leaving the page.',
+          guard: 'Direct: the step a visitor wants is one tap away.',
+          side: 'far',
+        },
+        {
+          node: 'Found',
+          detail: 'fast · structured',
+          title: 'Fast, and found.',
+          body: 'Every site loads quickly on a phone and is structured so search engines and AI assistants like ChatGPT and Gemini can read what the business does and recommend it.',
+          guard: 'Readable: by people and by the machines that point people to it.',
+          side: 'far',
+        },
+      ],
+      map: { shape: 'rows', near: 'Drawn into the work', far: 'Ready to buy', caption: 'From a first look to a first order', note: 'Each site is built around what its visitors came to do.' },
+      features: [
+        'Visitor mapping before any page is designed',
+        'Scroll driven storytelling, animated with purpose',
+        'Pieces that open to be looked at closely, and 360° walkthroughs',
+        'Sizes, prices and availability beside the work',
+        'Live ordering, reservations, buy and commission flows',
+        'A cart that applies bundle discounts on its own, and corporate gifting',
+        'Fast on a phone, structured for search and AI',
+      ],
+      result: 'The website stops being a brochure and becomes the place the work is experienced and bought: a story to follow, the detail up close, the facts to decide, and the next step right there.',
+    },
   ],
   discoverability: {
     id: 'ai-client-engine',
-    name: 'AI Client Engine',
+    name: 'AI discoverability',
+    kind: 'Being found by AI',
     sector: 'Coaches, clinics and professional practices',
-    before: 'Enquiries arrived in DMs and inboxes at all hours, and many were never answered.',
-    after: 'An AI ready page, your own assistant on ChatGPT, Gemini, Instagram and WhatsApp, and connected booking, live in 5 working days.',
+    before: 'People now ask ChatGPT and Gemini who to call. These businesses were not the answer, and enquiries in DMs went unanswered.',
+    after: 'Your business found and recommended when people ask ChatGPT, Gemini or Google, with your own assistant on Instagram and WhatsApp booking the calls. Live in 5 working days.',
     users: 'Practice owners · their clients',
     sources: ['ChatGPT', 'Gemini', 'WhatsApp · Instagram'],
     hub: 'Landing page',
@@ -1052,7 +1152,7 @@ export const COMPLEX: ComplexContent = {
   close: {
     label: 'Your turn',
     heading: 'Let’s find what to build first.',
-    body: 'From a system that does not exist yet to one that has outgrown how it is run: we map the work first, and we don’t compromise on security.',
+    body: 'A team of agents, being found by AI, or a system your business has outgrown: we map how the work moves first, then build it, and we don’t compromise on security.',
     action: 'Book a consultation',
     quiz: 'Not sure where to start?',
   },

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import HeroRobot from './HeroRobot'
 import Underline from './Underline'
 import { useRobotMood } from '../context/RobotMood'
+import { site } from '../config/site'
 
 export default function Hero() {
   const { moodHandlers } = useRobotMood()
@@ -42,7 +43,7 @@ export default function Hero() {
       </div>
 
       {/* ---------- Two-side composition: copy | robot ---------- */}
-      <div className="relative z-10 mx-auto grid min-h-0 w-full max-w-6xl flex-1 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] gap-x-10 px-6 pt-[104px] md:pt-28 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:grid-rows-1">
+      <div className="relative z-10 mx-auto grid min-h-0 w-full max-w-6xl flex-1 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] gap-x-10 px-6 pt-[104px] lg:px-10 md:pt-28 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:grid-rows-1">
         {/* ----- Copy ----- */}
         <div className="flex flex-col items-center text-center lg:items-start lg:justify-center lg:pb-[7vh] lg:text-left">
           <h1
@@ -80,9 +81,11 @@ export default function Hero() {
             </a>
 
             <a
-              href="#book-consultation"
+              href={site.links.booking}
+              target="_blank"
+              rel="noopener"
               {...moodHandlers('happy')}
-              className="group inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-ink/20 bg-white/50 px-3 py-2.5 text-[12px] font-semibold text-ink backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/40 hover:bg-white hover:shadow-[0_18px_34px_-18px_rgba(27,26,23,0.5)] active:translate-y-0 sm:flex-none sm:gap-2 sm:px-7 sm:py-3.5 sm:text-[15px]"
+              className="group inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-glass/30 bg-white/50 px-3 py-2.5 text-[12px] font-semibold text-glass backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-glass hover:bg-white hover:shadow-[0_18px_34px_-18px_rgba(27,26,23,0.5)] active:translate-y-0 sm:flex-none sm:gap-2 sm:px-7 sm:py-3.5 sm:text-[15px]"
             >
               Book a Consultation
               <span

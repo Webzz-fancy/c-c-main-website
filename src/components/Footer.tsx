@@ -8,32 +8,30 @@ type LinkGroup = {
 
 const GROUPS: LinkGroup[] = [
   {
-    title: 'Company',
-    links: [
-      { label: 'About', href: '#about' },
-      { label: 'Contact', href: '#contact' },
-      { label: 'Privacy Policy', href: '#privacy' },
-    ],
-  },
-  {
     title: 'Ways We Help',
     links: [
-      { label: 'Book a Consultation', href: '#book-consultation' },
-      { label: 'Drop Your Problem', href: '#drop-problem' },
+      { label: 'Book a Consultation', href: site.links.booking },
+      { label: 'Drop Your Problem', href: site.links.dropProblem },
+      { label: 'Business fix plan', href: '#quiz' },
     ],
   },
   {
     title: 'Explore',
     links: [
       { label: 'Home', href: '#home' },
-      { label: 'Our Projects', href: '#projects' },
-      { label: 'Take the Quiz', href: '#quiz' },
+      { label: 'Our Projects', href: '/complex' },
+      { label: 'Contact', href: '/contact' },
     ],
   },
 ]
 
 const EMAIL = site.contact.email
-const PHONE = site.contact.phone
+
+/** a profile shows only once it has a real address, never a dead '#' link */
+const SOCIAL = [
+  { label: 'LinkedIn', href: site.social.linkedin, Icon: LinkedInIcon },
+  { label: 'Instagram', href: site.social.instagram, Icon: InstagramIcon },
+].filter((item) => item.href.startsWith('http'))
 
 function LinkedInIcon() {
   return (
@@ -120,36 +118,38 @@ export default function Footer() {
               />
             </p>
 
-            <div className="mt-7 flex items-center gap-3">
-              {[
-                { label: 'LinkedIn', href: site.social.linkedin, Icon: LinkedInIcon },
-                { label: 'Instagram', href: site.social.instagram, Icon: InstagramIcon },
-              ].map(({ label, href, Icon }) => (
-                <a
-                  key={label}
-                  href={href}
-                  aria-label={label}
-                  className="grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/[0.06] text-white/75 transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/60 hover:bg-brand hover:text-ink"
-                >
-                  <Icon />
-                </a>
-              ))}
-            </div>
+            {SOCIAL.length > 0 && (
+              <div className="mt-7 flex items-center gap-3">
+                {SOCIAL.map(({ label, href, Icon }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    aria-label={label}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/[0.06] text-white/75 transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/60 hover:bg-brand hover:text-ink"
+                  >
+                    <Icon />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Links + contact */}
-          <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-8 gap-y-10 lg:grid-cols-[1fr_1fr_minmax(15rem,1.4fr)]">
             {GROUPS.map((group) => (
               <nav key={group.title} aria-label={group.title}>
-                <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/45">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-glass-300">
                   {group.title}
-                </h3>
+                </p>
                 <ul className="mt-4 space-y-2.5">
                   {group.links.map((item) => (
                     <li key={item.label}>
                       <a
                         href={link(item.href)}
-                        className="group inline-flex items-center text-[14.5px] text-white/70 transition-colors duration-300 hover:text-white"
+                        {...(item.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                        className="group -my-2 inline-flex items-center py-2 text-[14.5px] text-white/70 transition-colors duration-300 hover:text-white"
                       >
                         <span className="mr-0 h-px w-0 bg-brand transition-all duration-300 group-hover:mr-2 group-hover:w-3" />
                         {item.label}
@@ -160,29 +160,31 @@ export default function Footer() {
               </nav>
             ))}
 
-            <div className="col-span-2 sm:col-span-1">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/45">
+            <address className="col-span-2 not-italic lg:col-span-1" aria-label="Contact">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-glass-300">
                 Contact
-              </h3>
+              </p>
               <ul className="mt-4 space-y-2.5">
                 <li>
                   <a
                     href={`mailto:${EMAIL}`}
-                    className="text-[14.5px] leading-snug text-white/70 transition-colors duration-300 hover:text-brand"
+                    className="py-2 whitespace-nowrap text-[14.5px] leading-snug text-white/70 transition-colors duration-300 hover:text-brand"
                   >
                     {EMAIL}
                   </a>
                 </li>
                 <li>
                   <a
-                    href={`tel:${PHONE.replace(/\s/g, '')}`}
-                    className="text-[14.5px] text-white/70 transition-colors duration-300 hover:text-brand"
+                    href={site.contact.whatsapp}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="py-2 text-[14.5px] text-white/70 transition-colors duration-300 hover:text-brand"
                   >
-                    {PHONE}
+                    Message us on WhatsApp
                   </a>
                 </li>
               </ul>
-            </div>
+            </address>
           </div>
         </div>
 

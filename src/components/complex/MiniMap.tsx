@@ -240,7 +240,39 @@ function PathMap() {
   )
 }
 
-const VISUALS = { match: MatchMap, stages: StagesMap, roles: RolesMap, phone: PhoneMap, pipeline: PipelineMap, funnel: FunnelMap, path: PathMap }
+// A visitor's way in: found in search or an AI answer, down the page one
+// step at a time, out to an order.
+function JourneyMap() {
+  const rows = ['The story', 'Close look', 'The facts', 'Order']
+  const stages = ['Drawn in', 'Sees', 'Decides']
+  return (
+    <Svg>
+      <Label x={14} y={30}>Finds</Label>
+      <path className="complex-mini__wire" d="M100 58 H134" />
+      <path className="complex-mini__wire" d="M100 129 H111 V58" />
+      <Chip x={14} y={41} w={86} h={34} title="Search" tone="far" />
+      <Chip x={14} y={112} w={86} h={34} title="AI answer" tone="far" />
+      <g className="complex-mini__window" transform="translate(122 10)">
+        <rect className="complex-mini__window-frame" width={124} height={168} rx={10} />
+        <path className="complex-mini__window-bar" d="M0 24 H124" />
+        {[12, 21, 30].map((cx) => <circle key={cx} className="complex-mini__notch" cx={cx} cy={12} r={2.5} />)}
+        {rows.map((row, i) => (
+          <g key={row} transform={`translate(12 ${36 + i * 34})`}>
+            {i > 0 && <path className="complex-mini__wire" d="M50 -10 V0" />}
+            <rect className={i === 3 ? 'complex-mini__pill complex-mini__pill--on' : 'complex-mini__pill'} width={100} height={24} rx={7} />
+            <circle className="complex-mini__dot" cx={12} cy={12} r={3.5} />
+            <text className="complex-mini__small" x={22} y={16}>{row}</text>
+          </g>
+        ))}
+      </g>
+      {stages.map((stage, i) => <Label key={stage} x={258} y={61 + i * 34}>{stage}</Label>)}
+      <path className="complex-mini__wire complex-mini__wire--lead" d="M234 160 H262" />
+      <Chip x={262} y={138} w={86} h={44} index="NEXT STEP" title="Enquiry" tone="hub" />
+    </Svg>
+  )
+}
+
+const VISUALS = { match: MatchMap, stages: StagesMap, roles: RolesMap, phone: PhoneMap, pipeline: PipelineMap, funnel: FunnelMap, path: PathMap, journey: JourneyMap }
 
 export function ProjectVisual({ project }: { project: ComplexProject }) {
   const Visual = VISUALS[project.visual]
