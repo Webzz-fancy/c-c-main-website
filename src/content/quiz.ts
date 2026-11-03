@@ -328,8 +328,8 @@ export const QUIZ = {
   },
   email: {
     heading: 'Keep a copy',
-    body: 'We’ll email you this plan and the check, so you have them when you sit down to do it.',
-    marketing: 'Also send me the occasional short note on fixing this. Unsubscribe any time.',
+    body: 'We’ll send this plan to your inbox, so it’s there when you sit down to run the check.',
+    marketing: 'And nudge me once in a few days to see how the check went. Just once.',
     action: 'Email me my plan',
   },
 }

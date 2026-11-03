@@ -13,7 +13,7 @@ The fix plan on the home page (`#quiz`) is finished on the front end.
 
 **What the server is for**
 
-- Under the plan there is a "Keep a copy" form: first name, email, and a separate, unticked box for occasional emails.
+- Under the plan there is a "Keep a copy" form: first name, email, and a separate, unticked box for one nudge 3 days later.
 - Sending that copy, and anything after it, needs the server.
 - Until the server exists, the form tells the visitor the copy could not be sent and suggests saving a PDF.
 
@@ -71,8 +71,8 @@ What the endpoint must do:
    - The only visitor text allowed in the email is their first name, escaped. This stops the form being used to send spam.
 3. **Notify us.**
    - Send `teamEmail()` to our inbox. It has the name, the email, whether they ticked the box, and every answer.
-4. **Add to the email list only if `marketing` is true.**
-   - Tag them with: `model`, `belief`, the first priority stage (`plan.area.id`), and `tentative` if `plan.tentative` is true.
+4. **Schedule the nudge only if `marketing` is true.**
+   - Send `nudgeEmail()` 3 days later. A scheduled send in the email service, or a simple queue, is enough. No list or automation is needed.
    - Without the tick, they get the plan email and nothing else.
 5. **Log only what is needed:** name, email, first priority. No full answers in logs.
 
@@ -83,49 +83,35 @@ To use `src/content/quiz.ts` and `src/content/quizEmails.ts` from `server.js`, b
 
 ## 2. The emails are already written
 
-Every email is written and rendered in `src/content/quizEmails.ts`, so the server only sends them. Preview of every email for each first priority: https://claude.ai/artifact/VRqNF7uTptH5GP2WPE6jd9 (ask the owner to share it with you).
+There are two emails for the visitor and one notice for us, all written and rendered in `src/content/quizEmails.ts`. The server only sends them.
+
+Preview: https://claude.ai/artifact/VRqNF7uTptH5GP2WPE6jd9 (ask the owner to share it with you).
 
 | Function | Email | Who gets it | When |
 |---|---|---|---|
-| `planEmail(answers, name)` | Their plan, in the same order as the page | Everyone who asks for a copy | Straight away |
+| `planEmail(answers, name)` | Their fix plan again, so it lives in their inbox | Everyone who asks for a copy | Straight away |
+| `nudgeEmail(answers, name)` | "Did the check surprise you?", one friendly nudge asking for a reply | Only if `marketing` is true | 3 days later |
 | `teamEmail(answers, { name, email, marketing })` | New plan notice with every answer | Our inbox (`LEADS_TO`) | Straight away |
-| `followUps(answers, name)[0]` | "Did you run the check?" | Only if `marketing` is true | Day 2 |
-| `followUps(answers, name)[1]` | "What good {stage} looks like" | Only if `marketing` is true | Day 5 |
-| `followUps(answers, name)[2]` | "When a checklist is enough, and when it isn't" | Only if `marketing` is true | Day 9 |
-| `followUps(answers, name)[3]` | "A second pair of eyes on your answers" | Only if `marketing` is true | Day 14 |
 
 Each email has `subject`, `preheader`, `day` and `marketing`.
 
-To send one:
+To send:
 
-- Turn it into HTML with `renderHtml(email, unsubscribeUrl)` and into plain text with `renderText(email, unsubscribeUrl)`, and send both versions.
-- For the four notes, pass the email tool's unsubscribe link, for example Brevo's `{{ unsubscribe }}`. The plan and team emails have no unsubscribe link, because the visitor asked for them.
-- The logo loads from `https://clauseandcode.com/logo.png`, so the site must be live first.
-- Pass the visitor's first name exactly as validated. The renderer escapes it.
-
-Scheduling:
-
-- Schedule the four notes when the plan is sent. Cancel any notes not yet sent if the person unsubscribes.
-- The simplest way is to build all four at once and hand them to the email tool with send dates.
-- The other way is to store the answers and build each note on its day.
-- Day 2 invites a reply. Set the reply-to address to an inbox someone reads, for example `support@clauseandcode.com`.
-
-The series stops after day 14. Don't add people to any other list unless they have given separate consent.
+- Turn each email into HTML with `renderHtml(email, unsubscribeUrl)` and into plain text with `renderText(email, unsubscribeUrl)`, and send both versions.
+- Only the nudge needs the email tool's unsubscribe link.
+- Images load from `https://clauseandcode.com/logo.png` and `https://clauseandcode.com/email/`, so the site must be live first.
+- The nudge asks people to reply. Set the reply-to address to an inbox someone reads and answers, for example `support@clauseandcode.com`.
+- There is no other sequence. Don't add people to any list unless they have given separate consent.
 
 ## 3. Services and settings to set up
 
 - **An email sending service**, with clauseandcode.com verified (SPF and DKIM).
   - Options: Resend, Postmark, Brevo, or the Hostinger mailbox over SMTP.
   - It needs a from address, such as `plans@clauseandcode.com`.
-- **An email list tool** for the follow-ups, with automations and tags.
-  - Options: Brevo, MailerLite or Kit.
-  - Brevo can do both the sending and the list.
 - **Environment variables on Hostinger**, never committed:
   - `MAIL_API_KEY`
   - `MAIL_FROM`
   - `LEADS_TO`, our inbox
-  - `LIST_API_KEY`
-  - `LIST_ID`
 
 ## 4. Privacy
 
