@@ -2,16 +2,68 @@ import { useEffect, useRef, useState } from 'react'
 import { useScrolled } from '../hooks/useScrolled'
 import { useHomeLinks } from '../hooks/useHomeLinks'
 import { useRobotMood } from '../context/RobotMood'
+import { COMPLEX, PROJECT_GROUPS } from '../content/complex'
 
 type NavItem = {
   label: string
   href: string
   children?: { label: string; href: string; description: string }[]
+  /** a wide menu listing every project; the label itself still opens the page */
+  projects?: boolean
+}
+
+type ProjectLink = { id: string; label: string; href: string; description: string; external?: boolean }
+
+// Every project, grouped the way the menu shows them. Each one opens the
+// projects page with its details already open.
+const PROJECT_MENU: { label: string; items: ProjectLink[] }[] = PROJECT_GROUPS.map((group) => ({
+  label: group.label,
+  items:
+    group.id === 'ai'
+      ? [{
+          id: 'agents',
+          label: 'AI agent office',
+          href: '/complex#agents',
+          description: 'A director, agent teams and one queue of decisions',
+        }, {
+          id: COMPLEX.discoverability.id,
+          label: COMPLEX.discoverability.name,
+          href: COMPLEX.discoverability.url,
+          description: 'AI discoverability',
+          external: true,
+        }]
+      : COMPLEX.projects
+          .filter((project) => project.group === group.id)
+          .map((project) => ({
+            id: project.id,
+            label: project.card.name,
+            href: `/complex#project-${project.id}`,
+            description: project.card.area,
+          })),
+}))
+
+function ProjectMenuLink({ item, onPick }: { item: ProjectLink; onPick: () => void }) {
+  return (
+    <a
+      href={item.href}
+      onClick={onPick}
+      {...(item.external ? { target: '_blank', rel: 'noopener' } : {})}
+      className="group/item flex flex-col gap-0.5 rounded-xl px-3 py-2.5 transition-colors duration-200 hover:bg-brand-50"
+    >
+      <span className="flex items-center justify-between gap-3 text-[14px] font-semibold text-ink">
+        {item.label}
+        <span className="translate-x-0 text-brand opacity-0 transition-all duration-300 group-hover/item:translate-x-1 group-hover/item:opacity-100">
+          {item.external ? '↗' : '→'}
+        </span>
+      </span>
+      <span className="text-[12px] leading-snug text-ink-muted">{item.description}</span>
+    </a>
+  )
 }
 
 const NAV: NavItem[] = [
   { label: 'Home', href: '#home' },
-  { label: 'Our Projects', href: '/complex' },
+  { label: 'Our Projects', href: '/complex', projects: true },
   {
     label: 'Ways We Help',
     href: '#ways-we-help',
@@ -124,12 +176,32 @@ export default function Header() {
             return (
               <div
                 key={item.label}
-                data-nav-menu={item.children ? '' : undefined}
+                data-nav-menu={item.children || item.projects ? '' : undefined}
                 className="relative"
-                onMouseEnter={() => item.children && openMenu(item.label)}
-                onMouseLeave={() => item.children && scheduleClose()}
+                onMouseEnter={() => (item.children || item.projects) && openMenu(item.label)}
+                onMouseLeave={() => (item.children || item.projects) && scheduleClose()}
+                onBlur={(e) => {
+                  if (item.projects && !e.currentTarget.contains(e.relatedTarget as Node)) scheduleClose()
+                }}
               >
-                {item.children ? (
+                {item.projects ? (
+                  // the label goes to the projects page; hovering or focusing
+                  // it shows every project, so a visitor can go straight to one
+                  <a
+                    href={link(item.href)}
+                    aria-haspopup="true"
+                    aria-expanded={isOpen}
+                    onFocus={() => openMenu(item.label)}
+                    className="group relative flex items-center gap-1.5 rounded-full px-4 py-2 text-[14px] font-medium text-ink-soft transition-colors duration-300 hover:text-ink"
+                  >
+                    {item.label}
+                    <ChevronIcon open={isOpen} />
+                    <span
+                      className="pointer-events-none absolute inset-x-4 bottom-1 h-px origin-left scale-x-0 bg-brand transition-transform duration-300 group-hover:scale-x-100"
+                      aria-hidden="true"
+                    />
+                  </a>
+                ) : item.children ? (
                   // a parent item is a menu trigger, not a link: clicking it
                   // opens (or closes) the menu and never scrolls the page
                   <button
@@ -157,6 +229,42 @@ export default function Header() {
                       aria-hidden="true"
                     />
                   </a>
+                )}
+
+                {item.projects && (
+                  <div
+                    className={[
+                      'absolute left-1/2 top-full w-[640px] -translate-x-1/2 pt-3 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                      isOpen
+                        ? 'pointer-events-auto visible translate-y-0 opacity-100'
+                        : 'pointer-events-none invisible translate-y-2 opacity-0',
+                    ].join(' ')}
+                  >
+                    <div className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white p-3 shadow-soft">
+                      <div className="grid grid-cols-2 gap-x-3">
+                        <div>
+                          <p className="px-3 pb-1 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-glass">{PROJECT_MENU[0].label}</p>
+                          {PROJECT_MENU[0].items.map((p) => <ProjectMenuLink key={p.id} item={p} onPick={() => setOpenDropdown(null)} />)}
+                        </div>
+                        <div>
+                          {PROJECT_MENU.slice(1).map((group) => (
+                            <div key={group.label}>
+                              <p className="px-3 pb-1 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-glass">{group.label}</p>
+                              {group.items.map((p) => <ProjectMenuLink key={p.id} item={p} onPick={() => setOpenDropdown(null)} />)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <a
+                        href={link(item.href)}
+                        onClick={() => setOpenDropdown(null)}
+                        className="mt-2 flex items-center justify-between rounded-xl bg-cream px-3.5 py-3 text-[13.5px] font-semibold text-ink transition-colors duration-200 hover:bg-brand-50"
+                      >
+                        See all projects
+                        <span className="text-brand" aria-hidden="true">→</span>
+                      </a>
+                    </div>
+                  </div>
                 )}
 
                 {item.children && (
@@ -236,13 +344,13 @@ export default function Header() {
       <div
         className={[
           'mx-auto mt-3 max-w-[calc(100%-32px)] overflow-hidden rounded-3xl border border-black/[0.06] bg-white shadow-soft transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] lg:hidden',
-          mobileOpen ? 'max-h-[640px] opacity-100' : 'pointer-events-none max-h-0 border-transparent opacity-0 shadow-none',
+          mobileOpen ? 'max-h-[min(860px,calc(100svh-96px))] overflow-y-auto opacity-100' : 'pointer-events-none max-h-0 border-transparent opacity-0 shadow-none',
         ].join(' ')}
       >
         <nav className="flex flex-col p-3" aria-label="Mobile">
           {NAV.map((item) => (
             <div key={item.label} className="border-b border-black/[0.05] last:border-0">
-              {item.children ? (
+              {item.children || item.projects ? (
                 <button
                   type="button"
                   aria-expanded={mobileSub === item.label}
@@ -260,6 +368,37 @@ export default function Header() {
                 >
                   {item.label}
                 </a>
+              )}
+              {item.projects && (
+                <div
+                  className={[
+                    'grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                    mobileSub === item.label ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                  ].join(' ')}
+                >
+                  <div className="overflow-hidden">
+                    <div className="pb-2 pl-5">
+                      <a
+                        href={link(item.href)}
+                        onClick={() => setMobileOpen(false)}
+                        className="block py-2 text-[14px] font-semibold text-ink"
+                      >
+                        All projects
+                      </a>
+                      {PROJECT_MENU.flatMap((group) => group.items).map((p) => (
+                        <a
+                          key={p.id}
+                          href={p.href}
+                          onClick={() => setMobileOpen(false)}
+                          {...(p.external ? { target: '_blank', rel: 'noopener' } : {})}
+                          className="block py-2 text-[14px] text-ink-muted"
+                        >
+                          {p.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               )}
               {item.children && (
                 <div

@@ -102,6 +102,8 @@ const contactHtml = () =>
 /** The plain HTML stays in the DOM during the JS loading screen, then is
  *  removed when the matching React page is ready. Without JS it is the page:
  *  readable content, not an invisible search-only duplicate. */
+const projectName = (id: string) => (id === COMPLEX.discoverability.id ? COMPLEX.discoverability.name : COMPLEX.projects.find((p) => p.id === id)?.card.name ?? id)
+
 export function staticHtml(page: PageSeo): string {
   const open = `<div data-prerender><main>`
   const close = `</main>${contactHtml()}</div>`
@@ -125,14 +127,29 @@ export function staticHtml(page: PageSeo): string {
     return (
       open +
       `<header><p>${esc(COMPLEX.hero.label)}</p><h1>${esc(COMPLEX.hero.firstLine)} ${esc(COMPLEX.hero.secondLine)}</h1><p>${esc(COMPLEX.hero.intro)}</p></header>` +
-      `<section id="complex-index"><p>${esc(COMPLEX.index.label)}</p><h2>${esc(COMPLEX.index.heading)}</h2><p>${esc(COMPLEX.index.intro)}</p><ol>${COMPLEX.projects
-        .map(({ id, card }) => `<li><h3><a href="#project-${id}">${esc(card.name)}</a></h3><p>${esc(card.kind)} · ${esc(card.sector)}</p><dl><dt>The problem</dt><dd>${esc(card.problem)}</dd><dt>What we built</dt><dd>${esc(card.built)}</dd><dt>Who uses it</dt><dd>${esc(card.users)}</dd><dt>What changed</dt><dd>${esc(card.outcome)}</dd></dl></li>`)
-        .join('')}</ol></section>` +
-      `<section id="complex-work" aria-labelledby="complex-work-title"><p>${esc(COMPLEX.work.label)}</p><h2 id="complex-work-title">${esc(COMPLEX.work.heading)}</h2><p>${esc(COMPLEX.work.intro)}</p>${COMPLEX.projects
-        .map((project) => `<article id="project-${project.id}"><p>${esc(project.label)}</p><h2>${esc(project.title)}</h2><p>${esc(project.lede)}</p><ol>${project.stops
-          .map((stop) => `<li><h3>${esc(stop.title)}</h3><p>${esc(stop.body)}</p><p>${esc(stop.guard)}</p></li>`)
-          .join('')}</ol><p>${esc(project.result)}</p></article>`)
+      `<section id="agents"><p>${esc(COMPLEX.agents.label)}</p><h2>${esc(COMPLEX.agents.heading)} ${esc(COMPLEX.agents.emphasis)}</h2><p>${esc(COMPLEX.agents.intro)}</p><p>${esc(COMPLEX.agents.definition)}</p><p>${esc(COMPLEX.agents.director.name)}: ${esc(COMPLEX.agents.director.job)}.</p><ul>${COMPLEX.agents.teams
+        .map((team) => `<li>${esc(team.name)}: ${esc(team.job)}</li>`)
+        .join('')}</ul><h3>${esc(COMPLEX.agents.story.label)}</h3><ol>${COMPLEX.agents.story.steps
+        .map((step) => `<li>${esc(step.level)}: ${esc(step.text)}</li>`)
+        .join('')}</ol><h3>${esc(COMPLEX.agents.control.label)}</h3><dl>${COMPLEX.agents.control.steps
+        .map((step) => `<dt>${esc(step.level)}</dt><dd>${esc(step.what)}</dd>`)
+        .join('')}</dl><h3>${esc(COMPLEX.agents.setup.label)}</h3><dl>${COMPLEX.agents.setup.steps
+        .map((step) => `<dt>${esc(step.step)}</dt><dd>${esc(step.what)}</dd>`)
+        .join('')}</dl><h3>${esc(COMPLEX.agents.industries.intro)} your business</h3>${COMPLEX.agents.industries.items
+        .map((item) => `<h4>${esc(item.label)}</h4><ul>${[...item.clients, ...item.operations].map((line) => `<li>${esc(line)}</li>`).join('')}</ul>`)
         .join('')}</section>` +
+      `<section id="complex-index"><p>${esc(COMPLEX.index.label)}</p><h2>${esc(COMPLEX.index.heading)}</h2><p>${esc(COMPLEX.index.intro)}</p><h3>${esc(COMPLEX.finder.heading)}</h3><dl>${COMPLEX.finder.needs
+        .map((need) => `<dt>${esc(need.label)}</dt><dd>${esc(need.plan)} Closest projects: ${esc(need.projects.map(projectName).join(', '))}.</dd>`)
+        .join('')}</dl><ol>${COMPLEX.projects
+        .map(({ id, card }) => `<li><h3><a href="#project-${id}">${esc(card.name)}</a></h3><p>${esc(card.kind)} · ${esc(card.area)}</p><dl><dt>Before</dt><dd>${esc(card.before)}</dd><dt>Now</dt><dd>${esc(card.after)}</dd><dt>Who uses it</dt><dd>${esc(card.users)}</dd></dl></li>`)
+        .join('')}<li><h3><a href="${COMPLEX.discoverability.url}">${esc(COMPLEX.discoverability.name)}</a></h3><p>AI discoverability · ${esc(COMPLEX.discoverability.sector)}</p><dl><dt>Before</dt><dd>${esc(COMPLEX.discoverability.before)}</dd><dt>Now</dt><dd>${esc(COMPLEX.discoverability.after)}</dd><dt>Who uses it</dt><dd>${esc(COMPLEX.discoverability.users)}</dd></dl></li></ol></section>` +
+      COMPLEX.projects
+        .map((project) => `<article id="project-${project.id}"><p>${esc(project.card.kind)} · ${esc(project.card.area)}</p><h2>${esc(project.card.name)}: ${esc(project.title)}</h2><p>${esc(project.lede)}</p><h3>Who uses it</h3><ul>${project.roles
+          .map((role) => `<li>${esc(role.name)}: ${esc(role.access)}</li>`)
+          .join('')}</ul><h3>How the work runs</h3><ol>${project.stops
+          .map((stop) => `<li><h4>${esc(stop.title)}</h4><p>${esc(stop.body)}</p><p>${esc(stop.guard)}</p></li>`)
+          .join('')}</ol><h3>Also built in</h3><ul>${project.features.map((f) => `<li>${esc(f)}</li>`).join('')}</ul><p>${esc(project.result)}</p></article>`)
+        .join('') +
       `<section><p>${esc(COMPLEX.close.label)}</p><h2>${esc(COMPLEX.close.heading)}</h2><p>${esc(COMPLEX.close.body)}</p><a href="mailto:${site.contact.email}?subject=Operations%20conversation">${esc(COMPLEX.close.action)}</a></section>` +
       close
     )
@@ -183,19 +200,40 @@ export function llmsTxt(): string {
     ``,
     `Recent builds: ${PORTFOLIO.map((p) => `${p.name} (${p.tag.toLowerCase()}, ${p.url})`).join('; ')}.`,
     ``,
+    `## AI agent offices`,
+    ``,
+    `${COMPLEX.agents.heading} ${COMPLEX.agents.emphasis} ${COMPLEX.agents.intro}`,
+    ``,
+    `- ${COMPLEX.agents.director.name}: ${COMPLEX.agents.director.job}`,
+    ...COMPLEX.agents.teams.map((team) => `- ${team.name}: ${team.job}`),
+    ``,
+    COMPLEX.agents.definition,
+    `${COMPLEX.agents.story.label}: ${COMPLEX.agents.story.steps.map((step) => `(${step.level}) ${step.text}`).join(' ')}`,
+    ``,
+    `${COMPLEX.agents.control.label}: ${COMPLEX.agents.control.steps.map((step) => `${step.level}: ${step.what}`).join(' ')}`,
+    ``,
+    `${COMPLEX.agents.setup.label}: ${COMPLEX.agents.setup.steps.map((step) => `${step.step}: ${step.what}`).join(' ')}`,
+    ``,
+    `${COMPLEX.agents.industries.intro} each kind of business:`,
+    ...COMPLEX.agents.industries.items.map((item) => `- ${item.label}: ${[...item.clients, ...item.operations].join('; ')}.`),
+    ``,
     `## Operations and custom systems`,
     ``,
     `${COMPLEX.hero.intro} ${COMPLEX.index.intro}`,
     ``,
+    `### ${COMPLEX.finder.heading}`,
+    ...COMPLEX.finder.needs.map((need) => `- ${need.label}: ${need.plan} Closest projects: ${need.projects.map(projectName).join(', ')}.`),
+    ``,
     ...COMPLEX.projects.flatMap((project) => [
-      `### ${project.card.name} (${project.card.sector})`,
-      `- Problem: ${project.card.problem}`,
-      `- What we built: ${project.card.built}`,
+      `### ${project.card.name} (${project.card.kind}: ${project.card.area})`,
+      `- Before: ${project.card.before}`,
+      `- Now: ${project.card.after}`,
       `- Who uses it: ${project.card.users}`,
-      `- What changed: ${project.card.outcome}`,
       ``,
       project.lede,
+      ...project.roles.map((role) => `- ${role.name}: ${role.access}`),
       ...project.stops.map((stop, i) => `${i + 1}. ${stop.title} ${stop.body} ${stop.guard}`),
+      `Also built in: ${project.features.join('; ')}.`,
       `Result: ${project.result}`,
       ``,
     ]),

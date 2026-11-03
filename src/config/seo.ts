@@ -60,14 +60,14 @@ export const PAGES: Record<'home' | 'simple' | 'complex', PageSeo> = {
   },
   complex: {
     path: '/complex',
-    title: 'Our Projects: Custom Systems | Clause & Code',
+    title: 'Our Projects: Systems and AI | Clause & Code',
     description:
-      'Custom systems we have built: a private expert bidding platform, the operations behind Laha Space, and an academy management platform. Problem, build, result.',
+      'AI agent offices and the systems we have built: expert matching, B2B order pipelines, client apps, quiz funnels and more. How each ran before, and now.',
     type: 'website',
     image: DEFAULT_IMAGE,
     imageAlt: 'Clause & Code: custom systems for work behind the business',
     summary:
-      'Our projects: custom systems built after mapping how the work moves. Each shows the problem, what we built, who uses it and what changed: a private expert bidding platform, the internal operations system for Laha Space, and an academy management platform (registrations, classes, attendance, progress, payments and reports, in English and Arabic).',
+      'An AI agent office we build for businesses and run ourselves: a director agent that plans the day, agent teams for leads and outreach, proposals, reports, content with quality checks and building, and one queue of decisions for the owner, with risky actions waiting for approval. Then our projects, each shown as how the work ran before and what runs now: an expert matching and bidding platform, a seven stage teacher vetting and matching system, an academy management platform (registrations, classes, attendance, progress, payments and reports, in English and Arabic), a client journey platform (client app, admin system and live owner dashboard), a mapped and automated B2B order pipeline, a quiz funnel with automated program delivery, and a complete membership system, from strategy and sign up to payments and onboarding. Also the AI Client Engine, our AI discoverability product (details at ai.clauseandcode.com).',
   },
 }
 
