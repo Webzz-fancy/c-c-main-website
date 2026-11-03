@@ -96,7 +96,7 @@ export default function ScrollRope() {
 
   return (
     <div
-      className="pointer-events-none fixed inset-y-0 right-[6px] z-30 block w-[38px] sm:w-[44px] lg:right-[12px] lg:w-[52px]"
+      className="pointer-events-none fixed inset-y-0 right-[3px] z-30 hidden w-[30px] sm:block sm:right-[6px] sm:w-[44px] lg:right-[12px] lg:w-[52px]"
       aria-hidden="true"
     >
       {/* Rope, paying out from the top edge of the viewport */}

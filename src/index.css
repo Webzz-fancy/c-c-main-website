@@ -98,3 +98,25 @@
     }
   }
 }
+
+/*
+ * One visible keyboard focus ring for the whole site, in the blue accent.
+ * Wrapped in :where() so it carries zero specificity: elements that opt
+ * out with outline-none (or draw their own ring) keep their own styling.
+ */
+:where(:focus-visible) {
+  outline: 2px solid #2D6D8B;
+  outline-offset: 3px;
+}
+
+/*
+ * Saving the fix plan as a PDF prints the plan alone, on white, without the
+ * buttons that only work on screen.
+ */
+@media print {
+  body * { visibility: hidden; }
+  .quiz-plan, .quiz-plan * { visibility: visible; }
+  .quiz-plan { position: absolute; inset: 0 auto auto 0; width: 100%; padding: 0 8mm; background: #fff; }
+  .quiz-plan__actions { display: none; }
+  html, body { background: #fff !important; }
+}

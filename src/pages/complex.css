@@ -1,6 +1,9 @@
 /* Complex / operations. The diagrams are editorial maps of the work, never
    imitations of private admin screens. Only the later sections scrub with scroll. */
 .complex-page {
+  /* one content width for every section, with room on the right for the
+     robot on its rope */
+  --page: min(1240px, calc(100% - 2 * clamp(24px, 7vw, 110px)));
   overflow: clip;
   background: #f8f5f0;
   color: #1b1a17;
@@ -13,8 +16,8 @@
 
 .complex-eyebrow {
   margin: 0;
-  color: #6f6b62;
-  font-size: 11px;
+  color: #2d6d8b;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: .22em;
   line-height: 1.5;
@@ -39,14 +42,13 @@
 .complex-link:hover span { transform: translate(2px, -2px); }
 .complex-link--brand { background: #e1ad34; color: #1b1a17; box-shadow: 0 14px 30px -12px rgba(225,173,52,.65); }
 .complex-link--brand:hover { background: #ebc96d; transform: translateY(-2px); box-shadow: 0 18px 34px -12px rgba(225,173,52,.65); }
-.complex-link--quiet { border: 1px solid rgba(27,26,23,.16); background: #fff; color: #1b1a17; }
-.complex-link--quiet:hover { border-color: #1b1a17; transform: translateY(-2px); }
+.complex-link--quiet { border: 1px solid rgba(45,109,139,.3); background: #fff; color: #27566d; }
+.complex-link--quiet:hover { border-color: #2d6d8b; transform: translateY(-2px); }
 
 /* 01 · The idea: the typography is bare on cream, as on home and Simple. */
 .complex-hero {
   position: relative;
   isolation: isolate;
-  min-height: max(690px, 100svh);
   overflow: hidden;
   background: #f8f5f0;
 }
@@ -67,10 +69,9 @@
   grid-template-columns: minmax(0,1.06fr) minmax(0,.94fr);
   align-items: center;
   gap: clamp(20px, 4.7vw, 76px);
-  width: min(1340px, 100%);
-  min-height: max(690px, 100svh);
+  width: var(--page);
   margin: 0 auto;
-  padding: 115px 6% 105px;
+  padding: 150px 0 32px;
 }
 
 .complex-hero__copy { position: relative; z-index: 2; }
@@ -85,6 +86,7 @@
   text-wrap: balance;
 }
 .complex-hero__copy h1 em { color: #a67821; font-weight: 400; }
+.complex-hero__intro + .complex-finder { margin-top: 0; }
 .complex-hero__intro {
   max-width: 515px;
   margin: 27px 0 28px;
@@ -245,17 +247,18 @@
    A card opens the project's details in a sheet over the page. */
 .complex-index {
   position: relative;
-  padding: clamp(84px, 8vw, 120px) 0 clamp(36px, 4vw, 56px);
+  padding: clamp(48px, 5vw, 80px) 0 clamp(36px, 4vw, 56px);
   background: #f8f5f0;
 }
 
 .complex-index__head {
-  width: min(1400px, 92%);
+  width: var(--page);
   margin: 0 auto;
 }
 
-/* the slider, with an arrow on each side that shows there is more, level with the pictures so it never covers the words */
-.complex-slider { position: relative; width: min(1400px, 92%); margin: clamp(40px, 4vw, 60px) auto 0; }
+/* the slider, with an arrow on each side that shows there is more: just
+   outside the cards, level with the pictures, so it covers neither */
+.complex-slider { position: relative; width: var(--page); margin: clamp(40px, 4vw, 60px) auto 0; }
 .complex-slider__arrow {
   position: absolute;
   top: 100px;
@@ -272,11 +275,11 @@
   translate: 0 -50%;
   transition: opacity .25s ease, transform .25s ease, background .25s ease;
 }
-.complex-slider__arrow--back { left: 12px; }
-.complex-slider__arrow--next { right: 12px; }
+.complex-slider__arrow--back { left: -28px; }
+.complex-slider__arrow--next { right: -28px; }
 .complex-slider__arrow svg { width: 22px; height: 22px; fill: none; stroke: #e1ad34; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .complex-slider__arrow:hover:not(:disabled) { background: #000; transform: scale(1.06); }
-.complex-slider__arrow:focus-visible { outline: 2px solid #e1ad34; outline-offset: 3px; }
+.complex-slider__arrow:focus-visible { outline: 2px solid #2d6d8b; outline-offset: 3px; }
 .complex-slider__arrow:disabled { opacity: 0; pointer-events: none; }
 
 .complex-index__head h2 {
@@ -459,9 +462,9 @@
 .complex-mini__chip--hub .complex-mini__title { fill: #f8f5f0; }
 .complex-mini__chip--hub .complex-mini__index { fill: #e1ad34; }
 .complex-mini__wire--faint { stroke: rgba(45, 109, 139, .28); stroke-dasharray: 3 4; }
-.complex-mini__label { fill: #4e7c92; font-size: 9px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
+.complex-mini__label { fill: #2d6d8b; font-size: 9px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
 .complex-mini__small { fill: #1b1a17; font-size: 10.5px; font-weight: 500; }
-.complex-mini__small--caps { fill: #4e7c92; font-size: 8.5px; font-weight: 600; letter-spacing: .14em; }
+.complex-mini__small--caps { fill: #2d6d8b; font-size: 8.5px; font-weight: 600; letter-spacing: .14em; }
 .complex-mini__step rect { fill: #fdf7e9; stroke: rgba(180, 129, 36, .55); stroke-width: 1; }
 .complex-mini__step text { fill: #a67821; font-size: 11px; font-weight: 600; }
 .complex-mini__step--done rect { fill: #e1ad34; stroke: #e1ad34; }
@@ -490,7 +493,7 @@
   border-radius: 999px;
   background: rgba(45, 109, 139, .09);
   color: #2d6d8b;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: .14em;
   text-transform: uppercase;
@@ -518,10 +521,11 @@
 }
 
 /* the agents' card: a director over a row of agents, on the same paper */
-.lab-team { display: flex; min-height: 158px; flex-direction: column; align-items: center; justify-content: center; gap: 22px; }
+.lab-team { display: flex; aspect-ratio: 360 / 188; min-height: 0; flex-direction: column; align-items: center; justify-content: center; gap: clamp(12px, 1.6vw, 22px); }
 .lab-team > span { display: flex; gap: clamp(14px, 2vw, 28px); }
 .lab-team .lab-bot { margin: 0; }
-.lab-team > .lab-bot { width: 68px; }
+.lab-team > .lab-bot { width: 23%; }
+.lab-team > span .lab-bot { width: clamp(48px, 4.6vw, 68px); }
 
 .complex-card__go {
   margin-top: auto;
@@ -537,9 +541,13 @@
 
 @media (max-width: 900px) {
   .complex-index__grid { --per: 1.15; }
-  .complex-slider__arrow { width: 44px; height: 44px; }
-  .complex-slider__arrow--back { left: -8px; }
-  .complex-slider__arrow--next { right: -8px; }
+  /* the arrows leave the pictures and sit as a pair under the cards, at the
+     reading edge, so the next card can peek in uncovered */
+  .complex-slider { padding-bottom: 60px; }
+  .complex-slider__arrow { top: auto; bottom: 0; width: 48px; height: 48px; translate: none; }
+  .complex-slider__arrow--back { right: 58px; left: auto; }
+  .complex-slider__arrow--next { right: 0; }
+  .complex-slider__arrow:disabled { opacity: .22; }
 }
 
 @media (max-width: 550px) {
@@ -617,7 +625,7 @@
   gap: 4px 14px;
   margin: 0;
   color: #6f6b62;
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: .18em;
   text-transform: uppercase;
@@ -694,7 +702,7 @@
 /* before and now, in the project's details */
 .complex-card__shift { display: grid; gap: 12px; margin-top: 0; }
 .complex-card__shift > span { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; font-size: 15px; line-height: 1.55; }
-.complex-card__shift b { padding-top: 3px; font-size: 10.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
+.complex-card__shift b { padding-top: 3px; font-size: 12px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
 .complex-card__before { color: #6f6b62; }
 .complex-card__before b { color: #8b867c; }
 .complex-card__after { color: #1b1a17; font-weight: 500; }
@@ -710,7 +718,7 @@
 .complex-detail__result h3 {
   margin: 0;
   color: #2d6d8b;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: .2em;
   text-transform: uppercase;
@@ -719,18 +727,13 @@
 .complex-detail__roles {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  gap: 22px clamp(28px, 4vw, 56px);
   margin: 18px 0 0;
   padding: 0;
   list-style: none;
 }
 
-.complex-detail__roles li {
-  padding: 18px 20px;
-  border: 1px solid rgba(27, 26, 23, .07);
-  border-radius: 16px;
-  background: #fff;
-}
+.complex-detail__roles li { max-width: 440px; }
 
 .complex-detail__roles b {
   display: block;
@@ -757,15 +760,8 @@
 }
 
 .complex-detail__steps li {
-  padding: 20px 22px;
-  border: 1px solid rgba(45, 109, 139, .14);
-  border-radius: 16px;
-  background: #fff;
-}
-
-.complex-detail__steps li[data-side='far'] {
-  border-color: rgba(180, 129, 36, .28);
-  background: #fdf9ef;
+  padding: 24px 0 26px;
+  border-top: 1px solid rgba(27, 26, 23, .1);
 }
 
 .complex-detail__step-head {
@@ -773,7 +769,7 @@
   gap: 12px;
   margin: 0;
   color: #6f6b62;
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: .16em;
   text-transform: uppercase;
@@ -782,9 +778,9 @@
 .complex-detail__step-head span:first-child { color: #a67821; }
 
 .complex-detail__steps h4 {
-  margin: 12px 0 0;
+  margin: 10px 0 0;
   font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   letter-spacing: -.01em;
   line-height: 1.2;
@@ -793,65 +789,39 @@
 .complex-detail__steps p:not(.complex-detail__step-head) {
   margin: 8px 0 0;
   color: #4a4740;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.65;
 }
 
 .complex-detail__steps .complex-detail__guard {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
   margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(27, 26, 23, .07);
   color: #2d6d8b;
-  font-size: 12.5px;
-  font-weight: 500;
-}
-
-.complex-detail__guard svg {
-  flex-shrink: 0;
-  width: 11px;
-  height: 13px;
-  margin-top: 2px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.3;
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 15px;
+  font-style: italic;
 }
 
 .complex-detail__features {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 28px;
+  gap: 14px clamp(28px, 4vw, 56px);
   margin: 18px 0 0;
   padding: 0;
   list-style: none;
 }
 
 .complex-detail__features li {
-  position: relative;
-  padding-left: 20px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(27, 26, 23, .08);
   color: #1b1a17;
   font-size: 15px;
   line-height: 1.55;
 }
 
-.complex-detail__features li::before {
-  position: absolute;
-  top: .62em;
-  left: 2px;
-  width: 7px;
-  height: 7px;
-  border-radius: 2px;
-  background: #e1ad34;
-  content: '';
-}
-
 .complex-detail__result {
   margin-top: clamp(34px, 4vw, 48px);
-  padding: clamp(24px, 3vw, 34px);
-  border-radius: 18px;
-  background: #fff;
+  padding-top: clamp(26px, 3vw, 34px);
+  border-top: 1px solid rgba(27, 26, 23, .08);
 }
 
 .complex-detail__result h3 { color: #a67821; }
@@ -875,7 +845,7 @@
   margin-top: 18px;
   --map-line: rgba(45, 109, 139, .34);
   --map-trace: #b48124;
-  --map-ink: #4e7c92;
+  --map-ink: #2d6d8b;
 }
 .complex-walk--rows {
   --map-line: rgba(150, 113, 44, .42);
@@ -897,7 +867,7 @@
   justify-content: space-between;
   gap: 14px;
   color: #6f6b62;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: .17em;
   line-height: 1.5;
@@ -992,8 +962,6 @@
   letter-spacing: .19em;
   text-transform: uppercase;
 }
-.complex-walk__lock circle { fill: rgba(255, 250, 240, .95); stroke: var(--map-line); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.complex-walk__lock path { fill: none; stroke: var(--map-trace); stroke-width: 1.5; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .complex-walk__node { opacity: calc(.16 + .84 * var(--node-focus, 1)); }
 .complex-walk__halo { fill: #e1ad34; opacity: calc(var(--node-glow, 0) * .3); filter: blur(12px); }
 .complex-walk__paper {
@@ -1007,17 +975,15 @@
 .complex-walk__title { fill: #1b1a17; font-family: 'Source Serif 4', Georgia, serif; font-size: 17.5px; font-weight: 600; letter-spacing: -.01em; }
 .complex-walk__detail { fill: #5c5850; font-family: 'Inter', Arial, sans-serif; font-size: 10.5px; }
 
-/* The cards stay as they were, one per row beside the map; the one being
-   read is marked with the map's gold. */
+/* The steps run one per row beside the map; the one being read comes
+   forward and its rule turns the map's gold. */
 .complex-walk__steps { grid-template-columns: minmax(0, 1fr); margin-top: 0; }
 /* Room after the last card, so the map can pull back to the whole system
    while it is still pinned. */
 .complex-walk__steps::after { height: var(--walk-tail, 120px); content: ''; }
-.complex-walk__steps li { transition: border-color .3s ease, box-shadow .3s ease; }
-.complex-walk__steps li[data-active] {
-  border-color: rgba(180, 129, 36, .55);
-  box-shadow: 0 18px 40px -28px rgba(166, 120, 33, .55), inset 3px 0 0 #e1ad34;
-}
+.complex-walk__steps li { opacity: .6; transition: opacity .3s ease, border-color .3s ease; }
+.complex-walk__steps li[data-active] { opacity: 1; }
+.complex-walk__steps li[data-active] { border-top-color: #e1ad34; }
 
 @media (max-width: 760px) {
   .complex-detail { align-items: flex-end; padding: 0; }
@@ -1062,19 +1028,19 @@
 }
 .complex-close__inner {
   position: relative;
-  width: min(1200px, 88%);
+  width: var(--page);
   margin: 0 auto;
-  padding: clamp(96px, 9.6vw, 142px) 0 clamp(96px, 9vw, 126px);
+  padding: clamp(80px, 8vw, 120px) 0 clamp(80px, 8vw, 112px);
 }
 .complex-close .complex-eyebrow { color: #a67821; }
 .complex-close h2 {
   max-width: 900px;
   margin: 20px 0 24px;
   font-family: 'Source Serif 4', Georgia, serif;
-  font-size: clamp(52px, 6.6vw, 102px);
+  font-size: clamp(38px, 4.2vw, 64px);
   font-weight: 600;
-  letter-spacing: -.04em;
-  line-height: .94;
+  letter-spacing: -.03em;
+  line-height: 1.02;
 }
 .complex-close__text > p:not(.complex-eyebrow) {
   max-width: 560px;
@@ -1088,27 +1054,27 @@
    its near hand, the other hand on its hip, feet on the section floor. It is
    positioned from its resting hand, which sits in the art 17.86% across and
    59.23% down, so that hand lands on the button's top edge at any size. */
-.complex-close__text > p.complex-close__lead { margin: 22px 0 0; color: #6f6b62; font-size: 15px; }
+.complex-close__lead { margin: 0; color: #6f6b62; font-size: 15px; }
 .complex-close__quiz {
-  display: inline-flex;
-  margin-top: 10px;
-  padding: 12px 20px;
-  border: 1.5px solid #1b1a17;
-  border-radius: 999px;
-  color: #1b1a17;
-  font-size: 15px;
+  margin-left: 6px;
+  color: #27566d;
   font-weight: 600;
-  text-decoration: none;
-  transition: background .2s ease, color .2s ease;
+  text-decoration: underline;
+  text-decoration-color: rgba(45,109,139,.35);
+  text-underline-offset: 4px;
+  transition: text-decoration-color .2s ease;
 }
-.complex-close__quiz:hover { background: #1b1a17; color: #f8f5f0; }
+.complex-close__quiz:hover { text-decoration-color: #2d6d8b; }
 
 .complex-close__actions {
   /* One place sets the robot's height, because the gap above the invitation is
      the room its head needs: on one column it never stands over the text. */
   --robot-h: clamp(120px, 15vh, 148px);
   display: flex;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: calc(.2 * var(--robot-h) + 36px);
+  row-gap: 22px;
   margin-top: calc(26px + .6 * var(--robot-h));
 }
 .complex-close__button {
@@ -1133,25 +1099,8 @@
   user-select: none;
 }
 
-/* Wide screens: the invitation and the robot stand as a pair under the copy, on
-   the right, so the robot never crosses the heading. Its own width is reserved
-   in the grid track, so it can lean out over the button without being clipped. */
 @media (min-width: 1120px) {
-  .complex-close__inner {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-    column-gap: clamp(36px, 4vw, 76px);
-    width: min(1150px, 86%);
-  }
-  .complex-close h2 { max-width: 100%; }
-  .complex-close__actions {
-    margin-top: 0;
-    justify-self: end;
-    /* Room for the robot to stand to the right of the button. */
-    padding-right: calc(.4324 * clamp(178px, 22vh, 236px) + 26px);
-  }
-  .complex-close__actions { --robot-h: clamp(178px, 22vh, 236px); margin-top: 0; }
+  .complex-close__actions { --robot-h: clamp(150px, 18vh, 190px); }
   .complex-close__button .complex-link { padding-right: 54px; padding-left: 56px; }
 }
 
@@ -1160,6 +1109,19 @@
 .complex-page[data-complex-motion='on'] [data-complex-reveal] {
   opacity: var(--reveal, 1);
   transform: translate3d(0, var(--reveal-y, 0px), 0);
+}
+
+/* tablets: the wide map would shrink its labels to a few pixels in the
+   narrower column, so the upright map is drawn instead, near full size */
+@media (min-width: 781px) and (max-width: 1100px) {
+  .complex-map { width: min(100%, 420px); aspect-ratio: 380 / 400; }
+  .complex-hero__inner > .complex-map { margin-top: clamp(40px, 5vw, 60px); }
+  .complex-map__svg--desktop { display: none; }
+  .complex-map__svg--mobile { display: block; }
+}
+
+@media (max-width: 1100px) {
+  .complex-finder__chips { justify-content: flex-start; }
 }
 
 @media (max-width: 1050px) {
@@ -1172,8 +1134,8 @@
   .complex-hero__inner {
     grid-template-columns: minmax(0, 1fr);
     gap: 35px;
-    width: min(700px, 100%);
-    padding: 143px 6% 54px;
+    width: var(--page);
+    padding: 143px 0 54px;
   }
   .complex-hero__copy h1 { max-width: 650px; font-size: clamp(51px, 7.9vw, 67px); }
   .complex-hero__intro { margin: 23px 0 25px; }
@@ -1183,7 +1145,7 @@
 }
 
 @media (max-width: 550px) {
-  .complex-hero__inner { gap: 30px; padding: 127px 5% 30px; }
+  .complex-hero__inner { gap: 30px; padding: 127px 0 30px; }
   .complex-hero__copy h1 { margin-top: 17px; font-size: clamp(44px, 11.6vw, 59px); line-height: .95; }
   .complex-hero__intro { max-width: calc(100% - 43px); font-size: 15px; line-height: 1.65; }
   .complex-map { width: min(100%, 410px); }

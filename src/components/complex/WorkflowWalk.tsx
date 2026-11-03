@@ -15,7 +15,6 @@ type MapGeometry = {
   wires: string[]
   /** The access boundary: stops on one side of it are not visible to the other. */
   lane: { axis: 'x' | 'y'; at: number; from: number; to: number }
-  lock: [number, number]
 }
 
 // The drawing lives in a 640 × 460 box starting at (10, 40); the map zooms
@@ -39,7 +38,6 @@ const COLUMNS: MapGeometry = {
   ],
   wires: ['M198 201 H226', 'M394 201 H444', 'M532 236 V316', 'M444 351 H394', 'M226 351 H198'],
   lane: { axis: 'x', at: 419, from: 108, to: 470 },
-  lock: [419, 276],
 }
 
 // The first three run along the top on one side of the line, the last three
@@ -55,32 +53,12 @@ const ROWS: MapGeometry = {
   ],
   wires: ['M210 185 H232', 'M418 185 H440', 'M533 220 V340', 'M440 375 H418', 'M232 375 H210'],
   lane: { axis: 'y', at: 280, from: 24, to: 636 },
-  lock: [533, 280],
 }
 
 const SHAPES = { columns: COLUMNS, rows: ROWS }
 
-function LockIcon() {
-  return (
-    <svg viewBox="0 0 12 14" aria-hidden="true" focusable="false">
-      <path d="M2 6V4.2a4 4 0 0 1 8 0V6" />
-      <rect x=".8" y="5.8" width="10.4" height="7.4" rx="1.4" />
-    </svg>
-  )
-}
-
-function Lock({ x, y }: { x: number; y: number }) {
-  return (
-    <g className="complex-walk__lock" transform={`translate(${x} ${y})`} aria-hidden="true">
-      <circle r="15" />
-      <path d="M-4 0.5 h8 v6.5 h-8 z" />
-      <path d="M-2.6 0.5 v-2.2 a2.6 2.6 0 0 1 5.2 0 v2.2" />
-    </g>
-  )
-}
-
 /**
- * "How the work runs" inside a project's sheet. The step cards scroll as
+ * The step by step walk-through inside a project's sheet. The step cards scroll as
  * before; beside them (above them on a phone) the workflow map holds still,
  * zooms to the step being read, lights the wire to the next one as the reader
  * moves on, and pulls back to the whole system after the last. Scrolling back
@@ -334,7 +312,6 @@ export default function WorkflowWalk({ project, scrollRoot }: {
                     </g>
                   )
                 })}
-                <Lock x={layout.lock[0]} y={layout.lock[1]} />
               </svg>
             </div>
           </div>
@@ -354,7 +331,7 @@ export default function WorkflowWalk({ project, scrollRoot }: {
             </p>
             <h4>{stop.title}</h4>
             <p>{stop.body}</p>
-            <p className="complex-detail__guard"><LockIcon />{stop.guard}</p>
+            <p className="complex-detail__guard">{stop.guard}</p>
           </li>
         ))}
       </ol>

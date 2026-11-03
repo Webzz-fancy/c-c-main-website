@@ -17,12 +17,13 @@ export const site = {
 
   contact: {
     email: 'support@clauseandcode.com',
-    phone: '+971 50 971 8796',
+    /** the business number, used only as a WhatsApp chat link */
+    whatsapp: 'https://wa.me/971509718796',
   },
 
   social: {
-    linkedin: '#linkedin',
-    instagram: '#instagram',
+    linkedin: 'https://www.linkedin.com/company/clauseandcode',
+    instagram: 'https://www.instagram.com/clauseandcode/',
   },
 
   /**
@@ -30,13 +31,11 @@ export const site = {
    * set the env vars and every CTA on the site follows.
    */
   links: {
-    booking: env.VITE_BOOKING_URL || '#book-consultation',
-    dropProblem: '#drop-problem',
+    booking: env.VITE_BOOKING_URL || 'https://calendar.app.google/3xg59Dqk3t21M8B87',
+    dropProblem: `mailto:support@clauseandcode.com?subject=${encodeURIComponent('My problem')}&body=${encodeURIComponent('What is not working in my business:\n\n')}`,
     quiz: env.VITE_QUIZ_URL || '#quiz',
-    projects: '#projects',
-    about: '#about',
-    contact: '#contact',
-    privacy: '#privacy',
+    projects: '/complex',
+    contact: '/contact',
   },
 
   /** Base URL for form submissions; empty until a backend exists. */

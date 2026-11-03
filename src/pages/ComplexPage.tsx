@@ -206,6 +206,7 @@ export default function ComplexPage() {
           <div className="complex-hero__inner">
             <div className="complex-hero__copy">
               <h1>{COMPLEX.hero.firstLine}{' '}<em>{COMPLEX.hero.secondLine}</em></h1>
+              <p className="complex-hero__intro">{COMPLEX.hero.intro}</p>
               <ProjectFinder onMatch={onMatch} />
             </div>
             <HeroNetwork focus={found?.need ?? (found?.industry ? 'agents' : null)} />
@@ -246,12 +247,8 @@ export default function ComplexPage() {
               <p className="complex-eyebrow">03 / {COMPLEX.close.label}</p>
               <h2 id="complex-close-title">{COMPLEX.close.heading}</h2>
               <p>{COMPLEX.close.body}</p>
-              <p className="complex-close__lead">{COMPLEX.close.quiz}</p>
-              <a className="complex-close__quiz" href={QUIZ} {...external(QUIZ)}>
-                Take the business quiz <span aria-hidden="true">→</span>
-              </a>
             </div>
-            {/* The robot stands to the right of the invitation and rests its
+            {/* Both ways forward on one line under the copy. The robot rests its
                 hand on the button, the way you would lean on a counter. */}
             <div className="complex-close__actions">
               <span className="complex-close__button">
@@ -267,6 +264,12 @@ export default function ComplexPage() {
                   decoding="async"
                 />
               </span>
+              <p className="complex-close__lead">
+                {COMPLEX.close.quiz}{' '}
+                <a className="complex-close__quiz" href={QUIZ} {...external(QUIZ)}>
+                  Get your business fix plan <span aria-hidden="true">→</span>
+                </a>
+              </p>
             </div>
           </div>
         </section>

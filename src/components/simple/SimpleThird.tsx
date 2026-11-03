@@ -269,7 +269,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
                   visibility: headVisible ? 'visible' : 'hidden',
                 }}
               >
-                <div className="mb-5 font-mono text-[11px] uppercase tracking-[0.2em] text-ink/60 sm:mb-7" style={{ opacity: clamp01(q2 / 0.3) }}>
+                <div className="mb-5 font-mono text-[12px] uppercase tracking-[0.2em] text-ink/60 sm:mb-7" style={{ opacity: clamp01(q2 / 0.3) }}>
                   Our work
                 </div>
                 <h2 className="font-display text-[clamp(2.6rem,7vw,6.6rem)] leading-[0.94] tracking-[-0.025em]">
@@ -435,7 +435,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
               {/* the status bar — in front of the ring: the previews rise
                   into the window from under it, never over it */}
               <div
-                className="absolute inset-x-0 bottom-0 flex items-center justify-between border-t border-ink/70 px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-ink/60"
+                className="absolute inset-x-0 bottom-0 flex items-center justify-between border-t border-ink/70 px-4 font-mono text-[12px] uppercase tracking-[0.18em] text-ink/60"
                 style={{ height: win.status, backgroundColor: CHROME, zIndex: 300 }}
               >
                 <span>Clause &amp; Code · Websites</span>
@@ -468,7 +468,7 @@ export default function SimpleThird({ q1, q2, qSpin, qEnd, onOpen }: Props) {
               </div>
               <span className="absolute left-1/2 -translate-x-1/2 truncate text-[12px] font-medium">Projects</span>
               <div className="flex items-center gap-2">
-                <span className="hidden text-[10px] uppercase tracking-[0.18em] text-ink/60 sm:inline">Our work</span>
+                <span className="hidden text-[12px] uppercase tracking-[0.18em] text-ink/60 sm:inline">Our work</span>
                 <span className="grid h-[16px] w-[16px] place-items-center border border-ink/80">
                   <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden><path d="M1 6.5h6" stroke={INK} strokeWidth="1.2" /></svg>
                 </span>

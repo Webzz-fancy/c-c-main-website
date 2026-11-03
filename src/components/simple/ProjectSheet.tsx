@@ -114,7 +114,7 @@ export default function ProjectSheet({ project, index, onClose }: Props) {
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="grid h-[18px] w-[18px] place-items-center border border-ink/80 transition-colors hover:bg-ink hover:text-white"
+              className="relative grid h-[18px] w-[18px] place-items-center border border-ink/80 transition-colors before:absolute before:-inset-[11px] before:content-[''] hover:bg-ink hover:text-white"
             >
               <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden>
                 <path d="M1.5 1.5l5 5M6.5 1.5l-5 5" stroke="currentColor" strokeWidth="1.2" />
@@ -128,7 +128,7 @@ export default function ProjectSheet({ project, index, onClose }: Props) {
             href={p.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group relative flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-ink/85 transition-colors hover:text-ink"
+            className="group relative flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.18em] text-ink/85 transition-colors before:absolute before:-inset-y-[11px] before:inset-x-0 before:content-[''] hover:text-ink"
           >
             <span className="relative">
               See the site
@@ -163,7 +163,7 @@ export default function ProjectSheet({ project, index, onClose }: Props) {
             </div>
           </a>
           <div className="flex flex-col p-5 sm:p-7 lg:p-8">
-            <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink/55">{p.tag}</div>
+            <div className="font-mono text-[12px] uppercase tracking-[0.2em] text-ink/55">{p.tag}</div>
             <h3 className="mt-3 font-display text-[clamp(2rem,3.4vw,3rem)] leading-[0.96] tracking-[-0.02em]">
               {p.name}
             </h3>
@@ -174,7 +174,7 @@ export default function ProjectSheet({ project, index, onClose }: Props) {
                 href={p.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group inline-flex items-center gap-3 font-mono text-[12px] uppercase tracking-[0.18em]"
+                className="group relative inline-flex items-center gap-3 font-mono text-[12px] uppercase tracking-[0.18em] before:absolute before:-inset-y-3 before:inset-x-0 before:content-['']"
               >
                 <span className="relative">
                   [ See the site ]
@@ -187,7 +187,7 @@ export default function ProjectSheet({ project, index, onClose }: Props) {
         </div>
 
         {/* the status bar */}
-        <div className="flex h-[28px] shrink-0 items-center justify-between border-t border-ink/60 px-3 font-mono text-[9.5px] uppercase tracking-[0.16em] text-ink/55 sm:px-4" style={{ backgroundColor: '#EDE7DB' }}>
+        <div className="flex h-[28px] shrink-0 items-center justify-between border-t border-ink/60 px-3 font-mono text-[12px] uppercase tracking-[0.16em] text-ink/55 sm:px-4" style={{ backgroundColor: '#EDE7DB' }}>
           <span>Clause &amp; Code · Websites</span>
           <span className="hidden sm:inline">Esc to close</span>
           <span>{String(index + 1).padStart(2, '0')} / 06</span>

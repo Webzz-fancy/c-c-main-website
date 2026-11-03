@@ -43,10 +43,12 @@ export type ComplexCard = {
 export type ComplexProject = {
   id: string
   /** where it sits in the header's projects menu */
-  group: 'systems' | 'automation'
+  group: 'systems' | 'automation' | 'websites'
   /** the drawing on its card, chosen to show the shape of the work */
-  visual: 'match' | 'stages' | 'roles' | 'phone' | 'pipeline' | 'funnel' | 'path'
+  visual: 'match' | 'stages' | 'roles' | 'phone' | 'pipeline' | 'funnel' | 'path' | 'journey'
   title: string
+  /** the heading over its step by step walk-through */
+  walk: string
   lede: string
   card: ComplexCard
   /** each role, and what it can reach */
@@ -163,9 +165,10 @@ export type ComplexContent = {
 
 /** The header's projects menu: the groups, in order, and what each holds. */
 export const PROJECT_GROUPS: { id: ComplexProject['group'] | 'ai'; label: string }[] = [
+  { id: 'ai', label: 'AI' },
   { id: 'systems', label: 'Custom systems' },
   { id: 'automation', label: 'Automation and funnels' },
-  { id: 'ai', label: 'AI' },
+  { id: 'websites', label: 'Online user experience' },
 ]
 
 export const COMPLEX: ComplexContent = {
@@ -473,6 +476,13 @@ export const COMPLEX: ComplexContent = {
         projects: ['orders', 'academy', 'membership'],
         plan: 'Tie quotes, invoices and payments to the same record, with reminders when something is late and nothing released until it is paid.',
       },
+      {
+        id: 'website',
+        label: 'A website people experience',
+        keywords: ['website', 'web site', 'web design', 'redesign', 'homepage', 'home page', 'seo', 'google', 'search engine', 'search result', 'get found', 'be found', 'visib', 'portfolio', 'gallery', 'artist', 'artisan', 'maker', 'handmade', 'craft', 'watch', 'jewel', 'commission', 'collector', 'first impression'],
+        projects: ['website-journey', 'ai-client-engine', 'quiz-funnel'],
+        plan: 'Map who visits and what they came to do, then build the site around it: the story in the scroll, the work up close, the facts to decide, and ordering or commissioning on the page.',
+      },
     ],
   },
   projects: [
@@ -481,6 +491,7 @@ export const COMPLEX: ComplexContent = {
       group: 'systems',
       visual: 'match',
       title: 'The right experts for every project, found by the system.',
+      walk: 'How a project finds its expert',
       lede: 'A team delivers projects through a network of independent experts. When a project comes in, the system finds the experts whose expertise fits, the team invites the ones it wants, and the bids, the choice and the work all stay inside that circle.',
       card: {
         name: 'Expert matching and bidding',
@@ -560,6 +571,7 @@ export const COMPLEX: ComplexContent = {
       group: 'systems',
       visual: 'stages',
       title: 'Only vetted teachers, matched to the right student.',
+      walk: 'How a teacher gets in and gets matched',
       lede: 'A learning community connects students with one on one teachers. Trust is the whole promise: every teacher clears seven stages before going live, and each student is then pointed to the teacher who fits.',
       card: {
         name: 'Teacher vetting and matching',
@@ -640,6 +652,7 @@ export const COMPLEX: ComplexContent = {
       group: 'systems',
       visual: 'roles',
       title: 'One office, one record per student.',
+      walk: 'How a student moves through the academy',
       lede: 'An academy ran enrolment, classes, attendance and fees in separate places. The office needed one system, and teachers needed only their part of it.',
       card: {
         name: 'Academy management platform',
@@ -720,6 +733,7 @@ export const COMPLEX: ComplexContent = {
       group: 'systems',
       visual: 'phone',
       title: 'Every appointment, from booking to the next one.',
+      walk: 'How an appointment runs',
       lede: 'A client app, an admin system for the team and a live dashboard for owners, built as one platform. The client is guided before the visit, looked after once it is over, and asked for a review and a referral at the right moment, without anyone on the team chasing it.',
       card: {
         name: 'Client journey platform',
@@ -800,6 +814,7 @@ export const COMPLEX: ComplexContent = {
       group: 'automation',
       visual: 'pipeline',
       title: 'B2B orders that move themselves to the next person.',
+      walk: 'How an order moves',
       lede: 'We mapped how B2B enquiries and orders actually moved through the business, found where they stalled, and rebuilt the process as one pipeline. Every handoff is now a status change that assigns the next person automatically.',
       card: {
         name: 'B2B order pipeline',
@@ -880,6 +895,7 @@ export const COMPLEX: ComplexContent = {
       group: 'automation',
       visual: 'funnel',
       title: 'A quiz that sells, onboards and delivers on its own.',
+      walk: 'How a quiz taker becomes a client',
       lede: 'A long online program existed only as written content: no page to sell it, no sign up flow and no way to deliver it. We built the funnel and the delivery around it, from a personality quiz on the landing page to the feedback form after the last session.',
       card: {
         name: 'Quiz funnel and program delivery',
@@ -960,6 +976,7 @@ export const COMPLEX: ComplexContent = {
       group: 'automation',
       visual: 'path',
       title: 'A complete membership system, built from the ground up.',
+      walk: 'How a member joins and stays',
       lede: 'A growing business needed a steadier model and a system to run it. We designed the membership and built the whole system behind it: the strategy and numbers, the site members sign up through, the workspace the team runs it from, the emails and payments, and every step from the first sign up to the welcome, so nothing depends on the founders doing it by hand.',
       card: {
         name: 'Membership system',
@@ -1034,6 +1051,88 @@ export const COMPLEX: ComplexContent = {
         'Contracts written and reviewed',
       ],
       result: 'The business runs on a membership system instead of one sale at a time: members come in, are approved, pay and are welcomed the same way every time, with a model to grow on and contracts it can rely on.',
+    },
+    {
+      id: 'website-journey',
+      group: 'websites',
+      visual: 'journey',
+      title: 'Websites people experience, not just visit.',
+      walk: 'How a visit unfolds',
+      lede: 'For makers, artisans, artists and brands, the work sells when people can feel it: the detail, the story, how it is made. We design the whole online experience around what a visitor came to do, whether that is to look closely, walk through, order, buy or commission, and tell the story as they scroll.',
+      card: {
+        name: 'From first look to first order',
+        kind: 'Online user experience',
+        area: 'Story · close looks · the facts · ordering · found by AI',
+        before: 'Work that sells in person, where the detail and the story do the selling, but online only a flat page and a contact form.',
+        after: 'Sites built around what visitors come to do: look closely, walk through, order, buy or commission, told as a story in the scroll and structured so people and AI can find them.',
+        users: 'Visitors and buyers · the owner · search engines and AI assistants',
+      },
+      roles: [
+        { name: 'Visitor', access: 'Follows the story as they scroll, looks at each piece up close, finds the facts they need, and orders, reserves or enquires on the page.' },
+        { name: 'Owner', access: 'Has a site built around how the work is actually sold, easy to keep current as new pieces and collections arrive.' },
+        { name: 'Search and AI assistants', access: 'Read fast, structured pages, so the work can be found and recommended when people ask.' },
+      ],
+      stops: [
+        {
+          node: 'Mapped',
+          detail: 'who visits · what for',
+          title: 'Mapped before it is designed.',
+          body: 'We start with who visits and what they came to do: see a collection, order a meal, view an original, walk through a project. Every page is then built for that job, not for a template.',
+          guard: 'Purposeful: every page has one job for the visitor.',
+          side: 'near',
+        },
+        {
+          node: 'The story',
+          detail: 'scroll · motion',
+          title: 'The story told as they scroll.',
+          body: 'Motion with a reason: a product turning as you read, light moving from day to night across a building, the heat of a kitchen rising down the page. The brand’s story carries the visitor from the first screen to the work.',
+          guard: 'Purposeful motion: it explains, it never just decorates.',
+          side: 'near',
+        },
+        {
+          node: 'Close look',
+          detail: 'pieces · walkthroughs',
+          title: 'The work, up close.',
+          body: 'Each piece opens to be looked at properly. Collections show what sets each line apart, and spaces can be walked through in 360°, so the visitor gets as close to the work as they would in person.',
+          guard: 'Close: nothing important is a thumbnail.',
+          side: 'near',
+        },
+        {
+          node: 'The facts',
+          detail: 'sizes · prices · availability',
+          title: 'Everything a buyer needs to decide.',
+          body: 'Sizes, prices and availability on each original; the ingredients and flavours of each product; the credentials behind the practice. The answers sit beside the work, so nobody has to ask first.',
+          guard: 'Clear: the facts are on the page, not behind a message.',
+          side: 'far',
+        },
+        {
+          node: 'Act',
+          detail: 'order · reserve · commission',
+          title: 'The next step on the page itself.',
+          body: 'Build your own order, reserve a table, buy an original or commission a new one, add a bundle to a cart that applies its own discount, or enquire about corporate gifting, without leaving the page.',
+          guard: 'Direct: the step a visitor wants is one tap away.',
+          side: 'far',
+        },
+        {
+          node: 'Found',
+          detail: 'fast · structured',
+          title: 'Fast, and found.',
+          body: 'Every site loads quickly on a phone and is structured so search engines and AI assistants like ChatGPT and Gemini can read what the business does and recommend it.',
+          guard: 'Readable: by people and by the machines that point people to it.',
+          side: 'far',
+        },
+      ],
+      map: { shape: 'rows', near: 'Drawn into the work', far: 'Ready to buy', caption: 'From a first look to a first order', note: 'Each site is built around what its visitors came to do.' },
+      features: [
+        'Visitor mapping before any page is designed',
+        'Scroll driven storytelling, animated with purpose',
+        'Pieces that open to be looked at closely, and 360° walkthroughs',
+        'Sizes, prices and availability beside the work',
+        'Live ordering, reservations, buy and commission flows',
+        'A cart that applies bundle discounts on its own, and corporate gifting',
+        'Fast on a phone, structured for search and AI',
+      ],
+      result: 'The website stops being a brochure and becomes the place the work is experienced and bought: a story to follow, the detail up close, the facts to decide, and the next step right there.',
     },
   ],
   discoverability: {

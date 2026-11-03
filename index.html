@@ -8,7 +8,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#F8F5F0" />
     <meta name="color-scheme" content="light" />
-    <meta name="author" content="Clause & Code" />
+    <meta name="author" content="Clause &amp; Code" />
+    <meta name="format-detection" content="telephone=no" />
     <link rel="manifest" href="/site.webmanifest" />
     <!-- The prerendered copy is a readable no-JS fallback. When JS is on,
          cover it with the loader's cream until React mounts the real page. -->
@@ -21,10 +22,12 @@
       html:not(.cc-js) #prerender h2 { font-size: 1.75rem; margin-top: 2rem; }
       html:not(.cc-js) #prerender a { color: #2D6D8B; text-decoration: underline; }
     </style>
-    <title>Clause &amp; Code | Systems, SOPs and Automation for Growth</title>
+    <!-- Fallback head for the dev server; the build replaces it per page
+         (scripts/prerender.mjs) and src/lib/head.ts keeps it in step. -->
+    <title>Clause &amp; Code | Process Mapping, SOPs and Business Systems</title>
     <meta
       name="description"
-      content="Clause & Code maps how your business runs, then builds the SOPs, systems and automation that let it scale without backend chaos."
+      content="Clause &amp; Code maps how your business runs, then builds the SOPs, custom systems and automation that let it scale without backend chaos. Based in the UAE."
     />
     <!--head-->
     <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />

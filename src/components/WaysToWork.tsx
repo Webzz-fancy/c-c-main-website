@@ -2,6 +2,7 @@ import { useRobotMood, type RobotMood } from '../context/RobotMood'
 import { useReveal } from '../hooks/useReveal'
 import Eyebrow from './Eyebrow'
 import Underline from './Underline'
+import { site } from '../config/site'
 
 type Option = {
   kicker: string
@@ -19,7 +20,7 @@ const OPTIONS: Option[] = [
     title: 'Drop Your Problem',
     body: 'Not sure what you need? Just tell us what is not working in your business. We will review your situation and tell you exactly how we can help.',
     cta: 'Drop Your Problem',
-    href: '#drop-problem',
+    href: site.links.dropProblem,
     mood: 'surprised',
     icon: 'problem',
   },
@@ -28,11 +29,16 @@ const OPTIONS: Option[] = [
     title: 'Book a Consultation',
     body: 'This is a focused one-on-one session where we examine what’s not working in your backend operations, including systems, processes, and workflows. We then start mapping a clear plan to help you scale.',
     cta: 'Book a Consultation',
-    href: '#book-consultation',
+    href: site.links.booking,
     mood: 'happy',
     icon: 'consultation',
   },
 ]
+
+/** Off-site destinations (the booking calendar) open in a new tab; mailto and in-page links don't. */
+function externalLink(href: string) {
+  return /^https?:\/\//.test(href) ? { target: '_blank', rel: 'noopener' } : {}
+}
 
 function OptionIcon({ name }: { name: Option['icon'] }) {
   const common = {
@@ -99,7 +105,7 @@ function OptionCard({ option, index }: { option: Option; index: number }) {
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/70 bg-white/70 text-brand-600 shadow-[0_8px_20px_-12px_rgba(18,44,56,0.5)] transition-all duration-500 group-hover:border-brand/40 group-hover:bg-brand group-hover:text-ink">
             <OptionIcon name={option.icon} />
           </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-muted">
+          <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
             {option.kicker}
           </span>
         </div>
@@ -114,6 +120,7 @@ function OptionCard({ option, index }: { option: Option; index: number }) {
         <div className="mt-auto pt-8">
           <a
             href={option.href}
+            {...externalLink(option.href)}
             {...moodHandlers(option.mood)}
             className="inline-flex items-center gap-2.5 rounded-full bg-brand px-6 py-3 text-[14.5px] font-semibold text-ink shadow-brand transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-300 hover:shadow-[0_20px_38px_-14px_rgba(225,173,52,0.85)] active:translate-y-0"
           >
@@ -136,7 +143,7 @@ export default function WaysToWork() {
   })
 
   return (
-    <section id="ways-we-help" className="relative w-full bg-cream py-24 md:py-32">
+    <section id="ways-we-help" className="relative w-full bg-cream py-20 md:py-24">
       {/* ---------- Ambient blue wash ---------- */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute inset-0 grain opacity-60" />
@@ -163,7 +170,7 @@ export default function WaysToWork() {
           </Eyebrow>
 
           <h2
-            className="mt-5 font-display text-[clamp(2.1rem,4.2vw,3.4rem)] leading-[1.06] tracking-[-0.02em] text-ink"
+            className="mt-5 font-display text-[clamp(2.2rem,4.2vw,3.6rem)] leading-[1.05] tracking-[-0.02em] text-ink"
             style={rise(90)}
           >
             Two ways to{' '}

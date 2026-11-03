@@ -33,7 +33,7 @@ export default function ChapterRule({ index, label, drawn, tone, lineRef, lineHi
   const light = tone === 'light'
   return (
     <div
-      className={`flex items-center gap-4 text-[11px] font-semibold uppercase tracking-[0.22em] sm:gap-6 ${light ? 'text-white/60' : 'text-ink/60'}`}
+      className={`flex items-center gap-4 text-[12px] font-semibold uppercase tracking-[0.22em] sm:gap-6 ${light ? 'text-white/60' : 'text-ink/60'}`}
     >
       <span className={`tabular-nums ${light ? 'text-white/85' : 'text-ink/80'}`} style={{ opacity: clamp01(d / 0.25) * keep }}>
         {index}

@@ -1,4 +1,3 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import Eyebrow from '../Eyebrow'
 
 type Props = {
@@ -14,26 +13,16 @@ type Props = {
  * Section 2 — what we do, in the language of the home page's approach
  * section: one glass box on the cream, the label, the heading and one
  * paragraph on top, and under them the two offers as glass cards with a
- * number each. The home page stacks its cards and runs the line down the
- * left; here the two cards stand side by side and the line runs along a
- * rail above them, from the left edge to the right, drawing itself with the
- * scroll — it lights the node above each card as it passes, and the cards
- * rise into place one after the other, the first a beat ahead of the
- * second, all of it standing by the time the row reaches the middle of the
- * screen. Scrolling back plays it back. On phones the cards stack and the
- * line is the same vertical rail as on the home page.
+ * number each, side by side (stacked on phones). The cards rise into place
+ * one after the other, the first a beat ahead of the second, and light as
+ * they settle, all of it standing by the time the row reaches the middle of
+ * the screen. Scrolling back plays it back.
  */
 export const AI_URL = 'https://ai.clauseandcode.com'
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 const outCubic = (t: number) => 1 - Math.pow(1 - t, 3)
 const outQuart = (t: number) => 1 - Math.pow(1 - t, 4)
-
-/** the rail above the cards that the line runs along (px, md and up) */
-const RAIL = 72
-/** the node above a card sits over its number badge: the badge's centre from
- *  the card's left edge (the card's padding + half the badge) */
-const NODE_X = { base: 24 + 22, sm: 28 + 22 }
 
 type Offer = {
   number: string
@@ -59,7 +48,7 @@ const OFFERS: Offer[] = [
     number: '02',
     title: 'AI discoverability & lead management',
     body: 'We put your business where people now look, in ChatGPT, Gemini and Instagram, and connect it all to your booking so every enquiry is answered.',
-    cta: 'Explore the AI Client Engine',
+    cta: 'Explore AI discoverability',
     mark: '↗',
     href: AI_URL,
     external: true,
@@ -75,54 +64,8 @@ export default function SimpleSecond({ progress, reveal, onProjects }: Props) {
   // second; both stand before the row reaches the middle
   const cardIn = OFFERS.map((_, i) => outQuart(clamp01((r - i * 0.14) / 0.72)))
 
-  // the line's geometry: the track's width and how far along the line each
-  // card's node sits (a fraction of the line, so the nodes light in turn
-  // as the draw passes them — along the rail on desktop, down the rail on
-  // phones)
-  const trackRef = useRef<HTMLDivElement>(null)
-  const itemRefs = useRef<(HTMLLIElement | null)[]>([])
-  const [geom, setGeom] = useState<{ w: number; nodes: number[]; frac: number[] }>({ w: 0, nodes: [], frac: [] })
-
-  const measure = useCallback(() => {
-    const track = trackRef.current
-    if (!track) return
-    const tb = track.getBoundingClientRect()
-    const horizontal = window.innerWidth >= 768
-    const nodeX = window.innerWidth >= 640 ? NODE_X.sm : NODE_X.base
-    const items = itemRefs.current.filter((el): el is HTMLLIElement => !!el)
-    const nodes: number[] = []
-    const frac: number[] = []
-    items.forEach((li) => {
-      const b = li.getBoundingClientRect()
-      const x = b.left - tb.left + nodeX
-      nodes.push(x)
-      if (horizontal) {
-        frac.push(tb.width > 0 ? x / tb.width : 0)
-      } else {
-        // the phone rail runs from 24px below the track's top to 24px above
-        // its bottom; each card's node sits 32px under the card's top
-        const railH = Math.max(1, tb.height - 48)
-        frac.push(clamp01((b.top - tb.top + 32 - 24) / railH))
-      }
-    })
-    setGeom({ w: tb.width, nodes, frac })
-  }, [])
-
-  useLayoutEffect(() => {
-    measure()
-    const ro = new ResizeObserver(measure)
-    if (trackRef.current) ro.observe(trackRef.current)
-    window.addEventListener('resize', measure)
-    // re-measure once webfonts settle, since they change the cards' heights
-    document.fonts?.ready.then(measure).catch(() => {})
-    return () => {
-      ro.disconnect()
-      window.removeEventListener('resize', measure)
-    }
-  }, [measure])
-
-  const railY = RAIL / 2
-  const reached = (i: number) => r >= (geom.frac[i] ?? i / Math.max(1, OFFERS.length - 1)) - 0.04
+  // a card lights once it has all but settled into place
+  const reached = (i: number) => cardIn[i] >= 0.96
 
   return (
     <section id="simple-second" className="relative w-full bg-cream pb-16 pt-24 md:pb-20 md:pt-32">
@@ -180,117 +123,16 @@ export default function SimpleSecond({ progress, reveal, onProjects }: Props) {
             </p>
           </div>
 
-          {/* ---------- the two cards, side by side, the line running above them from left to right ---------- */}
-          <div ref={trackRef} data-cards className="relative mt-12 md:mt-14 md:pt-[72px]">
-            {/* the line (md and up): a faint dashed track along the rail, the
-                golden draw over it with the scroll, a node above each card */}
-            {geom.w > 0 && (
-              <svg
-                className="pointer-events-none absolute left-0 top-0 z-0 hidden w-full md:block"
-                style={{ height: RAIL }}
-                viewBox={`0 0 ${geom.w} ${RAIL}`}
-                fill="none"
-                aria-hidden
-              >
-                <defs>
-                  {/* the path is a flat line (a zero-height box), so the
-                      gradient and the glow are set in user space — with box
-                      units the browser would drop both */}
-                  <linearGradient id="ccs-line-grad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={geom.w} y2="0">
-                    <stop offset="0%" stopColor="#EBC96D" />
-                    <stop offset="55%" stopColor="#E1AD34" />
-                    <stop offset="100%" stopColor="#C9962A" />
-                  </linearGradient>
-                  <filter id="ccs-line-glow" filterUnits="userSpaceOnUse" x="-24" y="0" width={geom.w + 48} height={RAIL}>
-                    <feGaussianBlur stdDeviation="6" result="b" />
-                    <feMerge>
-                      <feMergeNode in="b" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-
-                {/* the faint full length track */}
-                <path
-                  d={`M 0 ${railY} L ${geom.w} ${railY}`}
-                  stroke="#1B1A17"
-                  strokeOpacity="0.09"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeDasharray="6 8"
-                />
-
-                {/* the draw: exactly as far as the scroll has taken it */}
-                <path
-                  d={`M 0 ${railY} L ${geom.w} ${railY}`}
-                  stroke="url(#ccs-line-grad)"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  filter="url(#ccs-line-glow)"
-                  style={{
-                    strokeDasharray: geom.w,
-                    strokeDashoffset: geom.w * (1 - r),
-                    opacity: r > 0.002 ? 1 : 0,
-                  }}
-                />
-
-                {/* the node above each card */}
-                {geom.nodes.map((x, i) => {
-                  const on = reached(i)
-                  return (
-                    <g key={i}>
-                      <circle
-                        cx={x}
-                        cy={railY}
-                        r={on ? 13 : 8}
-                        fill="#E1AD34"
-                        opacity={on ? 0.16 : 0}
-                        style={{ transition: 'r 400ms ease, opacity 400ms ease' }}
-                      />
-                      <circle
-                        cx={x}
-                        cy={railY}
-                        r="5"
-                        fill={on ? '#E1AD34' : '#F8F5F0'}
-                        stroke={on ? '#E1AD34' : 'rgba(27,26,23,0.18)'}
-                        strokeWidth="2"
-                        style={{ transition: 'fill 400ms ease, stroke 400ms ease' }}
-                      />
-                    </g>
-                  )
-                })}
-              </svg>
-            )}
-
-            {/* phones: the vertical rail down the left, as on the home page */}
-            <div className="pointer-events-none absolute bottom-6 left-[7px] top-6 w-px md:hidden" aria-hidden>
-              <div className="h-full w-full bg-ink/10" />
-              <div className="absolute inset-x-0 top-0 bg-brand" style={{ height: `${(r * 100).toFixed(1)}%` }} />
-            </div>
-
+          {/* ---------- the two cards, side by side ---------- */}
+          <div data-cards className="relative mt-12 md:mt-14">
             {/* the cards */}
-            <ol className="relative z-10 grid grid-cols-1 gap-6 pl-6 md:grid-cols-2 md:gap-8 md:pl-0">
+            <ol className="relative grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
               {OFFERS.map((offer, i) => {
                 const q = cardIn[i]
                 const on = reached(i)
                 const first = i === 0
                 return (
-                  <li
-                    key={offer.number}
-                    ref={(el) => {
-                      itemRefs.current[i] = el
-                    }}
-                    className="relative"
-                  >
-                    {/* the node on the phone rail */}
-                    <span
-                      className={[
-                        'absolute -left-[23px] top-8 h-[9px] w-[9px] rounded-full border-2 transition-colors duration-500 md:hidden',
-                        on ? 'border-brand bg-brand' : 'border-black/15 bg-cream',
-                      ].join(' ')}
-                      aria-hidden
-                    />
-
+                  <li key={offer.number} className="relative">
                     <a
                       href={offer.href}
                       target={offer.external ? '_blank' : undefined}
@@ -326,7 +168,7 @@ export default function SimpleSecond({ progress, reveal, onProjects }: Props) {
                         willChange: 'opacity, transform, filter',
                       }}
                     >
-                      <div className="flex items-start gap-4">
+                      <div className="flex h-full items-start gap-4">
                         <span
                           className={[
                             'grid h-11 w-11 shrink-0 place-items-center rounded-xl font-display text-[17px] transition-all duration-500',
@@ -336,10 +178,14 @@ export default function SimpleSecond({ progress, reveal, onProjects }: Props) {
                           {offer.number}
                         </span>
 
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-display text-[clamp(1.3rem,1.9vw,1.65rem)] leading-tight tracking-[-0.01em] text-ink">{offer.title}</h3>
-                          <p className="mt-2.5 text-[15px] font-light leading-relaxed text-ink-soft">{offer.body}</p>
-                          <span className="mt-5 inline-flex items-center gap-2 text-[13px] font-semibold text-ink">
+                        {/* a column the height of the card, so the link sits on the
+                            bottom of both cards and the bodies start level
+                            (the title holds two lines on desktop even when
+                            it needs one) */}
+                        <div className="flex h-full min-w-0 flex-1 flex-col">
+                          <h3 className="font-display md:min-h-[2.5em] text-[clamp(1.3rem,1.9vw,1.65rem)] leading-tight tracking-[-0.01em] text-ink">{offer.title}</h3>
+                          <p className="mb-5 mt-2.5 text-[15px] font-light leading-relaxed text-ink-soft">{offer.body}</p>
+                          <span className="mt-auto inline-flex items-center gap-2 text-[13px] font-semibold text-ink">
                             <span className="relative">
                               {offer.cta}
                               <span className="absolute -bottom-0.5 left-0 h-px w-full origin-right scale-x-0 bg-brand transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:origin-left group-hover:scale-x-100" />

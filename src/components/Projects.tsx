@@ -23,7 +23,7 @@ export default function Projects() {
   })
 
   return (
-    <section id="projects" className="relative w-full bg-cream py-24 md:py-32">
+    <section id="projects" className="relative w-full bg-cream py-20 md:py-24">
       {/* ---------- Ambient blue wash ---------- */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute inset-0 grain opacity-60" />
@@ -79,7 +79,7 @@ export default function Projects() {
               <Eyebrow style={rise(80)}>Our Projects</Eyebrow>
 
               <h2
-                className="mt-6 font-display text-[clamp(2.1rem,4.2vw,3.5rem)] leading-[1.06] tracking-[-0.02em] text-ink"
+                className="mt-6 font-display text-[clamp(2.2rem,4.2vw,3.6rem)] leading-[1.05] tracking-[-0.02em] text-ink"
                 style={rise(150)}
               >
                 Real work.{' '}
@@ -101,7 +101,7 @@ export default function Projects() {
 
               <div className="mt-9" style={rise(330)}>
                 <a
-                  href="#projects-index"
+                  href="/complex"
                   {...moodHandlers('happy')}
                   className="group inline-flex items-center gap-2.5 rounded-full bg-brand px-7 py-3.5 text-[15px] font-semibold text-ink shadow-brand transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-300 hover:shadow-[0_22px_40px_-14px_rgba(225,173,52,0.85)] active:translate-y-0"
                 >
