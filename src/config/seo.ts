@@ -62,12 +62,12 @@ export const PAGES: Record<'home' | 'simple' | 'complex', PageSeo> = {
     path: '/complex',
     title: 'Our Projects: Systems and AI | Clause & Code',
     description:
-      'AI agent offices and the systems we have built: expert matching, B2B order pipelines, client apps, quiz funnels and more. How each ran before, and now.',
+      'AI agents, AI discoverability and the systems we have built: expert matching, B2B order pipelines, client apps, quiz funnels and more, and what each one changed.',
     type: 'website',
     image: DEFAULT_IMAGE,
     imageAlt: 'Clause & Code: custom systems for work behind the business',
     summary:
-      'An AI agent office we build for businesses and run ourselves: a director agent that plans the day, agent teams for leads and outreach, proposals, reports, content with quality checks and building, and one queue of decisions for the owner, with risky actions waiting for approval. Then our projects, each shown as how the work ran before and what runs now: an expert matching and bidding platform, a seven stage teacher vetting and matching system, an academy management platform (registrations, classes, attendance, progress, payments and reports, in English and Arabic), a client journey platform (client app, admin system and live owner dashboard), a mapped and automated B2B order pipeline, a quiz funnel with automated program delivery, and a complete membership system, from strategy and sign up to payments and onboarding. Also the AI Client Engine, our AI discoverability product (details at ai.clauseandcode.com).',
+      'A team of AI agents we build for businesses and run ourselves: a director agent that plans the day, agent teams for leads and outreach, proposals, reports, content with quality checks and building, and one queue of decisions for the owner, with risky actions waiting for approval. Then our projects, each shown as how the work ran before and what runs now: an expert matching and bidding platform, a seven stage teacher vetting and matching system, an academy management platform (registrations, classes, attendance, progress, payments and reports, in English and Arabic), a client journey platform (client app, admin system and live owner dashboard), a mapped and automated B2B order pipeline, a quiz funnel with automated program delivery, and a complete membership system, from strategy and sign up to payments and onboarding. Also the AI Client Engine, our AI discoverability product (details at ai.clauseandcode.com).',
   },
 }
 

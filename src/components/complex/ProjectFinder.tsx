@@ -6,13 +6,13 @@ import { BookButton } from './cta'
  * The hero's search: a visitor types the work they want handled, or taps a
  * task they recognise, and the agents and projects that do something like it
  * come to the front of the list below, with how we would approach it. Naming
- * their kind of business points them to the agent office, set up for it. It matches
+ * their kind of business points them to the agents, set up for it. It matches
  * on the page, against words we wrote for each problem: no chat, and no
  * request leaves the browser.
  */
 
-// the agent tasks come first; the rest sit behind "More"
-const FIRST = 5
+// three agent tasks fit on one line under the search; the rest sit behind "More"
+const FIRST = 3
 
 // `need` or `industry` is what matched, if anything did, so the hero map can show it
 export type FinderMatch = { ids: string[]; plan: string | null; none: boolean; need: string | null; industry: string | null }
@@ -20,13 +20,14 @@ export type FinderMatch = { ids: string[]; plan: string | null; none: boolean; n
 const INDUSTRIES = COMPLEX.agents.industries.items
 
 const NAMES: Record<string, string> = Object.fromEntries([
-  ['agents', 'AI agent office'],
+  ['agents', COMPLEX.index.agents.name],
   ...COMPLEX.projects.map((p) => [p.id, p.card.name]),
   [COMPLEX.discoverability.id, COMPLEX.discoverability.name],
 ])
 
-// where "See them" goes: the agent office has its own section
-const anchor = (id: string | undefined) => (id === 'agents' ? '#agents' : '#complex-index')
+// where the answer leads: a named business goes to the agents, set up for it;
+// anything else to the work, where the closest matches now lead the slider
+const anchor = (match: FinderMatch) => (match.industry ? '#agents' : '#complex-index')
 
 // Everything a project says about itself, for words that no problem lists.
 const HAYSTACK: Record<string, string> = Object.fromEntries([
@@ -129,7 +130,7 @@ export default function ProjectFinder({ onMatch }: { onMatch: (match: FinderMatc
         className="complex-finder__form"
         onSubmit={(e) => {
           e.preventDefault()
-          if (match && !match.none) document.querySelector(anchor(match.ids[0]))?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          if (match && !match.none) document.querySelector(anchor(match))?.scrollIntoView({ behavior: 'smooth', block: 'start' })
         }}
       >
         <label className="complex-finder__label" htmlFor="complex-finder-input">{finder.label}</label>
@@ -150,7 +151,6 @@ export default function ProjectFinder({ onMatch }: { onMatch: (match: FinderMatc
         <span id="complex-finder-hint" className="sr-only">{finder.heading}</span>
       </form>
       <div className="complex-finder__chips" role="group" aria-label="Popular tasks">
-        <span className="complex-finder__popular" aria-hidden="true">Popular:</span>
         {shown.map((need) => (
           <button
             key={need.id}
@@ -180,7 +180,7 @@ export default function ProjectFinder({ onMatch }: { onMatch: (match: FinderMatc
             <p><b>{agents.industries.intro} {/^[aeiou]/i.test(industry.label) ? 'an' : 'a'} {industry.label.toLowerCase()}:</b> {industry.teams.map((t) => t.name.toLowerCase()).join(', ')} and more.</p>
             <p className="complex-finder__plan"><b>Closest work we have built:</b> {industry.projects.map((id) => NAMES[id]).join(', ')}.</p>
             <div className="complex-finder__actions">
-              <a className="complex-link complex-link--brand" href="#agents">See the office <span aria-hidden="true">↓</span></a>
+              <a className="complex-link complex-link--brand" href="#agents">See the agents <span aria-hidden="true">↓</span></a>
               <a className="complex-finder__reset" href="#complex-grid">See the work</a>
               <button type="button" className="complex-finder__reset" onClick={() => update(null, '')}>{finder.reset}</button>
             </div>
@@ -190,7 +190,7 @@ export default function ProjectFinder({ onMatch }: { onMatch: (match: FinderMatc
             <p><b>Closest:</b> {names.join(', ')}.</p>
             {match.plan && <p className="complex-finder__plan">{match.plan}</p>}
             <div className="complex-finder__actions">
-              <a className="complex-link complex-link--brand" href={anchor(match.ids[0])}>See them <span aria-hidden="true">↓</span></a>
+              <a className="complex-link complex-link--brand" href={anchor(match)}>See them <span aria-hidden="true">↓</span></a>
               <button type="button" className="complex-finder__reset" onClick={() => update(null, '')}>{finder.reset}</button>
             </div>
           </>

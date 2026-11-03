@@ -127,7 +127,12 @@ export function staticHtml(page: PageSeo): string {
     return (
       open +
       `<header><p>${esc(COMPLEX.hero.label)}</p><h1>${esc(COMPLEX.hero.firstLine)} ${esc(COMPLEX.hero.secondLine)}</h1><p>${esc(COMPLEX.hero.intro)}</p></header>` +
-      `<section id="agents"><p>${esc(COMPLEX.agents.label)}</p><h2>${esc(COMPLEX.agents.heading)} ${esc(COMPLEX.agents.emphasis)}</h2><p>${esc(COMPLEX.agents.intro)}</p><p>${esc(COMPLEX.agents.definition)}</p><p>${esc(COMPLEX.agents.director.name)}: ${esc(COMPLEX.agents.director.job)}.</p><ul>${COMPLEX.agents.teams
+      `<section id="complex-index"><p>${esc(COMPLEX.index.label)}</p><h2>${esc(COMPLEX.index.heading)}</h2><p>${esc(COMPLEX.index.intro)}</p><h3>${esc(COMPLEX.finder.heading)}</h3><dl>${COMPLEX.finder.needs
+        .map((need) => `<dt>${esc(need.label)}</dt><dd>${esc(need.plan)} Closest projects: ${esc(need.projects.map(projectName).join(', '))}.</dd>`)
+        .join('')}</dl><ol>${COMPLEX.projects
+        .map(({ id, card }) => `<li><h3><a href="#project-${id}">${esc(card.name)}</a></h3><p>${esc(card.kind)} · ${esc(card.area)}</p><dl><dt>Before</dt><dd>${esc(card.before)}</dd><dt>Now</dt><dd>${esc(card.after)}</dd><dt>Who uses it</dt><dd>${esc(card.users)}</dd></dl></li>`)
+        .join('')}<li><h3><a href="${COMPLEX.discoverability.url}">${esc(COMPLEX.discoverability.name)}</a></h3><p>AI discoverability · ${esc(COMPLEX.discoverability.sector)}</p><dl><dt>Before</dt><dd>${esc(COMPLEX.discoverability.before)}</dd><dt>Now</dt><dd>${esc(COMPLEX.discoverability.after)}</dd><dt>Who uses it</dt><dd>${esc(COMPLEX.discoverability.users)}</dd></dl></li></ol></section>` +
+      `<section id="agents"><p>${esc(COMPLEX.agents.label)}</p><h2>${esc(COMPLEX.agents.heading)} ${esc(COMPLEX.agents.emphasis)}</h2><p>${esc(COMPLEX.agents.intro)}</p><p>${esc(COMPLEX.agents.director.name)}: ${esc(COMPLEX.agents.director.job)}.</p><ul>${COMPLEX.agents.teams
         .map((team) => `<li>${esc(team.name)}: ${esc(team.job)}</li>`)
         .join('')}</ul><h3>${esc(COMPLEX.agents.story.label)}</h3><ol>${COMPLEX.agents.story.steps
         .map((step) => `<li>${esc(step.level)}: ${esc(step.text)}</li>`)
@@ -138,11 +143,6 @@ export function staticHtml(page: PageSeo): string {
         .join('')}</dl><h3>${esc(COMPLEX.agents.industries.intro)} your business</h3>${COMPLEX.agents.industries.items
         .map((item) => `<h4>${esc(item.label)}</h4><ul>${[...item.clients, ...item.operations].map((line) => `<li>${esc(line)}</li>`).join('')}</ul>`)
         .join('')}</section>` +
-      `<section id="complex-index"><p>${esc(COMPLEX.index.label)}</p><h2>${esc(COMPLEX.index.heading)}</h2><p>${esc(COMPLEX.index.intro)}</p><h3>${esc(COMPLEX.finder.heading)}</h3><dl>${COMPLEX.finder.needs
-        .map((need) => `<dt>${esc(need.label)}</dt><dd>${esc(need.plan)} Closest projects: ${esc(need.projects.map(projectName).join(', '))}.</dd>`)
-        .join('')}</dl><ol>${COMPLEX.projects
-        .map(({ id, card }) => `<li><h3><a href="#project-${id}">${esc(card.name)}</a></h3><p>${esc(card.kind)} · ${esc(card.area)}</p><dl><dt>Before</dt><dd>${esc(card.before)}</dd><dt>Now</dt><dd>${esc(card.after)}</dd><dt>Who uses it</dt><dd>${esc(card.users)}</dd></dl></li>`)
-        .join('')}<li><h3><a href="${COMPLEX.discoverability.url}">${esc(COMPLEX.discoverability.name)}</a></h3><p>AI discoverability · ${esc(COMPLEX.discoverability.sector)}</p><dl><dt>Before</dt><dd>${esc(COMPLEX.discoverability.before)}</dd><dt>Now</dt><dd>${esc(COMPLEX.discoverability.after)}</dd><dt>Who uses it</dt><dd>${esc(COMPLEX.discoverability.users)}</dd></dl></li></ol></section>` +
       COMPLEX.projects
         .map((project) => `<article id="project-${project.id}"><p>${esc(project.card.kind)} · ${esc(project.card.area)}</p><h2>${esc(project.card.name)}: ${esc(project.title)}</h2><p>${esc(project.lede)}</p><h3>Who uses it</h3><ul>${project.roles
           .map((role) => `<li>${esc(role.name)}: ${esc(role.access)}</li>`)
@@ -200,14 +200,12 @@ export function llmsTxt(): string {
     ``,
     `Recent builds: ${PORTFOLIO.map((p) => `${p.name} (${p.tag.toLowerCase()}, ${p.url})`).join('; ')}.`,
     ``,
-    `## AI agent offices`,
+    `## AI agents`,
     ``,
     `${COMPLEX.agents.heading} ${COMPLEX.agents.emphasis} ${COMPLEX.agents.intro}`,
     ``,
     `- ${COMPLEX.agents.director.name}: ${COMPLEX.agents.director.job}`,
     ...COMPLEX.agents.teams.map((team) => `- ${team.name}: ${team.job}`),
-    ``,
-    COMPLEX.agents.definition,
     `${COMPLEX.agents.story.label}: ${COMPLEX.agents.story.steps.map((step) => `(${step.level}) ${step.text}`).join(' ')}`,
     ``,
     `${COMPLEX.agents.control.label}: ${COMPLEX.agents.control.steps.map((step) => `${step.level}: ${step.what}`).join(' ')}`,

@@ -22,7 +22,7 @@ const PROJECT_MENU: { label: string; items: ProjectLink[] }[] = PROJECT_GROUPS.m
     group.id === 'ai'
       ? [{
           id: 'agents',
-          label: 'AI agent office',
+          label: 'AI agents',
           href: '/complex#agents',
           description: 'A director, agent teams and one queue of decisions',
         }, {

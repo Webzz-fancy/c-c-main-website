@@ -67,6 +67,8 @@ export type ComplexProject = {
 export type ComplexProduct = {
   id: string
   name: string
+  /** the card's label, in plain words */
+  kind: string
   sector: string
   before: string
   after: string
@@ -88,14 +90,14 @@ export type ComplexNeed = {
   id: string
   label: string
   keywords: string[]
-  /** project ids, closest first; 'ai-client-engine' is the product card */
+  /** project ids, closest first; 'ai-client-engine' is the AI discoverability card */
   projects: string[]
   /** how we would approach it, in one sentence */
   plan: string
 }
 
 /**
- * What an agent office could do for one kind of business: the desks drawn on
+ * What a team of agents could do for one kind of business: the desks drawn on
  * the office floor, what waits on the owner, and the work the agents take on,
  * with clients and behind the scenes. Possibilities, not past projects.
  */
@@ -124,18 +126,18 @@ export type ComplexIndustry = {
   operations: string[]
 }
 
-/** The AI agent office we build, and run ourselves. */
+/** The AI agents we build, and run ourselves. */
 export type ComplexAgents = {
   label: string
   heading: string
   emphasis: string
   intro: string
-  definition: string
+  /** the agent on the page, introducing itself */
   director: { name: string; job: string }
   teams: { name: string; job: string; state: 'working' | 'reported' | 'needs-you' }[]
   queue: { label: string; items: string[] }
   story: { label: string; steps: ComplexStoryStep[] }
-  control: { label: string; steps: { level: string; what: string }[] }
+  control: { label: string; steps: { level: string; what: string; says: string }[] }
   setup: { label: string; steps: { step: string; what: string }[] }
   /** what an office does for any business, before one is picked */
   general: { clients: string[]; operations: string[] }
@@ -150,7 +152,8 @@ export type ComplexContent = {
     label: string
     heading: string
     intro: string
-    start: { label: string; items: { need: string; offer: string; href: string }[] }
+    /** the agents' card, first on the slider */
+    agents: { kind: string; name: string; change: string; action: string }
   }
   finder: { label: string; heading: string; placeholder: string; none: string; reset: string; needs: ComplexNeed[] }
   projects: ComplexProject[]
@@ -168,28 +171,27 @@ export const PROJECT_GROUPS: { id: ComplexProject['group'] | 'ai'; label: string
 export const COMPLEX: ComplexContent = {
   agents: {
     label: 'AI agents',
-    heading: 'A team of AI agents, working in your business.',
+    heading: 'A team of AI agents.',
     emphasis: 'You approve. They do the rest.',
-    intro: 'We run our own company on one. We map how your work moves, build the agents around it, and keep them running.',
-    definition: 'Each agent does one job, such as research, drafting, checking or reporting, and reports back. A director agent runs the team. You make the calls.',
+    intro: 'Customised to your business. We map how your work moves, build the agents around it, and keep them running.',
     director: { name: 'Director agent', job: 'Plans the day · checks every report' },
     teams: [
       { name: 'Front desk', job: 'Answers enquiries · books calls', state: 'working' },
       { name: 'Sales', job: 'Researches leads · drafts follow ups', state: 'reported' },
       { name: 'Operations', job: 'Orders · invoices · deadlines', state: 'working' },
       { name: 'Reports', job: 'Numbers · targets · what slipped', state: 'reported' },
-      { name: 'Content and QA', job: 'Drafts · checked before it goes out', state: 'needs-you' },
+      { name: 'Content', job: 'Creates · schedules · manages posts', state: 'needs-you' },
     ],
     queue: {
       label: 'Waiting on you',
-      items: ['Approve 3 follow up emails', 'Invoice batch ready to send', 'Two posts passed QA'],
+      items: ['Approve 3 follow up emails', 'Invoice batch ready to send', '2 posts passed QA'],
     },
     story: {
       label: 'Watch one job go through',
       steps: [
         { at: 'director', level: 'Automatic', text: 'Morning: the director agent sets today’s three priorities and hands out the work.' },
         { at: 1, level: 'Automatic', text: 'Sales researches three new leads and drafts a personal follow up for each.' },
-        { at: 4, level: 'Checked', text: 'Content and QA checks every draft against your tone and the facts.' },
+        { at: 4, level: 'Checked', text: 'Content checks every draft against your tone and the facts.' },
         { at: 'queue', level: 'Your yes', text: 'The drafts wait in your queue. You approve, edit or reject them in one batch.' },
         { at: 'you', level: 'On record', text: 'Approved emails go out, and every step is saved with who approved it.' },
       ],
@@ -197,19 +199,19 @@ export const COMPLEX: ComplexContent = {
     control: {
       label: 'You stay in control',
       steps: [
-        { level: 'Automatic', what: 'Research, drafts and internal records.' },
-        { level: 'Checked', what: 'Routine work passes a separate quality check first.' },
-        { level: 'Your yes', what: 'Anything sent to a client or the public, and anything involving money or a commitment, waits for you.' },
-        { level: 'On record', what: 'Every job, report and decision is written down and kept.' },
+        { level: 'Automatic', what: 'Research, drafts and internal records.', says: 'Research, drafts and internal records, I get on with by myself.' },
+        { level: 'Checked', what: 'Routine work passes a separate quality check first.', says: 'Routine work goes through a separate quality check before it moves on.' },
+        { level: 'Your yes', what: 'Anything sent to a client or the public, and anything involving money or a commitment, waits for you.', says: 'Anything for a client or the public, or involving money or a commitment, waits for your yes.' },
+        { level: 'On record', what: 'Every job, report and decision is written down and kept.', says: 'Everything I do is written down, with who approved it.' },
       ],
     },
     setup: {
       label: 'How we set it up',
       steps: [
-        { step: 'Map', what: 'We sit with you and map how the work moves today.' },
-        { step: 'Build', what: 'We build the agents around your tools and your rules.' },
-        { step: 'Test', what: 'They run beside your team until the work is right.' },
-        { step: 'Run', what: 'We keep them running and add agents as you grow.' },
+        { step: 'Map', what: 'How your work moves today' },
+        { step: 'Build', what: 'Agents around your tools and rules' },
+        { step: 'Test', what: 'Beside your team until it’s right' },
+        { step: 'Run', what: 'Kept running, added to as you grow' },
       ],
     },
     general: {
@@ -219,13 +221,13 @@ export const COMPLEX: ComplexContent = {
     industries: {
       label: 'See it for your business',
       any: 'Any business',
-      intro: 'What an agent office could take on for',
+      intro: 'What AI agents could take on for',
       note: 'Every draft and decision waits for your yes.',
       items: [
         {
           id: 'law',
           label: 'Law firm',
-          keywords: ['law', 'lawyer', 'legal', 'solicitor', 'attorney', 'barrister', 'litigation', 'paralegal'],
+          keywords: ['law firm', 'law', 'lawyer', 'legal', 'solicitor', 'attorney', 'barrister', 'litigation', 'paralegal'],
           teams: [{ name: 'Intake', job: 'Intake questions · conflict check' }, { name: 'Documents', job: 'Drafts letters · for a lawyer to review' }, { name: 'Deadlines', job: 'Filing dates · court dates' }, { name: 'Billing', job: 'Time logs · invoice drafts' }],
           queue: ['Approve 2 engagement letters', 'New intake ready to review', 'Filing due on Friday'],
           story: [
@@ -293,7 +295,7 @@ export const COMPLEX: ComplexContent = {
         {
           id: 'agency',
           label: 'Agency or consultancy',
-          keywords: ['agency', 'consult', 'marketing agency', 'studio', 'freelance', 'advisory', 'firm'],
+          keywords: ['agency', 'consult', 'marketing agency', 'studio', 'freelance', 'advisory'],
           teams: [{ name: 'Sales', job: 'Researches leads · drafts outreach' }, { name: 'Proposals', job: 'Call notes into proposals' }, { name: 'Projects', job: 'Status · flags overruns' }, { name: 'Reports', job: 'Monthly client reports' }],
           queue: ['Proposal ready to review', 'Approve 3 outreach drafts', 'Client report passed QA'],
           story: [
@@ -360,7 +362,7 @@ export const COMPLEX: ComplexContent = {
         },
       ],
     },
-    action: 'Talk about your agent office',
+    action: 'Talk to us about your agents',
   },
   hero: {
     label: 'Our Projects',
@@ -372,18 +374,16 @@ export const COMPLEX: ComplexContent = {
   index: {
     label: 'The projects',
     heading: 'Work we have built, and what it changed.',
-    intro: 'Custom systems, process mapping, automation and AI discoverability (being found and recommended by ChatGPT and Google). Every project started with a map of how the work actually moves.',
-    start: {
-      label: 'Where to start',
-      items: [
-        { need: 'Every enquiry answered, day and night', offer: 'AI Client Engine', href: 'https://ai.clauseandcode.com/' },
-        { need: 'A team that does the admin and follow ups', offer: 'AI agent office', href: '#agents' },
-        { need: 'Software built around how you work', offer: 'Custom systems', href: '#complex-grid' },
-      ],
+    agents: {
+      kind: 'AI agents',
+      name: 'A team of AI agents',
+      change: 'An agent for each job in the business, working beside the team. Clause & Code runs on them, and anything that matters waits for a yes.',
+      action: 'See the agents at work',
     },
+    intro: 'AI agents, AI discoverability, custom systems and automation. Every project started with a map of how the work actually moves.',
   },
   finder: {
-    label: 'Search our work',
+    label: 'Search our work to find what’s right for you',
     heading: 'Search our work by the task you want handled',
     placeholder: 'Type a task, e.g. “answer enquiries at night”',
     none: 'Nothing here matches that exactly yet. Every system on this page started as a problem like yours, mapped first and built after. Tell us about it.',
@@ -1038,10 +1038,11 @@ export const COMPLEX: ComplexContent = {
   ],
   discoverability: {
     id: 'ai-client-engine',
-    name: 'AI Client Engine',
+    name: 'AI discoverability',
+    kind: 'Being found by AI',
     sector: 'Coaches, clinics and professional practices',
-    before: 'Enquiries arrived in DMs and inboxes at all hours, and many were never answered.',
-    after: 'An AI ready page, your own assistant on ChatGPT, Gemini, Instagram and WhatsApp, and connected booking, live in 5 working days.',
+    before: 'People now ask ChatGPT and Gemini who to call. These businesses were not the answer, and enquiries in DMs went unanswered.',
+    after: 'Your business found and recommended when people ask ChatGPT, Gemini or Google, with your own assistant on Instagram and WhatsApp booking the calls. Live in 5 working days.',
     users: 'Practice owners · their clients',
     sources: ['ChatGPT', 'Gemini', 'WhatsApp · Instagram'],
     hub: 'Landing page',
@@ -1052,7 +1053,7 @@ export const COMPLEX: ComplexContent = {
   close: {
     label: 'Your turn',
     heading: 'Let’s find what to build first.',
-    body: 'From a system that does not exist yet to one that has outgrown how it is run: we map the work first, and we don’t compromise on security.',
+    body: 'A team of agents, being found by AI, or a system your business has outgrown: we map how the work moves first, then build it, and we don’t compromise on security.',
     action: 'Book a consultation',
     quiz: 'Not sure where to start?',
   },
