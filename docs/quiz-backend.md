@@ -67,74 +67,52 @@ What the endpoint must do:
    - Run `answers` through `cleanAnswers()` from `src/content/quiz.ts`. It returns `null` for anything invalid, including a missing check when one was due.
    - Reject with `400` if any of these checks fail.
 2. **Email the visitor their plan.**
-   - Build the plan with `buildPlan(answers)`, so the email says exactly what the page says.
+   - Send `planEmail(answers, name)`. It is built from `buildPlan(answers)`, so the email says exactly what the page says.
    - The only visitor text allowed in the email is their first name, escaped. This stops the form being used to send spam.
 3. **Notify us.**
-   - Send a short email to our inbox with the name, the email, whether they ticked the box, and `answerSummary(answers)`.
-   - Suggested subject: `New fix plan: {name} ({plan.area.stage or "nothing stood out"})`.
+   - Send `teamEmail()` to our inbox. It has the name, the email, whether they ticked the box, and every answer.
 4. **Add to the email list only if `marketing` is true.**
    - Tag them with: `model`, `belief`, the first priority stage (`plan.area.id`), and `tentative` if `plan.tentative` is true.
    - Without the tick, they get the plan email and nothing else.
 5. **Log only what is needed:** name, email, first priority. No full answers in logs.
 
-To use `src/content/quiz.ts` from `server.js`, bundle it for Node at build time.
+To use `src/content/quiz.ts` and `src/content/quizEmails.ts` from `server.js`, bundle them for Node at build time.
 
 - `scripts/prerender.mjs` already does this for `src/content/static.ts` with vite's SSR build. The same pattern works, with output format `cjs`.
 - `quiz.ts` imports `src/config/site.ts`, which reads `import.meta.env`. Vite fills that in at build time.
 
-## 2. The plan email
+## 2. The emails are already written
 
-Subject: `{name}, your business fix plan`
+Every email is written and rendered in `src/content/quizEmails.ts`, so the server only sends them. Preview of every email for each first priority: https://claude.ai/artifact/VRqNF7uTptH5GP2WPE6jd9 (ask the owner to share it with you).
 
-The sections come from `buildPlan()` and follow the page's order:
+| Function | Email | Who gets it | When |
+|---|---|---|---|
+| `planEmail(answers, name)` | Their plan, in the same order as the page | Everyone who asks for a copy | Straight away |
+| `teamEmail(answers, { name, email, marketing })` | New plan notice with every answer | Our inbox (`LEADS_TO`) | Straight away |
+| `followUps(answers, name)[0]` | "Did you run the check?" | Only if `marketing` is true | Day 2 |
+| `followUps(answers, name)[1]` | "What good {stage} looks like" | Only if `marketing` is true | Day 5 |
+| `followUps(answers, name)[2]` | "When a checklist is enough, and when it isn't" | Only if `marketing` is true | Day 9 |
+| `followUps(answers, name)[3]` | "A second pair of eyes on your answers" | Only if `marketing` is true | Day 14 |
 
-1. "Hi {name}, here is your business fix plan."
-2. "Fix first: {area.stage}", then **{headline}**, then `compare`. If `tentative` is true, add: "You weren't sure about several answers, so treat this as a first read."
-3. At a glance: how many stages in `map` are working well (`working`), worth watching (`some` or `risk`), to fix first (`first`) and not sure (`unclear`). Show them as large numbers in one row.
-4. **Where things stand:** each row of `map`, as the stage and `STATUS_LABEL[status]`, top to bottom. Use a coloured marker per status, as on the page:
-   - blue for working;
-   - gold outline for some risk;
-   - solid gold for at risk;
-   - large gold for fix this first;
-   - grey for not sure.
-5. **How one problem feeds another**, if `connection` is set: "{connection.from} → {connection.to}", then `connection.line`.
-6. **Why it matters:** `why`.
-7. **What to do next:**
-   - **1. Check it on your own records (about 20 minutes):** `check`, as a list. This is the part people use, so give it room.
-   - **2. Fix it, simplest way first.** Under "Start here", put `simple`. Under "If that isn't enough", put `bigger`, then a link `see.label` → `see.href`. Make relative links absolute with `https://clauseandcode.com`.
-8. **Based on what you told us:** each item in `evidence`, as the question followed by their answer in quotes.
-9. **What we couldn't tell:** each item in `unclear`, if there are any.
-10. **Let's look at what's actually causing this:** `QUIZ.close.body`, then two buttons:
-   - "Book a call": https://calendar.app.google/3xg59Dqk3t21M8B87
-   - "Message us on WhatsApp": https://wa.me/971509718796
-11. Footer: Clause & Code · clauseandcode.com.
+Each email has `subject`, `preheader`, `day` and `marketing`.
 
-Design:
+To send one:
 
-- Colours: gold `#E1AD34`, blue `#2D6D8B`, ink `#1B1A17`, cream background `#F8F5F0`.
-- Headings use a serif font.
-- No boxes, icons or scores. It should read like a letter.
+- Turn it into HTML with `renderHtml(email, unsubscribeUrl)` and into plain text with `renderText(email, unsubscribeUrl)`, and send both versions.
+- For the four notes, pass the email tool's unsubscribe link, for example Brevo's `{{ unsubscribe }}`. The plan and team emails have no unsubscribe link, because the visitor asked for them.
+- The logo loads from `https://clauseandcode.com/logo.png`, so the site must be live first.
+- Pass the visitor's first name exactly as validated. The renderer escapes it.
 
-## 3. The follow-up emails (only with the tick)
+Scheduling:
 
-These go only to people who ticked "Also send me the occasional short note on fixing this".
+- Schedule the four notes when the plan is sent. Cancel any notes not yet sent if the person unsubscribes.
+- The simplest way is to build all four at once and hand them to the email tool with send dates.
+- The other way is to store the answers and build each note on its day.
+- Day 2 invites a reply. Set the reply-to address to an inbox someone reads, for example `support@clauseandcode.com`.
 
-**Rules**
+The series stops after day 14. Don't add people to any other list unless they have given separate consent.
 
-- Keep each one short and about their first priority. The stage tag picks the version.
-- Every email has a one-click unsubscribe.
-- Never invent results, numbers or client stories.
-
-| When | Email |
-|---|---|
-| Day 2 | "Did you run the check?" A reminder of their check (`check`) and what to look for in the result. |
-| Day 5 | What a better version of this stage looks like for their kind of business, from `simple`, with one or two practical details. |
-| Day 9 | When a checklist is enough and when it isn't: the difference between `simple` and `bigger`, said honestly. |
-| Day 14 | "A second pair of eyes": a short offer to go through their answers on a call, with "Book a call" and WhatsApp. |
-
-For each of the nine stages, write one version of each of the four emails. That is 36 short emails. If the first priority is "nothing stood out", use one general version of each.
-
-## 4. Services and settings to set up
+## 3. Services and settings to set up
 
 - **An email sending service**, with clauseandcode.com verified (SPF and DKIM).
   - Options: Resend, Postmark, Brevo, or the Hostinger mailbox over SMTP.
@@ -149,7 +127,7 @@ For each of the nine stages, write one version of each of the four emails. That 
   - `LIST_API_KEY`
   - `LIST_ID`
 
-## 5. Privacy
+## 4. Privacy
 
 - Store only what the form collects: first name, email, the consent choice with its date, and the answers.
 - Keep the consent choice. If someone did not tick the box, they must never be added to the list.
