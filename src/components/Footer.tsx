@@ -1,4 +1,5 @@
 import { site } from '../config/site'
+import { BLOG_LIVE } from '../content/blog'
 import { useHomeLinks } from '../hooks/useHomeLinks'
 
 type LinkGroup = {
@@ -8,18 +9,19 @@ type LinkGroup = {
 
 const GROUPS: LinkGroup[] = [
   {
-    title: 'Ways We Help',
+    title: 'Ways we help',
     links: [
-      { label: 'Book a Consultation', href: site.links.booking },
-      { label: 'Drop Your Problem', href: site.links.dropProblem },
-      { label: 'Business fix plan', href: '#quiz' },
+      { label: 'What we can do for you', href: '#ways-we-help' },
+      { label: 'Book a consultation', href: site.links.booking },
+      { label: 'Get your fix plan', href: '#quiz' },
     ],
   },
   {
     title: 'Explore',
     links: [
       { label: 'Home', href: '#home' },
-      { label: 'Our Projects', href: '/complex' },
+      { label: 'Our projects', href: '/projects' },
+      ...(BLOG_LIVE ? [{ label: 'Blog', href: '/blog' }] : []),
       { label: 'Contact', href: '/contact' },
     ],
   },
@@ -193,8 +195,10 @@ export default function Footer() {
           <p className="text-[13px] text-white/45">
             © {year} Clause &amp; Code. All rights reserved.
           </p>
-          <p className="text-[13px] text-white/45">
-            Operations, systems &amp; AI for growing businesses.
+          {/* the website's own small print, under the contact column */}
+          <p className="flex gap-4 text-[13px] text-white/45">
+            <a href="/privacy" className="transition-colors duration-300 hover:text-brand">Privacy</a>
+            <a href="/terms" className="transition-colors duration-300 hover:text-brand">Terms</a>
           </p>
         </div>
       </div>

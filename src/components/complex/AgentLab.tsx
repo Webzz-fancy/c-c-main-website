@@ -301,7 +301,7 @@ const FROM: Record<Sample['kind'] | 'none', string> = {
 }
 
 // Every agent is our robot; what is on its screen says what it does.
-type Glyph = 'eyes' | 'chat' | 'mail' | 'calendar' | 'list' | 'pen' | 'chart' | 'box' | 'coin' | 'heart' | 'plus'
+export type Glyph = 'eyes' | 'chat' | 'mail' | 'calendar' | 'list' | 'pen' | 'chart' | 'box' | 'coin' | 'heart' | 'plus'
 const GLYPHS: Record<Glyph, string> = {
   eyes: 'M6.5 11q2.5-3.5 5 0M12.5 11q2.5-3.5 5 0M9 15.5q3 2.2 6 0',
   chat: 'M5 6.5h14v9h-8l-4 3v-3H5z',
@@ -340,9 +340,9 @@ export function AgentsVisual() {
   )
 }
 
-function Bot({ glyph, size = 'sm' }: { glyph: Glyph; size?: 'sm' | 'md' }) {
+export function Bot({ glyph, size = 'sm', className = '' }: { glyph: Glyph; size?: 'sm' | 'md'; className?: string }) {
   return (
-    <span className={`lab-bot lab-bot--${size}`} data-glyph={glyph} aria-hidden="true">
+    <span className={`lab-bot lab-bot--${size} ${className}`.trim()} data-glyph={glyph} aria-hidden="true">
       <svg viewBox="0 0 24 24"><path d={GLYPHS[glyph]} /></svg>
     </span>
   )
@@ -483,7 +483,7 @@ export default function AgentLab({ industry, onIndustry }: { industry: string; o
 
             <div className="lab-bar">
               <label className="lab-pick">
-                <span>Agents for</span>
+                <span>Example team for</span>
                 <select value={industry} onChange={(e) => onIndustry(e.target.value)}>
                   <option value="any">Any business</option>
                   {agents.industries.items.map((i) => <option key={i.id} value={i.id}>{i.label}</option>)}

@@ -168,7 +168,7 @@ export const PROJECT_GROUPS: { id: ComplexProject['group'] | 'ai'; label: string
   { id: 'ai', label: 'AI' },
   { id: 'systems', label: 'Custom systems' },
   { id: 'automation', label: 'Automation and funnels' },
-  { id: 'websites', label: 'Online user experience' },
+  { id: 'websites', label: 'Client experience' },
 ]
 
 export const COMPLEX: ComplexContent = {
@@ -180,20 +180,20 @@ export const COMPLEX: ComplexContent = {
     director: { name: 'Director agent', job: 'Plans the day · checks every report' },
     teams: [
       { name: 'Front desk', job: 'Answers enquiries · books calls', state: 'working' },
-      { name: 'Sales', job: 'Researches leads · drafts follow ups', state: 'reported' },
+      { name: 'Sales', job: 'Researches leads · drafts follow-ups', state: 'reported' },
       { name: 'Operations', job: 'Orders · invoices · deadlines', state: 'working' },
       { name: 'Reports', job: 'Numbers · targets · what slipped', state: 'reported' },
       { name: 'Content', job: 'Creates · schedules · manages posts', state: 'needs-you' },
     ],
     queue: {
       label: 'Waiting on you',
-      items: ['Approve 3 follow up emails', 'Invoice batch ready to send', '2 posts passed QA'],
+      items: ['Approve 3 follow-up emails', 'Invoice batch ready to send', '2 posts passed QA'],
     },
     story: {
       label: 'Watch one job go through',
       steps: [
         { at: 'director', level: 'Automatic', text: 'Morning: the director agent sets today’s three priorities and hands out the work.' },
-        { at: 1, level: 'Automatic', text: 'Sales researches three new leads and drafts a personal follow up for each.' },
+        { at: 1, level: 'Automatic', text: 'Sales researches three new leads and drafts a personal follow-up for each.' },
         { at: 4, level: 'Checked', text: 'Content checks every draft against your tone and the facts.' },
         { at: 'queue', level: 'Your yes', text: 'The drafts wait in your queue. You approve, edit or reject them in one batch.' },
         { at: 'you', level: 'On record', text: 'Approved emails go out, and every step is saved with who approved it.' },
@@ -218,13 +218,13 @@ export const COMPLEX: ComplexContent = {
       ],
     },
     general: {
-      clients: ['Answers enquiries and books calls, day and night', 'Researches leads and drafts each follow up', 'Sends updates, reminders and review requests on time'],
+      clients: ['Answers enquiries and books calls, day and night', 'Researches leads and drafts each follow-up', 'Sends updates, reminders and review requests on time'],
       operations: ['Orders, invoices and payment reminders', 'Reports with targets and what slipped', 'Content drafted and checked before it goes out', 'Deadlines and renewals tracked'],
     },
     industries: {
-      label: 'See it for your business',
+      label: 'Examples for your kind of business',
       any: 'Any business',
-      intro: 'What AI agents could take on for',
+      intro: 'Example: what AI agents could take on for',
       note: 'Every draft and decision waits for your yes.',
       items: [
         {
@@ -368,7 +368,7 @@ export const COMPLEX: ComplexContent = {
     action: 'Talk to us about your agents',
   },
   hero: {
-    label: 'Our Projects',
+    label: 'Our projects',
     firstLine: 'Tell us the work.',
     secondLine: 'See the agents and systems we built for it.',
     intro: 'AI agents and custom systems we have built, and the work each one takes off a team. Search for the task you want handled and the closest work comes first.',
@@ -380,7 +380,7 @@ export const COMPLEX: ComplexContent = {
     agents: {
       kind: 'AI agents',
       name: 'A team of AI agents',
-      change: 'An agent for each job in the business, working beside the team. Clause & Code runs on them, and anything that matters waits for a yes.',
+      change: 'Replies, follow-ups and reports stop waiting for someone to find the time. Each agent takes on one job, and together they work as one team, connected to you and customised to your requirements. You approve anything important.',
       action: 'See the agents at work',
     },
     intro: 'AI agents, AI discoverability, custom systems and automation. Every project started with a map of how the work actually moves.',
@@ -404,7 +404,7 @@ export const COMPLEX: ComplexContent = {
         label: 'Follow up on leads',
         keywords: ['lead', 'outreach', 'prospect', 'cold', 'pipeline', 'sales', 'linkedin', 'client acquisition', 'new clients', 'research'],
         projects: ['agents', 'ai-client-engine', 'orders'],
-        plan: 'An agent researches each lead, drafts a personal message for your yes, and follows up on time so no lead goes cold.',
+        plan: 'An agent researches each lead, drafts a personal message for you to approve, and follows up on time so no lead goes cold.',
       },
       {
         id: 'reports',
@@ -425,7 +425,7 @@ export const COMPLEX: ComplexContent = {
         label: 'Content and posts',
         keywords: ['content', 'post', 'social', 'blog', 'newsletter', 'caption', 'write', 'writing', 'marketing', 'instagram post', 'linkedin post'],
         projects: ['agents', 'quiz-funnel'],
-        plan: 'Agents draft the posts and emails, a second agent checks them, and nothing goes out without your yes.',
+        plan: 'Agents draft the posts and emails, a second agent checks them, and nothing goes out until you approve it.',
       },
       {
         id: 'handoffs',
@@ -572,13 +572,13 @@ export const COMPLEX: ComplexContent = {
       visual: 'stages',
       title: 'Only vetted teachers, matched to the right student.',
       walk: 'How a teacher gets in and gets matched',
-      lede: 'A learning community connects students with one on one teachers. Trust is the whole promise: every teacher clears seven stages before going live, and each student is then pointed to the teacher who fits.',
+      lede: 'A learning community connects students with one-on-one teachers. Trust is the whole promise: every teacher clears seven stages before going live (application, document checks, an interview, a team review, a live teaching test, acceptance and training), and each student is then pointed to the teacher who fits.',
       card: {
         name: 'Teacher vetting and matching',
         kind: 'Custom system',
         area: 'Vetting · matching · booking',
         before: 'Vetting teachers and arranging sessions meant coordinating applications, interviews and bookings by hand.',
-        after: 'Every teacher clears seven tracked stages, and students are matched and booked with the right teacher automatically.',
+        after: 'A platform that checks every teacher before they can teach: their application, documents, an interview and a live teaching test. Students see only approved teachers, are shown the ones who fit their goal and level, and book a free first session.',
         users: 'Community team · teachers · students',
       },
       roles: [
@@ -607,7 +607,7 @@ export const COMPLEX: ComplexContent = {
           node: 'Interview',
           detail: 'interview · teaching test',
           title: 'Seen teaching, not just on paper.',
-          body: 'A one on one interview, a team review, then a live teaching test the team observes and evaluates. Notes from every stage stay with the applicant, so each decision can still be explained months later.',
+          body: 'A one-on-one interview, a team review, then a live teaching test the team observes and evaluates. Notes from every stage stay with the applicant, so each decision can still be explained months later.',
           guard: 'On file: stage history and notes stay with the applicant.',
           side: 'near',
         },
@@ -638,7 +638,7 @@ export const COMPLEX: ComplexContent = {
       ],
       map: { shape: 'rows', near: 'Team workspace · admin only', far: 'Live in the community', caption: 'The work behind every booking', note: 'Notes and ID files stay behind the team’s sign in.' },
       features: [
-        'Seven stage vetting, tracked for every applicant with notes',
+        'Seven-stage vetting, tracked for every applicant with notes',
         'Verification documents behind the team’s own sign in',
         'Profiles stay as drafts until the team publishes them',
         'Teachers browsed by focus and level',
@@ -659,7 +659,7 @@ export const COMPLEX: ComplexContent = {
         kind: 'Custom system',
         area: 'Enrolment · classes · attendance · payments',
         before: 'Enrolment, attendance, progress and fees were tracked in separate places.',
-        after: 'One platform for the whole academy, in English and Arabic, live in 10 to 16 business days.',
+        after: 'One system to run an academy, in English and Arabic: online registration, classes and timetables, attendance and progress marked by teachers, fees with receipts, and report cards and reports for the office. Each person sees only their part.',
         users: 'Admin office · teachers · families',
       },
       roles: [
@@ -737,14 +737,14 @@ export const COMPLEX: ComplexContent = {
       lede: 'A client app, an admin system for the team and a live dashboard for owners, built as one platform. The client is guided before the visit, looked after once it is over, and asked for a review and a referral at the right moment, without anyone on the team chasing it.',
       card: {
         name: 'Client journey platform',
-        kind: 'Custom platform',
+        kind: 'Custom system',
         area: 'Client app · admin system · owner dashboard',
-        before: 'Bookings, reminders, follow ups, reviews and referrals each depended on someone remembering to do them.',
-        after: 'Clients book, prepare and get followed up in their own app, while the team and owners see every appointment and number live.',
+        before: 'Bookings, reminders, follow-ups, reviews and referrals each depended on someone remembering to do them.',
+        after: 'Clients book in their own app, get reminders and preparation steps, and are followed up, asked for a review and rewarded for referrals automatically. The team runs bookings from one admin system, and owners see revenue live across every branch.',
         users: 'Clients · front desk team · owners',
       },
       roles: [
-        { name: 'Client', access: 'Books on their phone, gets reminders and preparation steps, follow up check ins after the visit, loyalty points, and a one tap referral link.' },
+        { name: 'Client', access: 'Books on their phone, gets reminders and preparation steps, follow-up check-ins after the visit, loyalty points, and a one tap referral link.' },
         { name: 'Front desk team', access: 'Manages services, staff, schedules and bookings in the admin system, with each appointment’s status updated live.' },
         { name: 'Owners', access: 'See revenue by service, bookings and revenue per slot across every branch, side by side, in real time.' },
       ],
@@ -774,7 +774,7 @@ export const COMPLEX: ComplexContent = {
           side: 'near',
         },
         {
-          node: 'Follow up',
+          node: 'Follow-up',
           detail: 'timed check ins',
           title: 'Looked after once it is over.',
           body: 'After the visit, timed prompts and check ins run through the following days. The client is cared for between appointments without the team sending a single message by hand.',
@@ -786,7 +786,7 @@ export const COMPLEX: ComplexContent = {
           detail: 'asked at the right moment',
           title: 'Asked when they are happiest.',
           body: 'The review request is timed for the point where the client is most pleased with the result, not sent the moment they walk out of the door.',
-          guard: 'Earned: a review is only asked for once the follow up has run.',
+          guard: 'Earned: a review is only asked for once the follow-up has run.',
           side: 'far',
         },
         {
@@ -866,7 +866,7 @@ export const COMPLEX: ComplexContent = {
           node: 'Payment',
           detail: 'invoice · 3 day reminder',
           title: 'Paid before it ships.',
-          body: 'Finance raises the invoice in the accounting software and a payment follow up is set for three days later. New accounts pay before anything is fulfilled.',
+          body: 'Finance raises the invoice in the accounting software and a payment follow-up is set for three days later. New accounts pay before anything is fulfilled.',
           guard: 'Protected: first orders are only released once paid.',
           side: 'far',
         },
@@ -939,7 +939,7 @@ export const COMPLEX: ComplexContent = {
           node: 'Payment',
           detail: 'confirmation → sequence',
           title: 'Payment starts everything.',
-          body: 'A confirmed payment starts the sign up sequence. Visitors who took the quiz but did not join get one gentle follow up, and a waitlist opens once intake closes.',
+          body: 'A confirmed payment starts the sign up sequence. Visitors who took the quiz but did not join get one gentle follow-up, and a waitlist opens once intake closes.',
           guard: 'Triggered: only a confirmed payment starts onboarding.',
           side: 'far',
         },
@@ -983,7 +983,7 @@ export const COMPLEX: ComplexContent = {
         kind: 'Strategy and membership system',
         area: 'Model · sign up · workspace · emails · payments · contracts',
         before: 'Income rose and fell with each sale, there were no systems behind the business, and nearly every step was done by hand.',
-        after: 'A complete membership system: the model and positioning, sign up and applications, a team workspace, emails, payments, onboarding and the contracts behind it.',
+        after: 'Everything needed to run a paid membership: the model and numbers behind it, a website to join the waitlist and apply, one workspace where the team reviews and approves members, then payment links, welcome emails and contracts, all set up.',
         users: 'Founders · team · members',
       },
       roles: [
@@ -1060,11 +1060,11 @@ export const COMPLEX: ComplexContent = {
       walk: 'How a visit unfolds',
       lede: 'For makers, artisans, artists and brands, the work sells when people can feel it: the detail, the story, how it is made. We design the whole online experience around what a visitor came to do, whether that is to look closely, walk through, order, buy or commission, and tell the story as they scroll.',
       card: {
-        name: 'From first look to first order',
-        kind: 'Online user experience',
+        name: 'Your in-person experience, online',
+        kind: 'Client experience',
         area: 'Story · close looks · the facts · ordering · found by AI',
         before: 'Work that sells in person, where the detail and the story do the selling, but online only a flat page and a contact form.',
-        after: 'Sites built around what visitors come to do: look closely, walk through, order, buy or commission, told as a story in the scroll and structured so people and AI can find them.',
+        after: 'For makers, artisans, artists and brands whose work wins people over in person, so the website feels the same: the story unfolds as visitors scroll, every piece can be seen up close, the answers sit beside the work, and ordering, booking or commissioning happens on the page.',
         users: 'Visitors and buyers · the owner · search engines and AI assistants',
       },
       roles: [
@@ -1138,10 +1138,10 @@ export const COMPLEX: ComplexContent = {
   discoverability: {
     id: 'ai-client-engine',
     name: 'AI discoverability',
-    kind: 'Being found by AI',
+    kind: 'Get recommended by AI',
     sector: 'Coaches, clinics and professional practices',
     before: 'People now ask ChatGPT and Gemini who to call. These businesses were not the answer, and enquiries in DMs went unanswered.',
-    after: 'Your business found and recommended when people ask ChatGPT, Gemini or Google, with your own assistant on Instagram and WhatsApp booking the calls. Live in 5 working days.',
+    after: 'Your business found and recommended when people ask ChatGPT, Gemini or Google, with your own assistant on Instagram and WhatsApp booking the calls.',
     users: 'Practice owners · their clients',
     sources: ['ChatGPT', 'Gemini', 'WhatsApp · Instagram'],
     hub: 'Landing page',
@@ -1152,7 +1152,7 @@ export const COMPLEX: ComplexContent = {
   close: {
     label: 'Your turn',
     heading: 'Let’s find what to build first.',
-    body: 'A team of agents, being found by AI, or a system your business has outgrown: we map how the work moves first, then build it, and we don’t compromise on security.',
+    body: 'A team of agents, AI discoverability, or a system your business has outgrown: we map how the work moves first, then build it. It starts with a 45-minute call: tell us how things run today, and you’ll leave knowing what we’d fix first.',
     action: 'Book a consultation',
     quiz: 'Not sure where to start?',
   },

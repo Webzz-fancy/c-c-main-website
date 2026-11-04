@@ -32,7 +32,7 @@ export default function ContactPage() {
                 className="grid gap-x-10 gap-y-3 border-b border-black/[0.08] py-7 md:grid-cols-[240px_1fr_auto] md:items-center"
               >
                 <h2 className="font-display text-[1.6rem] leading-tight tracking-[-0.015em] text-ink">{way.name}</h2>
-                <p className={`max-w-lg text-[15px] leading-relaxed ${way.id === 'email' ? 'font-medium text-ink' : 'text-ink-soft'}`}>
+                <p className="max-w-lg text-[15px] leading-relaxed text-ink-soft">
                   {way.body}
                 </p>
                 <a

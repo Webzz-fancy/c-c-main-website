@@ -11,7 +11,8 @@ const notFoundInDev: Plugin = {
     server.middlewares.use((req, res, next) => {
       if ((req.method !== 'GET' && req.method !== 'HEAD') || !req.headers.accept?.includes('text/html')) return next()
       const path = new URL(req.url ?? '/', 'http://localhost').pathname
-      if (path === '/' || path === '/simple' || path === '/complex' || path === '/contact' || path === '/simple/' || path === '/complex/' || path === '/contact/') return next()
+      if (/^\/blog(\/[a-z0-9-]+)?\/?$/.test(path)) return next()
+      if (path === '/' || path === '/simple' || path === '/projects' || path === '/contact' || path === '/privacy' || path === '/terms' || path === '/privacy/' || path === '/terms/' || path === '/simple/' || path === '/projects/' || path === '/contact/') return next()
       const html = readFileSync(resolve(process.cwd(), 'public/404.html'))
       res.statusCode = 404
       res.setHeader('Content-Type', 'text/html; charset=utf-8')

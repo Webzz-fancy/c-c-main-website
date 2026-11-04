@@ -363,7 +363,7 @@ export default function SimpleTalk() {
             {...bookingTarget}
             className="inline-flex items-center gap-2 rounded-full bg-brand px-7 py-3.5 text-[15px] font-semibold text-ink shadow-brand transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-300 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-glass focus-visible:ring-offset-4 focus-visible:ring-offset-cream"
           >
-            Book a call
+            Book a consultation
             <span aria-hidden>↗</span>
           </a>
           <p className="text-[14px] font-light text-ink/65">

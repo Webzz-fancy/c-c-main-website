@@ -11,6 +11,8 @@ const env = import.meta.env
 export const site = {
   name: 'Clause & Code',
   tagline: 'From messy to efficient.',
+  /** what a consultation is, said once and shown beside the booking buttons */
+  consultation: 'A 45-minute call. Tell us how things run today, and you’ll leave knowing what we’d fix first.',
   description:
     'We map your processes and build the SOPs, systems and automations that let your business scale without the backend chaos.',
   url: env.VITE_SITE_URL ?? 'https://clauseandcode.com',
@@ -32,9 +34,8 @@ export const site = {
    */
   links: {
     booking: env.VITE_BOOKING_URL || 'https://calendar.app.google/3xg59Dqk3t21M8B87',
-    dropProblem: `mailto:support@clauseandcode.com?subject=${encodeURIComponent('My problem')}&body=${encodeURIComponent('What is not working in my business:\n\n')}`,
     quiz: env.VITE_QUIZ_URL || '#quiz',
-    projects: '/complex',
+    projects: '/projects',
     contact: '/contact',
   },
 

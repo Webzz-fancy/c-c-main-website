@@ -21,7 +21,7 @@ export function BookButton({ label = 'Book a consultation' }: { label?: string }
 export function QuizLink() {
   return (
     <a className="complex-link complex-link--quiet" href={QUIZ} {...external(QUIZ)}>
-      Get your business fix plan <span aria-hidden="true">→</span>
+      Get your fix plan <span aria-hidden="true">→</span>
     </a>
   )
 }

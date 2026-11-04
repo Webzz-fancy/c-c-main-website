@@ -12,7 +12,7 @@
  *
  *   node scripts/indexnow.mjs            # dry run: prints what it would send
  *   node scripts/indexnow.mjs --submit   # sends every URL in dist/sitemap.xml
- *   node scripts/indexnow.mjs --submit https://clauseandcode.com/complex
+ *   node scripts/indexnow.mjs --submit https://clauseandcode.com/projects
  *
  * Only submit pages that actually changed; resubmitting unchanged pages again
  * and again can get the key ignored.

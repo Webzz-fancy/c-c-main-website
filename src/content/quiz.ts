@@ -114,7 +114,7 @@ export const AREAS: Area[] = [
     ],
     simple: (_n, solo) => `Decide who answers each channel${solo ? ' and when you check it' : ''}, set an instant reply that says when they’ll hear back, and write your answers to the five questions you get most.`,
     bigger: () => 'If enquiries come in out of hours, or faster than anyone can answer, an AI agent customised to how you work can reply straight away, ask your questions and book the call, with anything important waiting for your yes.',
-    see: { label: 'See the AI agents at work', href: '/complex#agents' },
+    see: { label: 'See the AI agents at work', href: '/projects#agents' },
   },
   {
     id: 'followup',
@@ -136,7 +136,7 @@ export const AREAS: Area[] = [
     ],
     simple: () => 'Pick a rule, for example a message on day 2, day 7 and day 14, and keep the list of open enquiries in one place you check every morning.',
     bigger: () => 'When there are more open enquiries than anyone can track by hand, follow-ups can go out on their own and stop the moment someone replies. An AI agent can write each one for that person, waiting for your yes before it is sent.',
-    see: { label: 'See a funnel that follows up by itself', href: '/complex#project-quiz-funnel' },
+    see: { label: 'See a funnel that follows up by itself', href: '/projects#project-quiz-funnel' },
   },
   {
     id: 'start',
@@ -158,7 +158,7 @@ export const AREAS: Area[] = [
     ],
     simple: (n) => `Write one start checklist and one form that collects everything you need from the ${n.person} at once. Use them for every new ${n.work}.`,
     bigger: (n) => `If ${n.works} start often and the same details are typed again and again, the form can create the ${n.work}, send the welcome message and set the first tasks by itself.`,
-    see: { label: 'See work that moves itself to the next person', href: '/complex#project-orders' },
+    see: { label: 'See work that moves itself to the next person', href: '/projects#project-orders' },
   },
   {
     id: 'info',
@@ -180,7 +180,7 @@ export const AREAS: Area[] = [
     ],
     simple: (n) => `One folder per ${n.person}, named the same way, with every file saved there from today. One shared list of every open ${n.work} with its next step.`,
     bigger: (n) => `When the list outgrows a spreadsheet, one system built around how you work keeps ${n.people}, ${n.works} and messages together, and the tools you already use feed it by themselves.`,
-    see: { label: 'See one office with one record per student', href: '/complex#project-academy' },
+    see: { label: 'See one office with one record per student', href: '/projects#project-academy' },
   },
   {
     id: 'track',
@@ -202,7 +202,7 @@ export const AREAS: Area[] = [
     ],
     simple: (n) => `One list of every open ${n.work} with three columns: next step, owner, due date. Review it for ten minutes at the start of each week.`,
     bigger: (n) => `When there are too many ${n.works} to review by hand, a system that moves each one to the next person and flags anything overdue keeps them on track by itself.`,
-    see: { label: 'See an order pipeline that runs itself', href: '/complex#project-orders' },
+    see: { label: 'See an order pipeline that runs itself', href: '/projects#project-orders' },
   },
   {
     id: 'paid',
@@ -225,7 +225,7 @@ export const AREAS: Area[] = [
     ],
     simple: (n) => `Invoice on the day each ${n.work} is finished, and set one day a week to send reminders for anything overdue.`,
     bigger: (n) => `If invoices are still typed by hand, they can be built from the ${n.work} itself and reminders sent on a schedule, connected to the accounting software you already use.`,
-    see: { label: 'See an order pipeline that runs itself', href: '/complex#project-orders' },
+    see: { label: 'See an order pipeline that runs itself', href: '/projects#project-orders' },
   },
   {
     id: 'after',
@@ -247,7 +247,7 @@ export const AREAS: Area[] = [
     ],
     simple: (n) => `Send one message the day each ${n.work} is finished: thank them, ask for a review, and say what to do if they know someone who needs you.`,
     bigger: () => 'When there are too many to remember, review requests and check-ins can go out on their own at the right moment, so nobody has to remember.',
-    see: { label: 'See a complete membership system', href: '/complex#project-membership' },
+    see: { label: 'See a complete membership system', href: '/projects#project-membership' },
   },
   {
     id: 'owner',
@@ -282,7 +282,7 @@ export const AREAS: Area[] = [
         ? 'Write a one-page checklist for the task you do most, and a template for the message you send most. Add one a week.'
         : 'Answer each repeat question once, in writing, somewhere the team can find it. Then walk one person through a task only you do.',
     bigger: () => 'Once the steps are written, a system can move each piece of work on to the next person by itself, and AI agents customised to your business can take the routine parts, with anything that matters waiting for your yes.',
-    see: { label: 'See the AI agents at work', href: '/complex#agents' },
+    see: { label: 'See the AI agents at work', href: '/projects#agents' },
   },
 ]
 
@@ -314,17 +314,17 @@ const TIE_ORDER: AreaId[] = ['followup', 'reply', 'info', 'start', 'track', 'own
 const TENTATIVE = 4
 
 export const QUIZ = {
-  label: 'Business fix plan',
+  label: 'Not sure where to start?',
   heading: 'Where is your business',
   emphasis: 'losing time?',
   intro:
     'A few short questions about what actually happens in your business, from the first enquiry to getting paid. You’ll see where work slows down, what it’s affecting, and a check you can run on your own records to confirm it.',
   points: ['What to fix first, and why', 'A check you can run yourself', 'Yours to keep'],
-  meta: 'About 3 minutes · free',
+  meta: 'About 3 minutes',
   action: 'Get my plan',
   close: {
     heading: 'Let’s look at what’s actually causing this.',
-    body: 'On a short call we go through your answers, look at how this part of your business really runs, and tell you whether it needs a checklist, a better process or a system. If a checklist is enough, we’ll say so.',
+    body: 'On a 45-minute call we go through your answers, look at how this part of your business really runs, and tell you whether it needs a checklist, a better process or a system. If a checklist is enough, we’ll say so.',
   },
   email: {
     heading: 'Keep a copy',
@@ -492,8 +492,8 @@ export function buildPlan(a: QuizAnswers): Plan {
       why: 'When the basics hold, the next gains come from doing more of what works: more of the right enquiries, and more from the clients you already have.',
       check: AREAS.find((x) => x.id === belief.areas[0])!.check(n, solo),
       simple: 'Run the check above on your own records. If it confirms things are working, write down why, so it keeps working as you grow.',
-      bigger: 'If you want to grow without adding work, that is where a system or AI agents customised to your business can help. Book a call and we’ll look at it together.',
-      see: { label: 'See what we’ve built', href: '/complex' },
+      bigger: 'If you want to grow without adding work, that is where a system or AI agents customised to your business can help. Book a consultation and we’ll look at it together.',
+      see: { label: 'See what we’ve built', href: '/projects' },
       map,
       unclear,
     }

@@ -6,7 +6,7 @@ import { site } from '../config/site'
  */
 
 export type ContactWay = {
-  id: 'call' | 'whatsapp' | 'email' | 'problem'
+  id: 'call' | 'whatsapp' | 'email'
   name: string
   body: string
   action: string
@@ -18,12 +18,12 @@ export const CONTACT = {
   label: 'Contact',
   heading: 'Talk to us.',
   emphasis: 'However suits you.',
-  intro: 'A call, a message or a few lines about what isn’t working. A person reads every one, and we tell you honestly whether and how we can help.',
+  intro: 'A call, a message or a few lines about what isn’t working. We read every one, and we tell you honestly whether and how we can help.',
   ways: [
     {
       id: 'call',
-      name: 'Book a call',
-      body: 'Pick a time on our calendar. We get to know your business and you get an honest read on what to build first.',
+      name: 'Book a consultation',
+      body: site.consultation,
       action: 'Pick a time',
       href: site.links.booking,
       external: true,
@@ -39,21 +39,14 @@ export const CONTACT = {
     {
       id: 'email',
       name: 'Email',
-      body: site.contact.email,
-      action: 'Write to us',
+      body: 'Not sure what you need yet? A few lines about what isn’t working is plenty.',
+      action: site.contact.email,
       href: `mailto:${site.contact.email}`,
-    },
-    {
-      id: 'problem',
-      name: 'Drop your problem',
-      body: 'Not sure what you need? Tell us what isn’t working in a few lines and we will tell you how we would fix it.',
-      action: 'Describe it',
-      href: site.links.dropProblem,
     },
   ] satisfies ContactWay[],
   quiz: {
     lead: 'Not sure where you stand?',
-    action: 'Get your business fix plan',
+    action: 'Get your fix plan',
     href: '/#quiz',
   },
   faq: {

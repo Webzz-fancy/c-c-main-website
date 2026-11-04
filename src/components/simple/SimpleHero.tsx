@@ -57,7 +57,7 @@ export default function SimpleHero({ revealed }: Props) {
         data-hero-copy
         className="pointer-events-none absolute left-[6%] top-[13%] max-w-[560px] max-sm:right-[5%] max-sm:max-w-none sm:top-[14%] lg:top-[calc(50svh_-_0.29*min(76svh,680px)_-_36px)] lg:max-w-[700px] xl:left-[8%] xl:max-w-[760px]"
       >
-        <div className="text-[12px] font-semibold uppercase tracking-[0.22em] text-ink-muted">Our Projects · Websites &amp; AI discoverability</div>
+        <div className="text-[12px] font-semibold uppercase tracking-[0.22em] text-ink-muted">Our projects · Websites &amp; AI discoverability</div>
         <h1 className="mt-4 font-display text-[clamp(2.5rem,4.6vw,4.7rem)] leading-[0.92] tracking-[-0.03em] text-ink">
           Your website, built
           <br />

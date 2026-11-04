@@ -24,7 +24,7 @@ const PROJECT_MENU: { label: string; items: ProjectLink[] }[] = PROJECT_GROUPS.m
       ? [{
           id: 'agents',
           label: 'AI agents',
-          href: '/complex#agents',
+          href: '/projects#agents',
           description: 'An agent for each job, working beside your team',
         }, {
           id: COMPLEX.discoverability.id,
@@ -38,7 +38,7 @@ const PROJECT_MENU: { label: string; items: ProjectLink[] }[] = PROJECT_GROUPS.m
           .map((project) => ({
             id: project.id,
             label: project.card.name,
-            href: `/complex#project-${project.id}`,
+            href: `/projects#project-${project.id}`,
             description: project.card.area,
           })),
 }))
@@ -76,20 +76,25 @@ function ProjectMenuLink({ item, onPick }: { item: ProjectLink; onPick: () => vo
 
 const NAV: NavItem[] = [
   { label: 'Home', href: '#home' },
-  { label: 'Our Projects', href: '/complex', projects: true },
+  { label: 'Our projects', href: '/projects', projects: true },
   {
-    label: 'Ways We Help',
+    label: 'Ways we help',
     href: '#ways-we-help',
     children: [
       {
-        label: 'Book a Consultation',
-        href: site.links.booking,
-        description: 'A focused 1:1 session to map the fix.',
+        label: 'What we can do for you',
+        href: '#ways-we-help',
+        description: 'AI agents, AI discoverability, systems and websites.',
       },
       {
-        label: 'Drop Your Problem',
-        href: site.links.dropProblem,
-        description: 'Tell us what’s broken, we’ll point the way.',
+        label: 'Book a consultation',
+        href: site.links.booking,
+        description: '45 minutes to find what to fix first.',
+      },
+      {
+        label: 'Get your fix plan',
+        href: '#quiz',
+        description: 'Not sure where to start? A few questions, a clear first step.',
       },
     ],
   },
@@ -320,7 +325,7 @@ export default function Header() {
             {...moodHandlers('surprised')}
             className="hidden items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-[14px] font-semibold text-ink shadow-brand transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-300 hover:shadow-[0_18px_34px_-12px_rgba(225,173,52,0.8)] active:translate-y-0 sm:flex"
           >
-            Contact Us
+            Contact us
           </a>
 
           {/* Mobile toggle */}
@@ -463,7 +468,7 @@ export default function Header() {
             onClick={() => setMobileOpen(false)}
             className="mt-3 rounded-full bg-brand px-5 py-3 text-center text-[15px] font-semibold text-ink"
           >
-            Contact Us
+            Contact us
           </a>
         </nav>
       </div>

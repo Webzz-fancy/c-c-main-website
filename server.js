@@ -138,7 +138,7 @@ app.post('/api/drop-problem', (req, res) => {
 // Static site
 // ---------------------------------------------------------------------------
 
-// One preferred URL per page: /, /simple, /complex and /contact. All internal links and metadata use the
+// One preferred URL per page: /, /simple, /projects, /contact, /privacy and /terms. All internal links and metadata use the
 // slashless subpage URLs. Older visitors may still have a cached permanent
 // redirect FROM /simple TO /simple/, so we serve both addresses with a 200
 // and a canonical pointing to /simple rather than reversing the redirect
@@ -159,13 +159,28 @@ app.use((req, res, next) => {
   next()
 })
 
-app.get(/^\/(simple|complex|contact)$/i, (req, res) => {
+// The projects page used to live at /complex. Old links and search results
+// move to /projects for good; the browser keeps any #project anchor.
+app.get(/^\/complex(\/|\/index\.html)?$/i, (req, res) => redirectToPage(req, res, '/projects'))
+
+app.get(/^\/(simple|projects|contact|privacy|terms)$/i, (req, res) => {
   const page = req.params[0].toLowerCase()
   if (req.path !== `/${page}`) return redirectToPage(req, res, `/${page}`)
   res.set('Cache-Control', 'no-cache')
   return res.sendFile(path.join(distDir, page, 'index.html'))
 })
-app.get(['/index.html', '/simple/index.html', '/complex/index.html', '/contact/index.html'], (req, res) => {
+// The blog list and each post. A post exists only if the build wrote it, so
+// an unknown address is a real 404, never the home page.
+app.get(/^\/blog(?:\/([a-z0-9-]+))?\/?$/i, (req, res, next) => {
+  const slug = req.params[0]?.toLowerCase()
+  const want = slug ? `/blog/${slug}` : '/blog'
+  if (req.path !== want) return redirectToPage(req, res, want)
+  const file = path.join(distDir, 'blog', ...(slug ? [slug] : []), 'index.html')
+  if (!fs.existsSync(file)) return next()
+  res.set('Cache-Control', 'no-cache')
+  return res.sendFile(file)
+})
+app.get(['/index.html', '/simple/index.html', '/projects/index.html', '/contact/index.html', '/privacy/index.html', '/terms/index.html'], (req, res) => {
   const page = req.path.split('/')[1].toLowerCase()
   redirectToPage(req, res, page === 'index.html' ? '/' : `/${page}`)
 })

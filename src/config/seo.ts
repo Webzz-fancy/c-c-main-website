@@ -1,5 +1,6 @@
 import { site } from './site'
 import { COMPLEX } from '../content/complex'
+import { BLOG, BLOG_LIVE, POSTS, postBySlug, postPath, type BlogPost } from '../content/blog'
 
 /**
  * SEO + GEO — one entry per URL the site serves.
@@ -32,6 +33,8 @@ export type PageSeo = {
   noindex?: boolean
   /** a short "about this page" line for llms.txt */
   summary: string
+  /** a blog post: its dates, for the article schema and the sitemap */
+  post?: BlogPost
 }
 
 export const ORIGIN = site.url.replace(/\/$/, '')
@@ -52,18 +55,18 @@ export const ENTITY = {
   country: 'United Arab Emirates',
 }
 
-export const PAGES: Record<'home' | 'simple' | 'complex' | 'contact', PageSeo> = {
+export const PAGES: Record<'home' | 'simple' | 'complex' | 'contact' | 'privacy' | 'terms' | 'blog', PageSeo> = {
   home: {
     path: '/',
     name: 'Home',
-    title: 'Clause & Code | Process Mapping, SOPs and Business Systems',
+    title: 'Clause & Code | AI Agents and Business Systems, Built Around You',
     description:
-      'Clause & Code maps how your business runs, then builds the SOPs, custom systems and automation that let it scale without backend chaos.',
+      'AI agents that answer, follow up and report, systems that run the routine, and websites that feel like meeting you. Mapped first, then built around your business.',
     type: 'website',
     image: DEFAULT_IMAGE,
-    imageAlt: 'Clause & Code: we build the operating system behind your growth',
+    imageAlt: 'Clause & Code: you run the business, we handle the mess',
     summary:
-      'Company home page: our four step approach (process mapping, creation and customization, adoption and implementation, AI readiness and automation), the two ways to work with us (drop your problem, book a consultation), and the business fix plan: short questions about what actually happens from the first enquiry to getting paid, and a plan that names the first thing worth fixing, shows the answers behind it, gives a check to run on your own records and the simplest fix before any system.',
+      'Company home page: one ordinary business day shown twice, before and after (a reply agent, a follow-up agent, one shared system, AI discoverability and a report agent), the four ways we put AI to work (an AI team, being recommended by ChatGPT and Gemini, systems that run the routine, a website that feels like meeting you), the work we have built, how we work (map how it really runs, build it around you, hand it over properly, add AI where it pays), and, for anyone not sure where to start, the business fix plan: short questions about what actually happens from the first enquiry to getting paid, and a plan that names the first thing worth fixing, shows the answers behind it, gives a check to run on your own records and the simplest fix before any system.',
   },
   simple: {
     path: '/simple',
@@ -79,8 +82,8 @@ export const PAGES: Record<'home' | 'simple' | 'complex' | 'contact', PageSeo> =
       'Our websites and AI discoverability offer: how we build sites (mapped before design, fast, structured for people and AI), AI discoverability at ai.clauseandcode.com, and six recent interactive builds.',
   },
   complex: {
-    path: '/complex',
-    name: 'Our Projects',
+    path: '/projects',
+    name: 'Our projects',
     title: 'AI Agents and Custom Business Systems | Clause & Code',
     description:
       'AI agents customised to your business, AI discoverability, custom business systems and workflow automation we have built, each shown before and after.',
@@ -88,26 +91,87 @@ export const PAGES: Record<'home' | 'simple' | 'complex' | 'contact', PageSeo> =
     image: DEFAULT_IMAGE,
     imageAlt: 'Clause & Code: AI agents and custom systems we have built',
     summary:
-      'Our projects, searchable by the task you want handled. First, AI agents customised to each business’s requirements and built for whatever work it needs. The example team shows a director agent that plans the day and checks every report, and agents for the front desk, sales, operations, reports and content, with anything sent to a client or involving money waiting for the owner’s yes. Then AI discoverability (being found and recommended when people ask ChatGPT, Gemini or Google), and the custom systems we have built, each shown as how the work ran before and what runs now: an expert matching and bidding platform, a seven stage teacher vetting and matching system, an academy management platform in English and Arabic, a client journey platform, a mapped and automated B2B order pipeline, a quiz funnel with automated program delivery, a complete membership system, and online user experience for makers, artisans, artists and brands: sites built around what visitors come to do (look closely, walk through, order, buy or commission), the story told as they scroll, the facts beside the work, fast and structured for search and AI.',
+      'Our projects, searchable by the task you want handled. First, AI agents customised to each business’s requirements and built for whatever work it needs. The example team shows a director agent that plans the day and checks every report, and agents for the front desk, sales, operations, reports and content, with anything sent to a client or involving money waiting for the owner’s yes. Then AI discoverability (being found and recommended when people ask ChatGPT, Gemini or Google), and the custom systems we have built, each shown as how the work ran before and what runs now: an expert matching and bidding platform, a seven-stage teacher vetting and matching system, an academy management platform in English and Arabic, a client journey platform, a mapped and automated B2B order pipeline, a quiz funnel with automated program delivery, a complete membership system, and client experience for makers, artisans, artists and brands, so the website feels like meeting the work in person: sites built around what visitors come to do (look closely, walk through, order, buy or commission), the story told as they scroll, the facts beside the work, fast and structured for search and AI.',
   },
   contact: {
     path: '/contact',
     name: 'Contact',
-    title: 'Contact Clause & Code | Book a Call or WhatsApp',
+    title: 'Contact Clause & Code | Book a Consultation or WhatsApp',
     description:
-      'Book a call, message us on WhatsApp or email support@clauseandcode.com. We work in English and Arabic. Common questions answered.',
+      'Book a consultation, message us on WhatsApp or email support@clauseandcode.com about AI agents, systems or your website. We work in English and Arabic. Common questions answered.',
     type: 'website',
     image: DEFAULT_IMAGE,
     imageAlt: 'Contact Clause & Code',
     summary:
-      'How to reach us: book a call on our calendar, message us on WhatsApp, email, or drop your problem in a few lines. Also the questions people ask us most, answered.',
+      'How to reach us: book a consultation on our calendar, message us on WhatsApp, or email a few lines about what is not working. Also the questions people ask us most, answered.',
+  },
+  privacy: {
+    path: '/privacy',
+    name: 'Privacy',
+    title: 'Privacy Policy | Clause & Code',
+    description:
+      'What clauseandcode.com collects and why: no analytics or tracking cookies, only what you choose to send us. Covers this website, not the systems we build for clients.',
+    type: 'website',
+    image: DEFAULT_IMAGE,
+    imageAlt: 'Clause & Code privacy policy',
+    summary: 'The privacy policy for this website only: no analytics or tracking cookies, and what happens to the details you choose to send us.',
+  },
+  terms: {
+    path: '/terms',
+    name: 'Terms',
+    title: 'Terms of Use | Clause & Code',
+    description:
+      'The terms for using clauseandcode.com. The business fix plan is general guidance, not advice. Client work is covered by its own written agreement.',
+    type: 'website',
+    image: DEFAULT_IMAGE,
+    imageAlt: 'Clause & Code terms of use',
+    summary: 'The terms for using this website only. Client work runs on its own written agreement.',
+  },
+  blog: {
+    path: '/blog',
+    name: 'Blog',
+    // kept out of search until the first post is published
+    noindex: !BLOG_LIVE,
+    title: 'Blog: AI Agents, Systems and Getting Found | Clause & Code',
+    description:
+      'Notes from the work: what we learn building AI agents, custom systems and AI discoverability for real businesses, and the small fixes that come first.',
+    type: 'website',
+    image: DEFAULT_IMAGE,
+    imageAlt: 'The Clause & Code blog',
+    summary: BLOG.intro,
   },
 }
 
+/** one page per post, built from the post itself */
+export function postSeo(post: BlogPost): PageSeo {
+  const title = `${post.title} | Clause & Code`
+  return {
+    path: postPath(post),
+    name: post.title,
+    title: title.length > 70 ? post.title : title,
+    description: post.description,
+    type: 'article',
+    image: DEFAULT_IMAGE,
+    imageAlt: post.title,
+    noindex: post.draft,
+    summary: post.excerpt,
+    post,
+  }
+}
+
+/** every URL the build writes: the fixed pages, then each post */
+export const ALL_PAGES: PageSeo[] = [...Object.values(PAGES), ...POSTS.map(postSeo)]
+
 export function pageForPath(pathname: string): PageSeo {
   if (pathname === '/simple' || pathname === '/simple/') return PAGES.simple
-  if (pathname === '/complex' || pathname === '/complex/') return PAGES.complex
+  if (pathname === '/projects' || pathname === '/projects/') return PAGES.complex
   if (pathname === '/contact' || pathname === '/contact/') return PAGES.contact
+  if (pathname === '/privacy' || pathname === '/privacy/') return PAGES.privacy
+  if (pathname === '/terms' || pathname === '/terms/') return PAGES.terms
+  if (pathname === '/blog' || pathname === '/blog/') return PAGES.blog
+  const slug = /^\/blog\/([a-z0-9-]+)\/?$/.exec(pathname)?.[1]
+  const post = slug ? postBySlug(slug) : undefined
+  if (post) return postSeo(post)
   return PAGES.home
 }
 
@@ -144,7 +208,7 @@ export const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'How does the process work?',
-    a: 'Four steps: process mapping, creation and customization of systems and documentation, adoption and implementation with training, and finally AI readiness and automation where it creates real efficiency.',
+    a: 'Four steps: we map how the work really runs, build the agents and systems around your business, hand them over properly with training and documentation, then stay on to keep them working and add more where it saves real time.',
   },
   {
     q: 'Who is Clause & Code for?',
@@ -164,7 +228,7 @@ export const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'What custom business systems have you built?',
-    a: 'An expert matching and bidding platform, a seven stage teacher vetting and matching system, an academy management platform in English and Arabic, a client journey platform, an automated B2B order pipeline, a quiz funnel with program delivery and a complete membership system. Each one started with a map of how the work actually moved.',
+    a: 'An expert matching and bidding platform, a seven-stage teacher vetting and matching system, an academy management platform in English and Arabic, a client journey platform, an automated B2B order pipeline, a quiz funnel with program delivery and a complete membership system. Each one started with a map of how the work actually moved.',
   },
   {
     q: 'Do you build websites?',
@@ -176,7 +240,7 @@ export const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'How do I start?',
-    a: 'Book a call on our calendar, message us on WhatsApp, or email support@clauseandcode.com. If you are not sure what you need, take the business fix plan on the home page first: short questions about how work moves through your business, and a plan for what to fix first and how to check it yourself.',
+    a: 'Book a consultation on our calendar, message us on WhatsApp, or email support@clauseandcode.com. If you are not sure what you need, take the business fix plan on the home page first: short questions about how work moves through your business, and a plan for what to fix first and how to check it yourself.',
   },
 ]
 
@@ -294,6 +358,7 @@ function faqPage(items: { q: string; a: string }[], url: string): JsonLd {
 function breadcrumbs(page: PageSeo): JsonLd {
   const url = absolute(page.path)
   const items = [{ name: PAGES.home.name, item: `${ORIGIN}/` }]
+  if (page.post) items.push({ name: PAGES.blog.name, item: absolute(PAGES.blog.path) })
   if (page !== PAGES.home) items.push({ name: page.name, item: url })
   return {
     '@type': 'BreadcrumbList',
@@ -302,7 +367,7 @@ function breadcrumbs(page: PageSeo): JsonLd {
   }
 }
 
-/** the work shown on /complex, in the order the page shows it */
+/** the work shown on /projects, in the order the page shows it */
 function projectList(url: string): JsonLd {
   const items = [
     { name: COMPLEX.index.agents.name, description: COMPLEX.index.agents.change, url: `${url}#agents` },
@@ -384,7 +449,7 @@ export function jsonLdFor(page: PageSeo): JsonLd {
         itemListElement: PORTFOLIO.map((p, i) => ({
           '@type': 'ListItem',
           position: i + 1,
-          item: { '@type': 'CreativeWork', name: p.name, description: p.tag, url: p.url, creator: { '@id': ORG_ID } },
+          item: { '@type': 'CreativeWork', name: p.tag, url: p.url, creator: { '@id': ORG_ID } },
         })),
       },
       breadcrumbs(page),
@@ -424,9 +489,9 @@ export function jsonLdFor(page: PageSeo): JsonLd {
       ...(website
         ? [
             service(
-              `${url}#online-user-experience`,
-              'Online user experience',
-              'Website user experience design for makers, artisans, artists and brands',
+              `${url}#client-experience`,
+              'Client experience',
+              'Websites that carry the in-person experience online, for makers, artisans, artists and brands',
               website.card.after,
               `${url}#project-${website.id}`,
             ),
@@ -439,6 +504,43 @@ export function jsonLdFor(page: PageSeo): JsonLd {
     graph.push(
       webPage(page, 'ContactPage', { mainEntity: { '@id': ORG_ID }, hasPart: { '@id': `${url}#faq` } }),
       faqPage(FAQ, url),
+      breadcrumbs(page),
+    )
+  } else if (page === PAGES.blog) {
+    graph.push(
+      webPage(page, 'CollectionPage', { mainEntity: { '@id': `${url}#blog` } }),
+      {
+        '@type': 'Blog',
+        '@id': `${url}#blog`,
+        name: `${SITE_NAME} blog`,
+        url,
+        publisher: { '@id': ORG_ID },
+        inLanguage: 'en',
+        blogPost: POSTS.filter((p) => !p.draft).map((p) => ({ '@id': `${absolute(postPath(p))}#article` })),
+      },
+      breadcrumbs(page),
+    )
+  } else if (page.post) {
+    const { post } = page
+    graph.push(
+      webPage(page, 'WebPage', { mainEntity: { '@id': `${url}#article` } }),
+      {
+        '@type': 'BlogPosting',
+        '@id': `${url}#article`,
+        headline: post.title,
+        description: post.description,
+        url,
+        mainEntityOfPage: { '@id': `${url}#webpage` },
+        image: absolute(page.image),
+        datePublished: post.date,
+        dateModified: post.updated ?? post.date,
+        author: { '@id': ORG_ID },
+        publisher: { '@id': ORG_ID },
+        isPartOf: { '@id': `${absolute(PAGES.blog.path)}#blog` },
+        articleSection: post.topic,
+        timeRequired: `PT${post.minutes}M`,
+        inLanguage: 'en',
+      },
       breadcrumbs(page),
     )
   } else {
