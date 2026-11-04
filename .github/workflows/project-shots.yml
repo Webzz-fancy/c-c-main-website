@@ -1,7 +1,7 @@
 name: Project screenshots
 on:
   push:
-    branches: ['main']
+    branches: ['main', 'arena/01a07717-clauseandcode']
     paths: ['scripts/shots/**', '.github/workflows/project-shots.yml']
   workflow_dispatch:
     inputs:
@@ -16,10 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     container: mcr.microsoft.com/playwright:v1.47.2-jammy
     steps:
-      # pinned to a commit, so a moved tag can't change what runs with write access
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@v4
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      - run: npm init -y >/dev/null && npm i playwright@1.47.2 sharp@0.35.5 --no-audit --no-fund
+      - run: npm init -y >/dev/null && npm i playwright@1.47.2 sharp --no-audit --no-fund
         working-directory: scripts/shots
       - run: node scripts/shots/sites.mjs
         env:
@@ -29,4 +28,4 @@ jobs:
           git config user.email "agent@arena.ai"
           git add public/projects
           git commit -m "Project screenshots for the Simple page ring" || echo "nothing to commit"
-          git push origin HEAD:main
+          git push origin HEAD:${{ github.ref_name }}

@@ -39,7 +39,7 @@ export const PRIVACY: LegalDoc = {
       heading: 'Just browsing',
       body: [
         'We do not use analytics, advertising or tracking cookies, or tracking pixels. Our fonts and images are served from our own site, not from other companies.',
-        'Like any website, our server has to see your IP address to send you the page. Our hosting provider may keep standard server logs to keep the site running and secure.',
+        'Like any website, our server has to see your IP address to send you the page. It also holds it in memory for up to 10 minutes to stop anyone flooding our forms. Our hosting provider may keep standard server logs to keep the site running and secure.',
       ],
     },
     {

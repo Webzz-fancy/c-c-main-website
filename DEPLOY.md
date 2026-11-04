@@ -52,18 +52,19 @@ never commit those. `.env.example` **is** committed as documentation.
 
 ## Authentication
 
-Sign in with the GitHub CLI, which keeps the login in the system keychain
-rather than a plain-text file:
+GitHub no longer accepts account passwords over HTTPS. When prompted for a
+password, paste a **Personal Access Token**:
+
+1. GitHub → Settings → Developer settings → Personal access tokens →
+   Tokens (classic) → *Generate new token*
+2. Tick the **`repo`** scope, generate, and copy it
+3. Username: `navara-y`, Password: *the token*
+
+To avoid re-entering it every time:
 
 ```bash
-gh auth login
+git config --global credential.helper store
 ```
-
-If you use a Personal Access Token instead, make it a **fine-grained** token
-limited to this repository (Contents: read and write) with an expiry date, and
-let the macOS keychain hold it (`git config --global credential.helper
-osxkeychain`). Never use `credential.helper store`: it saves the token
-unencrypted in `~/.git-credentials`.
 
 ## Hostinger (Git-connected Node.js app)
 

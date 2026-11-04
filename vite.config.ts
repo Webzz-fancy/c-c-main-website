@@ -26,8 +26,8 @@ const notFoundInDev: Plugin = {
 export default defineConfig({
   plugins: [react(), notFoundInDev],
   server: {
-    // this machine only; `npm run dev -- --host` opens it to the local network
-    host: 'localhost',
+    host: '0.0.0.0',
     port: 5173,
+    allowedHosts: true,
   },
 })

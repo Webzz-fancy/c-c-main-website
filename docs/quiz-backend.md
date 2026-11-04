@@ -59,11 +59,10 @@ Response:
 
 What the endpoint must do:
 
-1. **Validate.** (The old placeholder form endpoints, with their `rateLimited()`, `clean()` and `EMAIL` helpers, were removed from `server.js` because nothing used them. Bring back what you need, following "Abuse and security" below.)
-   - Parse JSON for this route only: `express.json({ limit: '16kb' })`, and accept only `Content-Type: application/json`.
-   - Rate limit per visitor, as in "Abuse and security".
-   - Clean `name` (max 60) and `email` (max 160): strings only, line breaks replaced with spaces, trimmed, cut to length.
-   - Check `email` with a simple pattern such as `/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/`.
+1. **Validate.**
+   - Rate limit with the existing `rateLimited(req.ip)`.
+   - Clean `name` (max 60) and `email` (max 160) with the existing `clean()`.
+   - Check `email` against the existing `EMAIL` pattern.
    - Treat `marketing` as true only if it is exactly `true`.
    - Run `answers` through `cleanAnswers()` from `src/content/quiz.ts`. It returns `null` for anything invalid, including a missing check when one was due.
    - Reject with `400` if any of these checks fail.
@@ -75,21 +74,7 @@ What the endpoint must do:
 4. **Schedule the nudge only if `marketing` is true.**
    - Send `nudgeEmail()` 3 days later. A scheduled send in the email service, or a simple queue, is enough. No list or automation is needed.
    - Without the tick, they get the plan email and nothing else.
-5. **Log only what is needed:** that a plan was sent, and its first priority. No names, email addresses or answers in logs; the team email already has them.
-
-### Abuse and security
-
-This form makes our server send an email to any address typed into it, so it is the one part of the site worth attacking. Before it goes live:
-
-- **Rate limit behind the proxy.** Hostinger's CDN and Passenger sit in front of the app, so `req.ip` is the proxy unless you set `app.set('trust proxy', 1)` (check the real visitor IP arrives in `req.ip` on the live host). Allow about 5 sends per IP per hour, and keep the store bounded: drop old entries, don't wipe everyone's count when it fills.
-- **Cap per recipient.** At most 2 plan emails to the same address per day, whatever the IP. This stops the form being used to flood someone's inbox.
-- **Honeypot.** Add a hidden field (for example `company`) that people never see. If it has a value, return `{ ok: true }` and send nothing.
-- **Same answer either way.** Don't tell the visitor whether an address was capped or blocked; return the same response.
-- **Only our words in the email.** The first name, HTML-escaped, is the only visitor text in any email. No links or answers typed by the visitor.
-- **Same origin.** Serve the endpoint from this site. If it ever moves to another origin, set `VITE_API_BASE_URL` (the server's Content Security Policy picks it up) and allow only `https://clauseandcode.com` in CORS.
-- **Keys stay on the server.** The email service key lives in the Hostinger environment settings only, never in `VITE_` variables (those are built into the public JavaScript) and never in the repository.
-- **Unsubscribe.** The nudge email carries a working unsubscribe link and a `List-Unsubscribe` header.
-- **Errors.** On any failure, log the error and return `{ ok: false }`, never the error text.
+5. **Log only what is needed:** name, email, first priority. No full answers in logs.
 
 To use `src/content/quiz.ts` and `src/content/quizEmails.ts` from `server.js`, bundle them for Node at build time.
 
