@@ -19,8 +19,8 @@ lerna-debug.log*
 
 # Environment / secrets
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 *.pem
 
 # Caches
@@ -47,4 +47,7 @@ project.mp4
 public/frames_preview/
 
 # credentials backup: never commit (see HOSTINGER_ENV_BACKUP.md)
-HOSTINGER_ENV_BACKUP.md
+HOSTINGER_ENV_BACKUP*
+
+# local Claude Code settings
+.claude/
