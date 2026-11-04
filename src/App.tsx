@@ -3,31 +3,42 @@ import ScrollRope from './components/ScrollRope'
 import Header from './components/Header'
 import Hero from './components/Hero'
 import Approach from './components/Approach'
-import Projects from './components/Projects'
-import WaysToWork from './components/WaysToWork'
 import Quiz from './components/Quiz'
+import SameDay from './components/SameDay'
+import Abilities from './components/Abilities'
+import HomeWork from './components/HomeWork'
 import Footer from './components/Footer'
 import Loader from './components/Loader'
 import { RobotMoodProvider } from './context/RobotMood'
 import ComplexPage from './pages/ComplexPage'
 import ContactPage from './pages/ContactPage'
+import LegalPage from './pages/LegalPage'
+import BlogPage from './pages/BlogPage'
+import PostPage from './pages/PostPage'
+import { BLOG_ON_HOME, postBySlug } from './content/blog'
+import BlogStrip from './components/BlogStrip'
+import { PRIVACY, TERMS } from './content/legal'
 import { pageForPath } from './config/seo'
 import { applyHead } from './lib/head'
 
 // the websites page carries the 3D robot (three.js); only that page loads it
 const SimplePage = lazy(() => import('./pages/SimplePage'))
 
-type Page = 'home' | 'simple' | 'complex' | 'contact'
+type Page = 'home' | 'simple' | 'complex' | 'contact' | 'privacy' | 'terms' | 'blog' | 'post'
 function getPage(path: string): Page {
+  if (path === '/blog' || path === '/blog/') return 'blog'
+  if (/^\/blog\/[a-z0-9-]+\/?$/.test(path)) return 'post'
   if (path === '/simple' || path === '/simple/') return 'simple'
-  if (path === '/complex' || path === '/complex/') return 'complex'
+  if (path === '/projects' || path === '/projects/') return 'complex'
   if (path === '/contact' || path === '/contact/') return 'contact'
+  if (path === '/privacy' || path === '/privacy/') return 'privacy'
+  if (path === '/terms' || path === '/terms/') return 'terms'
   return 'home'
 }
 
 function removeLegacySlash() {
   const path = window.location.pathname
-  if (path === '/simple/' || path === '/complex/' || path === '/contact/') {
+  if (path === '/simple/' || path === '/projects/' || path === '/contact/' || path === '/privacy/' || path === '/terms/' || /^\/blog(\/[a-z0-9-]+)?\/$/.test(path)) {
     window.history.replaceState(window.history.state, '', path.slice(0, -1) + window.location.search + window.location.hash)
   }
 }
@@ -73,7 +84,7 @@ export default function App() {
       if (!href || !href.startsWith('/')) return
       const target = new URL(href, window.location.href)
       if (target.origin !== window.location.origin) return
-      const isProjectRoute = target.pathname === '/simple' || target.pathname === '/complex' || target.pathname === '/contact'
+      const isProjectRoute = ['/simple', '/projects', '/contact', '/privacy', '/terms', '/blog'].includes(target.pathname) || /^\/blog\/[a-z0-9-]+$/.test(target.pathname)
       if (!isProjectRoute && target.pathname !== '/') return
       if (page === 'home' && !isProjectRoute) return
       if (target.pathname === window.location.pathname) return
@@ -118,6 +129,28 @@ export default function App() {
       </RobotMoodProvider>
     )
   }
+  if (page === 'privacy' || page === 'terms') {
+    return (
+      <RobotMoodProvider>
+        <LegalPage doc={page === 'privacy' ? PRIVACY : TERMS} />
+      </RobotMoodProvider>
+    )
+  }
+  if (page === 'blog') {
+    return (
+      <RobotMoodProvider>
+        <BlogPage />
+      </RobotMoodProvider>
+    )
+  }
+  if (page === 'post') {
+    const post = postBySlug(window.location.pathname.split('/')[2]?.toLowerCase() ?? '')
+    return (
+      <RobotMoodProvider>
+        {post ? <PostPage post={post} /> : <BlogPage />}
+      </RobotMoodProvider>
+    )
+  }
   if (page === 'complex') {
     return (
       <RobotMoodProvider>
@@ -138,9 +171,11 @@ export default function App() {
             <Header />
             <main>
               <Hero />
+              <SameDay />
+              <Abilities />
+              <HomeWork />
               <Approach />
-              <Projects />
-              <WaysToWork />
+              {BLOG_ON_HOME && <BlogStrip />}
               <Quiz />
             </main>
             <Footer />

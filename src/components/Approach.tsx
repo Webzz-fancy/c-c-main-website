@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useReveal } from '../hooks/useReveal'
 import Eyebrow from './Eyebrow'
+import { HOME_APPROACH } from '../content/home'
 
 
 type Step = {
@@ -9,28 +10,7 @@ type Step = {
   body: string
 }
 
-const STEPS: Step[] = [
-  {
-    number: '01',
-    title: 'Process Mapping',
-    body: 'We begin by deeply mapping how your business currently operates. This includes understanding information flow, decision points, team responsibilities, and where friction exists. This step forms the foundation for everything that follows.',
-  },
-  {
-    number: '02',
-    title: 'Creation and Customization',
-    body: 'We create custom systems and documentation built specifically around how your business works. Nothing is generic. Everything is shaped according to your actual processes and needs.',
-  },
-  {
-    number: '03',
-    title: 'Adoption and Implementation',
-    body: 'We help you adopt the right tools and make sure they integrate properly into your operations. We provide the necessary training and support so the systems actually get used and deliver results.',
-  },
-  {
-    number: '04',
-    title: 'AI-Readiness and Automation',
-    body: 'Once your foundation is solid, we introduce intelligent automation and AI solutions. These are applied only where they create real efficiency and measurable improvement.',
-  },
-]
+const STEPS: Step[] = HOME_APPROACH.steps.map((step, i) => ({ number: String(i + 1).padStart(2, '0'), ...step }))
 
 /** A measured anchor point on a card, in track-local coordinates. */
 type Anchor = { x: number; y: number }
@@ -188,7 +168,7 @@ export default function Approach() {
   const nodeThreshold = (i: number) => (anchors.length < 2 ? 0 : i / (anchors.length - 1))
 
   return (
-    <section id="approach" className="relative w-full bg-cream py-20 md:py-24">
+    <section id="approach" className="relative w-full bg-cream py-14 md:py-[clamp(48px,7vh,72px)]">
       {/* ---------- Ambient background behind the glass ---------- */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute inset-0 grain opacity-60" />
@@ -217,7 +197,7 @@ export default function Approach() {
       <div className="relative mx-auto w-full max-w-[1240px] px-4 sm:px-8">
         {/* ---------- The glass box ---------- */}
         <div
-          className="relative isolate rounded-[28px] border border-white/70 px-4 py-10 shadow-[0_40px_100px_-40px_rgba(18,44,56,0.34),inset_0_1px_0_rgba(255,255,255,0.9)] sm:rounded-[36px] sm:px-10 md:px-14 md:py-16"
+          className="relative isolate rounded-[28px] border border-white/70 px-4 py-10 shadow-[0_40px_100px_-40px_rgba(18,44,56,0.34),inset_0_1px_0_rgba(255,255,255,0.9)] sm:rounded-[36px] sm:px-10 md:px-14 md:py-10"
           style={{
             background:
               'linear-gradient(145deg, rgba(255,255,255,0.56) 0%, rgba(45,109,139,0.045) 45%, rgba(45,109,139,0.06) 100%)',
@@ -239,23 +219,22 @@ export default function Approach() {
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:items-center lg:gap-12">
             {/* ---------- Left: sticky heading ---------- */}
             <div className="lg:h-full">
               <div className="lg:sticky lg:top-32">
-                <Eyebrow>How We Work</Eyebrow>
+                <Eyebrow>{HOME_APPROACH.label}</Eyebrow>
 
-                <h2 className="mt-6 font-display text-[clamp(2.2rem,4.2vw,3.6rem)] leading-[1.05] tracking-[-0.02em] text-ink">
-                  Our <span className="italic text-brand-600">Approach</span>
+                <h2 className="mt-5 font-display text-[clamp(2.1rem,3.6vw,3.3rem)] leading-[1.05] tracking-[-0.02em] text-ink">
+                  {HOME_APPROACH.heading} <span className="italic text-brand-600">{HOME_APPROACH.emphasis}</span>
                 </h2>
 
-                <p className="mt-5 max-w-md text-[clamp(0.98rem,1.15vw,1.08rem)] font-light leading-relaxed text-ink-soft">
-                  We follow a clear and structured process to ensure every solution we build is
-                  relevant, practical, and sustainable.
+                <p className="mt-4 max-w-md text-[clamp(0.98rem,1.1vw,1.06rem)] font-light leading-relaxed text-ink-soft">
+                  {HOME_APPROACH.intro}
                 </p>
 
                 {/* Progress readout, tied to the same scroll value as the line */}
-                <div className="mt-9 hidden max-w-[280px] lg:block">
+                <div className="mt-7 hidden max-w-[280px] lg:block">
                   <div className="flex items-center justify-between text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
                     <span>Progress</span>
                     <span className="tabular-nums text-brand-600">
@@ -366,7 +345,7 @@ export default function Approach() {
               </div>
 
               {/* Cards */}
-              <ol className="relative z-10 space-y-5 pl-6 sm:pl-[clamp(72px,16%,150px)] md:space-y-8">
+              <ol className="relative z-10 space-y-4 pl-6 sm:pl-[clamp(56px,12%,120px)] md:space-y-3">
                 {STEPS.map((step, i) => (
                   <StepCard
                     key={step.number}
@@ -409,7 +388,7 @@ function StepCard({ step, index, reached, registerRef }: StepCardProps) {
         registerRef(el)
       }}
       className={[
-        'group relative rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-0.5 sm:p-7',
+        'group relative rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-0.5 sm:px-6 sm:py-4',
         index % 2 === 1 ? 'sm:ml-5 md:ml-8' : '',
         reached
           ? 'border-white/70 shadow-[0_24px_60px_-30px_rgba(18,44,56,0.4)]'
@@ -456,7 +435,7 @@ function StepCard({ step, index, reached, registerRef }: StepCardProps) {
         <h3 className="font-display text-[clamp(1.25rem,1.9vw,1.6rem)] leading-tight tracking-[-0.01em] text-ink">
           {step.title}
         </h3>
-        <p className="col-span-2 mt-3 text-[15px] font-light leading-relaxed text-ink-soft sm:col-span-1 sm:col-start-2 sm:mt-2.5">
+        <p className="col-span-2 mt-3 text-[14.5px] font-light leading-relaxed text-ink-soft sm:col-span-1 sm:col-start-2 sm:mt-1.5">
           {step.body}
         </p>
       </div>

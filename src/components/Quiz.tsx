@@ -369,7 +369,7 @@ function PlanView({ answers, headRef, onRestart }: {
         <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-ink-soft">{QUIZ.close.body}</p>
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <a href={site.links.booking} target="_blank" rel="noopener noreferrer" className={goldButton}>
-            Book a call <span aria-hidden="true">↗</span>
+            Book a consultation <span aria-hidden="true">↗</span>
           </a>
           <a href={whatsappLink(answers)} target="_blank" rel="noopener noreferrer" className={blueButton}>
             Send it to us on WhatsApp <span aria-hidden="true">↗</span>
@@ -505,7 +505,7 @@ export default function Quiz() {
   })
 
   return (
-    <section id="quiz" aria-label={`${QUIZ.heading} ${QUIZ.emphasis}`} className="relative w-full bg-cream pb-20 pt-8 md:pb-24 md:pt-12">
+    <section id="quiz" aria-label={`${QUIZ.heading} ${QUIZ.emphasis}`} className="relative w-full bg-cream pb-14 pt-6 md:pb-[clamp(48px,7vh,72px)] md:pt-8">
       {/* ---------- Ambient blue wash ---------- */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute inset-0 grain opacity-60" />
@@ -527,7 +527,7 @@ export default function Quiz() {
 
       <div ref={ref} className="relative mx-auto w-full max-w-[1240px] px-5 sm:px-8">
         <div
-          className="relative isolate overflow-hidden rounded-[28px] border border-white/70 px-6 py-16 text-center shadow-[0_40px_100px_-40px_rgba(18,44,56,0.34),inset_0_1px_0_rgba(255,255,255,0.9)] sm:rounded-[36px] sm:px-12 md:py-20"
+          className="relative isolate overflow-hidden rounded-[28px] border border-white/70 px-6 py-12 text-center shadow-[0_40px_100px_-40px_rgba(18,44,56,0.34),inset_0_1px_0_rgba(255,255,255,0.9)] sm:rounded-[36px] sm:px-12 md:py-12"
           style={{
             background:
               'linear-gradient(145deg, rgba(255,255,255,0.60) 0%, rgba(45,109,139,0.045) 45%, rgba(45,109,139,0.06) 100%)',
@@ -555,12 +555,12 @@ export default function Quiz() {
               <DrawnQuestionMark active={revealed} />
             </div>
 
-            <Eyebrow withRule={false} className="mt-8 justify-center" style={rise(120)}>
+            <Eyebrow className="mt-5 justify-center" style={rise(120)}>
               {QUIZ.label}
             </Eyebrow>
 
             <h2
-              className="mt-5 font-display text-[clamp(2.2rem,4.2vw,3.6rem)] leading-[1.05] tracking-[-0.02em] text-balance text-ink"
+              className="mt-4 font-display text-[clamp(2.1rem,3.6vw,3.3rem)] leading-[1.05] tracking-[-0.02em] text-balance text-ink"
               style={rise(200)}
             >
               {QUIZ.heading}{' '}
@@ -568,7 +568,7 @@ export default function Quiz() {
             </h2>
 
             <p
-              className="mt-5 max-w-xl text-[clamp(0.98rem,1.2vw,1.1rem)] font-light leading-relaxed text-ink-soft"
+              className="mt-4 max-w-xl text-[clamp(0.98rem,1.1vw,1.06rem)] font-light leading-relaxed text-ink-soft"
               style={rise(280)}
             >
               {QUIZ.intro}
@@ -578,7 +578,7 @@ export default function Quiz() {
               {QUIZ.points.map((point) => <span key={point}>{point}</span>)}
             </p>
 
-            <div className="mt-9" style={rise(360)}>
+            <div className="mt-7" style={rise(360)}>
               <button
                 ref={startRef}
                 type="button"

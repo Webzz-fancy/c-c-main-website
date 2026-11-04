@@ -1,29 +1,23 @@
 import { useMemo, useState } from 'react'
 import { COMPLEX, type ComplexIndustry, type ComplexNeed } from '../../content/complex'
-import { BookButton } from './cta'
 
 /**
- * The hero's search: a visitor types the work they want handled, or taps a
- * task they recognise, and the agents and projects that do something like it
- * come to the front of the list below, with how we would approach it. Naming
- * their kind of business points them to the agents, set up for it. It matches
- * on the page, against words we wrote for each problem: no chat, and no
- * request leaves the browser.
+ * The hero's search: a visitor types the work they want handled, or taps one
+ * of three popular tasks, and the map beside it shows that job while the
+ * closest projects move to the front of the slider below. Naming their kind of
+ * business points them to the agents, set up for it. It matches on the page,
+ * against words we wrote for each problem: no chat, and no request leaves the
+ * browser.
  */
 
-// three agent tasks fit on one line under the search; the rest sit behind "More"
-const FIRST = 3
+// three popular tasks, each with its own loop on the hero map: a message
+// coming in, a sale going cold, and the owner's view of the day
+const POPULAR = ['enquiries', 'leads', 'reports']
 
 // `need` or `industry` is what matched, if anything did, so the hero map can show it
 export type FinderMatch = { ids: string[]; plan: string | null; none: boolean; need: string | null; industry: string | null }
 
 const INDUSTRIES = COMPLEX.agents.industries.items
-
-const NAMES: Record<string, string> = Object.fromEntries([
-  ['agents', COMPLEX.index.agents.name],
-  ...COMPLEX.projects.map((p) => [p.id, p.card.name]),
-  [COMPLEX.discoverability.id, COMPLEX.discoverability.name],
-])
 
 // where the answer leads: a named business goes to the agents, set up for it;
 // anything else to the work, where the closest matches now lead the slider
@@ -99,10 +93,9 @@ export function matchQuery(query: string): FinderMatch | null {
 }
 
 export default function ProjectFinder({ onMatch }: { onMatch: (match: FinderMatch | null) => void }) {
-  const { finder, agents } = COMPLEX
+  const { finder } = COMPLEX
   const [picked, setPicked] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [more, setMore] = useState(false)
 
   const resolve = (nextPicked: string | null, nextQuery: string): FinderMatch | null => {
     if (nextPicked) {
@@ -119,9 +112,7 @@ export default function ProjectFinder({ onMatch }: { onMatch: (match: FinderMatc
     onMatch(resolve(nextPicked, nextQuery))
   }
 
-  const industry = match?.industry ? INDUSTRIES.find((i) => i.id === match.industry) : undefined
-  const names = match?.ids.slice(0, 3).map((id) => NAMES[id]).filter(Boolean) ?? []
-  const shown = more ? finder.needs : finder.needs.slice(0, FIRST)
+  const shown = POPULAR.map((id) => finder.needs.find((n) => n.id === id)).filter((n) => n !== undefined)
 
   return (
     <div className="complex-finder">
@@ -150,7 +141,8 @@ export default function ProjectFinder({ onMatch }: { onMatch: (match: FinderMatc
         </div>
         <span id="complex-finder-hint" className="sr-only">{finder.heading}</span>
       </form>
-      <div className="complex-finder__chips" role="group" aria-label="Popular tasks">
+      <div className="complex-finder__chips" role="group" aria-labelledby="complex-finder-popular">
+        <span id="complex-finder-popular" className="complex-finder__popular">Popular</span>
         {shown.map((need) => (
           <button
             key={need.id}
@@ -161,39 +153,6 @@ export default function ProjectFinder({ onMatch }: { onMatch: (match: FinderMatc
           >
             {need.label}
           </button>
-        ))}
-        {!more && (
-          <button type="button" className="complex-finder__chip complex-finder__chip--more" onClick={() => setMore(true)}>
-            More <span aria-hidden="true">+</span>
-          </button>
-        )}
-      </div>
-
-      <div className="complex-finder__answer" aria-live="polite" data-shown={match ? '' : undefined}>
-        {match && (match.none ? (
-          <>
-            <p>{finder.none}</p>
-            <div className="complex-finder__actions"><BookButton /></div>
-          </>
-        ) : industry ? (
-          <>
-            <p><b>{agents.industries.intro} {/^[aeiou]/i.test(industry.label) ? 'an' : 'a'} {industry.label.toLowerCase()}:</b> {industry.teams.map((t) => t.name.toLowerCase()).join(', ')} and more.</p>
-            <p className="complex-finder__plan"><b>Closest work we have built:</b> {industry.projects.map((id) => NAMES[id]).join(', ')}.</p>
-            <div className="complex-finder__actions">
-              <a className="complex-link complex-link--brand" href="#agents">See the agents <span aria-hidden="true">↓</span></a>
-              <a className="complex-finder__reset" href="#complex-grid">See the work</a>
-              <button type="button" className="complex-finder__reset" onClick={() => update(null, '')}>{finder.reset}</button>
-            </div>
-          </>
-        ) : (
-          <>
-            <p><b>Closest:</b> {names.join(', ')}.</p>
-            {match.plan && <p className="complex-finder__plan">{match.plan}</p>}
-            <div className="complex-finder__actions">
-              <a className="complex-link complex-link--brand" href={anchor(match)}>See them <span aria-hidden="true">↓</span></a>
-              <button type="button" className="complex-finder__reset" onClick={() => update(null, '')}>{finder.reset}</button>
-            </div>
-          </>
         ))}
       </div>
     </div>

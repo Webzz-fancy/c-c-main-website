@@ -15,8 +15,10 @@
  *     while the home page's loading screen is running.
  *
  * dist/index.html  →  /            dist/simple/index.html  →  /simple
- *                                    dist/complex/index.html →  /complex
+ *                                    dist/projects/index.html →  /projects
  *                                    dist/contact/index.html →  /contact
+ *                                    dist/blog/index.html    →  /blog
+ *                                    dist/blog/<slug>/index.html → /blog/<slug>
  *
  * Also writes sitemap.xml (lastmod from git), robots.txt, llms.txt and
  * llms-full.txt.
@@ -58,7 +60,7 @@ await build({
   },
 })
 const mod = await import(join(tmpDir, 'static.mjs') + `?t=${Date.now()}`)
-const { PAGES, ORIGIN, jsonLdFor, absolute, staticHtml, llmsTxt } = mod
+const { ALL_PAGES, ORIGIN, jsonLdFor, absolute, staticHtml, llmsTxt } = mod
 
 // ---------------------------------------------------------------------------
 // the built shell: vite's dist/index.html carries the hashed asset tags
@@ -83,6 +85,7 @@ function headFor(page) {
     `<meta name="robots" content="${robots}" />`,
     `<link rel="canonical" href="${url}" />`,
     `<meta property="og:type" content="${page.type}" />`,
+    ...(page.post ? [`<meta property="article:published_time" content="${page.post.date}" />`, `<meta property="article:modified_time" content="${page.post.updated ?? page.post.date}" />`] : []),
     `<meta property="og:site_name" content="Clause &amp; Code" />`,
     `<meta property="og:locale" content="en_US" />`,
     `<meta property="og:url" content="${url}" />`,
@@ -128,7 +131,7 @@ function pageHtml(page) {
   return html
 }
 
-for (const page of Object.values(PAGES)) {
+for (const page of ALL_PAGES) {
   const out = page.path === '/' ? join(dist, 'index.html') : join(dist, page.path.replace(/^\/|\/$/g, ''), 'index.html')
   mkdirSync(dirname(out), { recursive: true })
   writeFileSync(out, pageHtml(page))
@@ -143,11 +146,15 @@ const today = new Date().toISOString().slice(0, 10)
 /** the files each page's content comes from: its lastmod is the date of the
  *  last commit that touched them, or today when any of them has uncommitted
  *  changes (or git is not available on the build host) */
+const COPY = ['src/content/static.ts', 'src/config/seo.ts']
 const SOURCES = {
-  '/': ['src/components/Hero.tsx', 'src/components/Approach.tsx', 'src/components/Projects.tsx', 'src/components/WaysToWork.tsx', 'src/components/Quiz.tsx', 'src/content/quiz.ts'],
-  '/complex': ['src/content/complex.ts', 'src/pages/ComplexPage.tsx', 'src/components/complex'],
-  '/contact': ['src/content/contact.ts', 'src/pages/ContactPage.tsx', 'src/config/seo.ts'],
+  '/': ['src/content/home.ts', 'src/components/Hero.tsx', 'src/components/SameDay.tsx', 'src/components/Abilities.tsx', 'src/components/HomeWork.tsx', 'src/components/Approach.tsx', 'src/components/Quiz.tsx', 'src/content/quiz.ts', 'src/content/blog.ts', ...COPY],
+  '/projects': ['src/content/complex.ts', 'src/pages/ComplexPage.tsx', 'src/components/complex', ...COPY],
+  '/contact': ['src/content/contact.ts', 'src/pages/ContactPage.tsx', ...COPY],
   '/simple': ['src/pages/SimplePage.tsx', 'src/components/simple'],
+  '/privacy': ['src/content/legal.ts', ...COPY],
+  '/terms': ['src/content/legal.ts', ...COPY],
+  '/blog': ['src/content/blog.ts', 'src/pages/BlogPage.tsx', ...COPY],
 }
 function lastmod(path) {
   const files = SOURCES[path]
@@ -161,14 +168,14 @@ function lastmod(path) {
   }
 }
 
-const indexable = Object.values(PAGES).filter((p) => !p.noindex)
+const indexable = ALL_PAGES.filter((p) => !p.noindex)
 const sitemap =
   `<?xml version="1.0" encoding="UTF-8"?>\n` +
   `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n` +
   indexable
     .map(
       (p) =>
-        `  <url>\n    <loc>${absolute(p.path)}</loc>\n    <lastmod>${lastmod(p.path)}</lastmod>\n    <image:image>\n      <image:loc>${absolute(p.image)}</image:loc>\n    </image:image>\n  </url>`,
+        `  <url>\n    <loc>${absolute(p.path)}</loc>\n    <lastmod>${p.post ? p.post.updated ?? p.post.date : lastmod(p.path)}</lastmod>\n    <image:image>\n      <image:loc>${absolute(p.image)}</image:loc>\n    </image:image>\n  </url>`,
     )
     .join('\n') +
   `\n</urlset>\n`

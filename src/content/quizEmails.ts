@@ -129,8 +129,8 @@ export function planEmail(a: QuizAnswers, name: string): Email {
   blocks.push(
     { type: 'rule' },
     { type: 'h2', text: 'Want a second pair of eyes?' },
-    { type: 'p', text: 'This is our favourite kind of puzzle. Book a call and we’ll go through your answers with you, then tell you straight whether it needs a checklist, a better process or a system. If a checklist will do, we’ll say so.' },
-    talk('Book a call'),
+    { type: 'p', text: 'This is our favourite kind of puzzle. Book a consultation and we’ll go through your answers with you, then tell you straight whether it needs a checklist, a better process or a system. If a checklist will do, we’ll say so.' },
+    talk('Book a consultation'),
     ...signoff,
   )
 
@@ -167,7 +167,7 @@ export function nudgeEmail(a: QuizAnswers, name: string): Email {
       { type: 'h2', text: 'Now the fun part' },
       { type: 'p', text: 'Hit reply and tell us what you found, even if it’s one line. We’ll write back with what we’d do next. Sometimes the answer is “a checklist and you’re sorted”, and we’re happy to say that.' },
       { type: 'p', text: 'Rather talk it through? Grab a slot, or say hi on WhatsApp.' },
-      talk('Book a call'),
+      talk('Book a consultation'),
       { type: 'p', text: 'That’s our one nudge. No more after this, promise.', tone: 'muted' },
       ...signoff,
     ],

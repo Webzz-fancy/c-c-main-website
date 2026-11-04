@@ -10,11 +10,14 @@
  */
 import { site } from '../config/site'
 import { COMPLEX } from './complex'
+import { PRIVACY, TERMS } from './legal'
+import { HOME_HERO, HOME_DAY, HOME_ABILITIES, HOME_WORK, HOME_APPROACH } from './home'
 import { CONTACT } from './contact'
 import { QUIZ } from './quiz'
-import { PAGES, ORIGIN, FAQ, PORTFOLIO, ENTITY, absolute, type PageSeo } from '../config/seo'
+import { PAGES, ALL_PAGES, ORIGIN, FAQ, PORTFOLIO, ENTITY, absolute, type PageSeo } from '../config/seo'
+import { BLOG, BLOG_LIVE, BLOG_ON_HOME, POSTS, formatDate, postPath, type BlogBlock } from './blog'
 
-export { PAGES, ORIGIN, FAQ, PORTFOLIO, absolute }
+export { PAGES, ALL_PAGES, ORIGIN, FAQ, PORTFOLIO, absolute }
 export { jsonLdFor } from '../config/seo'
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -26,37 +29,17 @@ const AI_URL = 'https://ai.clauseandcode.com/'
  * ------------------------------------------------------------------------- */
 
 const HOME = {
-  h1: 'We build the operating system behind your growth.',
-  intro:
-    'We start with process mapping because the right solution only comes from understanding how your business actually works. Once we map your operations, we create custom systems, help you adopt the right tools, and make you ready for intelligent automation.',
+  h1: `${HOME_HERO.first} ${HOME_HERO.emphasis}`,
+  intro: HOME_HERO.intro,
   actions: [
-    ['See Our Approach', '#approach'],
-    ['Book a Consultation', site.links.booking],
+    [HOME_HERO.primary.label, HOME_HERO.primary.href],
+    [HOME_HERO.secondary.label, HOME_HERO.secondary.href],
   ],
   approach: {
-    label: 'How We Work',
-    h2: 'Our Approach',
-    intro: 'We follow a clear and structured process to ensure every solution we build is relevant, practical, and sustainable.',
-    steps: [
-      ['Process Mapping', 'We begin by deeply mapping how your business currently operates. This includes understanding information flow, decision points, team responsibilities, and where friction exists. This step forms the foundation for everything that follows.'],
-      ['Creation and Customization', 'We create custom systems and documentation built specifically around how your business works. Nothing is generic. Everything is shaped according to your actual processes and needs.'],
-      ['Adoption and Implementation', 'We help you adopt the right tools and make sure they integrate properly into your operations. We provide the necessary training and support so the systems actually get used and deliver results.'],
-      ['AI-Readiness and Automation', 'Once your foundation is solid, we introduce intelligent automation and AI solutions. These are applied only where they create real efficiency and measurable improvement.'],
-    ],
-  },
-  projects: {
-    label: 'Our Projects',
-    h2: 'Real work. Real transformation.',
-    p: 'See how we have helped founders and growing businesses build scalable systems, reduce operational chaos, and create backend structures that support long-term growth. Each project reflects our focus on clarity, efficiency, and sustainable systems.',
-    action: 'View Our Projects',
-  },
-  ways: {
-    label: 'Work With Us',
-    h2: 'Two ways to work with us',
-    options: [
-      ['Not sure where to start', 'Drop Your Problem', 'Not sure what you need? Just tell us what is not working in your business. We will review your situation and tell you exactly how we can help.', site.links.dropProblem],
-      ['Ready to fix it', 'Book a Consultation', 'This is a focused one-on-one session where we examine what\u2019s not working in your backend operations, including systems, processes, and workflows. We then start mapping a clear plan to help you scale.', site.links.booking],
-    ],
+    label: HOME_APPROACH.label,
+    h2: `${HOME_APPROACH.heading} ${HOME_APPROACH.emphasis}`,
+    intro: HOME_APPROACH.intro,
+    steps: HOME_APPROACH.steps.map((step) => [step.title, step.body]),
   },
   quiz: {
     label: QUIZ.label,
@@ -68,7 +51,7 @@ const HOME = {
 }
 
 const SIMPLE = {
-  label: 'Our Projects · Websites & AI discoverability',
+  label: 'Our projects · Websites & AI discoverability',
   h1: 'Your website, built to a higher standard.',
   intro: [
     'A website is the front of a business. We build it with the same rigour we bring to the operations behind one.',
@@ -113,10 +96,10 @@ const faqHtml = (items: { q: string; a: string }[]) =>
  *  outline stays the page's own headings) */
 const footerHtml = () =>
   `<footer><p>${esc(site.name)} · ${esc(site.tagline)}</p>` +
-  `<nav aria-label="Ways We Help"><p>Ways We Help</p><ul><li>${a(site.links.booking, 'Book a Consultation')}</li><li>${a(site.links.dropProblem, 'Drop Your Problem')}</li><li>${a('/#quiz', 'Business fix plan')}</li></ul></nav>` +
-  `<nav aria-label="Explore"><p>Explore</p><ul><li>${a('/', 'Home')}</li><li>${a('/complex', 'Our Projects')}</li><li>${a('/contact', 'Contact')}</li></ul></nav>` +
+  `<nav aria-label="Ways we help"><p>Ways we help</p><ul><li>${a('/#ways-we-help', 'What we can do for you')}</li><li>${a(site.links.booking, 'Book a consultation')}</li><li>${a('/#quiz', 'Get your fix plan')}</li></ul></nav>` +
+  `<nav aria-label="Explore"><p>Explore</p><ul><li>${a('/', 'Home')}</li><li>${a('/projects', 'Our projects')}</li>${BLOG_LIVE ? `<li>${a('/blog', 'Blog')}</li>` : ''}<li>${a('/contact', 'Contact')}</li></ul></nav>` +
   `<address aria-label="Contact"><p>Contact</p><ul><li>${a(`mailto:${site.contact.email}`, site.contact.email)}</li><li>${a(site.contact.whatsapp, 'Message us on WhatsApp')}</li></ul></address>` +
-  `<p>© ${new Date().getFullYear()} ${esc(site.name)}. All rights reserved.</p><p>Operations, systems &amp; AI for growing businesses.</p></footer>`
+  `<p>© ${new Date().getFullYear()} ${esc(site.name)}. All rights reserved.</p><p>${a('/privacy', 'Privacy')} · ${a('/terms', 'Terms')}</p></footer>`
 
 /** The plain HTML stays in the DOM during the JS loading screen, then is
  *  removed when the matching React page is ready. Without JS it is the page:
@@ -127,6 +110,36 @@ export function staticHtml(page: PageSeo): string {
   const open = `<div data-prerender><main>`
   const close = `</main>${footerHtml()}</div>`
 
+  if (page === PAGES.blog) {
+    return (
+      open +
+      `<header><p>${esc(BLOG.label)}</p><h1>${esc(BLOG.heading)} ${esc(BLOG.emphasis)}</h1><p>${esc(BLOG.intro)}</p></header>` +
+      (POSTS.length
+        ? `<ol>${POSTS.map((p) => `<li><p>${esc(p.topic)} · <time datetime="${p.date}">${esc(formatDate(p.date))}</time> · ${p.minutes} min read</p><h2>${a(postPath(p), p.title)}</h2><p>${esc(p.excerpt)}</p></li>`).join('')}</ol>`
+        : `<p>${esc(BLOG.empty)}</p>`) +
+      close
+    )
+  }
+  if (page.post) {
+    const p = page.post
+    const block = (b: BlogBlock) =>
+      b.type === 'h2' ? `<h2>${esc(b.text)}</h2>` : b.type === 'list' ? `<ul>${b.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>` : b.type === 'quote' ? `<blockquote>${esc(b.text)}</blockquote>` : `<p>${esc(b.text)}</p>`
+    return (
+      open +
+      `<article><p>${a('/blog', BLOG.back)}</p><p>${esc(p.topic)} · <time datetime="${p.date}">${esc(formatDate(p.date))}</time> · ${p.minutes} min read</p><h1>${esc(p.title)}</h1><p>${esc(p.excerpt)}</p>${p.body.map(block).join('')}` +
+      `<aside><h2>${esc(BLOG.close.heading)}</h2><p>${esc(BLOG.close.body)}</p>${a(site.links.booking, 'Book a consultation')} ${a('/#quiz', 'Get your fix plan')}<p>${esc(site.consultation)}</p></aside></article>` +
+      close
+    )
+  }
+  if (page === PAGES.privacy || page === PAGES.terms) {
+    const doc = page === PAGES.privacy ? PRIVACY : TERMS
+    return (
+      open +
+      `<header><p>${esc(doc.label)}</p><h1>${esc(doc.heading)} ${esc(doc.emphasis)}</h1><p>Last updated ${esc(doc.updated)}</p><p>${esc(doc.short)}</p></header>` +
+      doc.sections.map((s) => `<section><h2>${esc(s.heading)}</h2>${s.body.map((t) => `<p>${esc(t)}</p>`).join('')}</section>`).join('') +
+      close
+    )
+  }
   if (page === PAGES.simple) {
     return (
       open +
@@ -135,9 +148,9 @@ export function staticHtml(page: PageSeo): string {
         .map(([t, b, cta, href]) => `<li><h3>${esc(t)}</h3><p>${esc(b)}</p>${a(href, cta)}</li>`)
         .join('')}</ol></section>` +
       `<section id="projects"><p>${esc(SIMPLE.third.label)}</p><h2>${esc(SIMPLE.third.h2)}</h2><p>${esc(SIMPLE.third.p)}</p><ul>${PORTFOLIO.map(
-        (p) => `<li>${a(p.url, p.name)} · ${esc(p.tag)}</li>`,
+        (p) => `<li>${a(p.url, p.tag)}</li>`,
       ).join('')}</ul><p>${esc(SIMPLE.third.close)}</p></section>` +
-      `<section id="contact"><p>${esc(SIMPLE.talk.label)}</p><h2>${esc(SIMPLE.talk.h2)}</h2><p>${esc(SIMPLE.talk.p)}</p>${a(site.links.booking, 'Book a call')}</section>` +
+      `<section id="contact"><p>${esc(SIMPLE.talk.label)}</p><h2>${esc(SIMPLE.talk.h2)}</h2><p>${esc(SIMPLE.talk.p)}</p>${a(site.links.booking, 'Book a consultation')}</section>` +
       close
     )
   }
@@ -171,7 +184,7 @@ export function staticHtml(page: PageSeo): string {
           .map((stop) => `<li><h4>${esc(stop.title)}</h4><p>${esc(stop.body)}</p><p>${esc(stop.guard)}</p></li>`)
           .join('')}</ol><h3>Also built in</h3><ul>${project.features.map((f) => `<li>${esc(f)}</li>`).join('')}</ul><h3>The result</h3><p>${esc(project.result)}</p></article>`)
         .join('') +
-      `<section aria-labelledby="complex-close-title"><p>${esc(COMPLEX.close.label)}</p><h2 id="complex-close-title">${esc(COMPLEX.close.heading)}</h2><p>${esc(COMPLEX.close.body)}</p>${a(site.links.booking, COMPLEX.close.action)} <span>${esc(COMPLEX.close.quiz)}</span> ${a('/#quiz', 'Take the business quiz')}</section>` +
+      `<section aria-labelledby="complex-close-title"><p>${esc(COMPLEX.close.label)}</p><h2 id="complex-close-title">${esc(COMPLEX.close.heading)}</h2><p>${esc(COMPLEX.close.body)}</p>${a(site.links.booking, COMPLEX.close.action)} <span>${esc(COMPLEX.close.quiz)}</span> ${a('/#quiz', 'Get your fix plan')}</section>` +
       close
     )
   }
@@ -189,13 +202,23 @@ export function staticHtml(page: PageSeo): string {
   return (
     open +
     `<header id="home"><h1>${esc(HOME.h1)}</h1><p>${esc(HOME.intro)}</p><p>${HOME.actions.map(([t, href]) => a(href, t)).join(' ')}</p></header>` +
+    `<section id="your-day"><p>${esc(HOME_DAY.label)}</p><h2>${esc(HOME_DAY.heading)} ${esc(HOME_DAY.emphasis)}</h2><p>${esc(HOME_DAY.intro)}</p><dl>${HOME_DAY.moments
+      .map((m) => `<dt>${esc(m.time)}</dt><dd>${esc(HOME_DAY.off)}: ${esc(m.today)} ${esc(HOME_DAY.on)}: ${esc(m.after)} (${esc(m.who)})</dd>`)
+      .join('')}</dl><p>${esc(HOME_DAY.note)}</p></section>` +
+    `<section id="ways-we-help"><p>${esc(HOME_ABILITIES.label)}</p><h2>${esc(HOME_ABILITIES.heading)} ${esc(HOME_ABILITIES.emphasis)}</h2><p>${esc(HOME_ABILITIES.intro)}</p><ul>${HOME_ABILITIES.items
+      .map((item) => `<li><h3>${esc(item.title)}</h3><p>${esc(item.body)}</p>${a(item.href, item.action)}</li>`)
+      .join('')}</ul></section>` +
+    `<section id="work"><p>${esc(HOME_WORK.label)}</p><h2>${esc(HOME_WORK.heading)} ${esc(HOME_WORK.emphasis)}</h2><p>${esc(HOME_WORK.intro)}</p><ul><li>${a('/projects#agents', COMPLEX.index.agents.name)}: ${esc(COMPLEX.index.agents.change)}</li><li>${a(AI_URL, COMPLEX.discoverability.name)}: ${esc(COMPLEX.discoverability.after)}</li>${COMPLEX.projects
+      .map((p) => `<li>${a(`/projects#project-${p.id}`, p.card.name)}: ${esc(p.card.after)}</li>`)
+      .join('')}</ul><p>${a(HOME_WORK.href, HOME_WORK.action)}</p></section>` +
     `<section id="approach"><p>${esc(HOME.approach.label)}</p><h2>${esc(HOME.approach.h2)}</h2><p>${esc(HOME.approach.intro)}</p><ol>${HOME.approach.steps
       .map(([t, b]) => `<li><h3>${esc(t)}</h3><p>${esc(b)}</p></li>`)
       .join('')}</ol></section>` +
-    `<section id="projects"><p>${esc(HOME.projects.label)}</p><h2>${esc(HOME.projects.h2)}</h2><p>${esc(HOME.projects.p)}</p><p>${a('/complex', HOME.projects.action)}</p></section>` +
-    `<section id="ways-we-help"><p>${esc(HOME.ways.label)}</p><h2>${esc(HOME.ways.h2)}</h2><ul>${HOME.ways.options
-      .map(([kicker, t, b, href]) => `<li><p>${esc(kicker)}</p><h3>${esc(t)}</h3><p>${esc(b)}</p>${a(href, t)}</li>`)
-      .join('')}</ul></section>` +
+    (BLOG_ON_HOME
+      ? `<section id="blog"><p>${esc(BLOG.strip.label)}</p><h2>${esc(BLOG.strip.heading)} ${esc(BLOG.strip.emphasis)}</h2><ul>${POSTS.slice(0, 3)
+          .map((p) => `<li><h3>${a(postPath(p), p.title)}</h3><p>${esc(p.excerpt)}</p></li>`)
+          .join('')}</ul><p>${a('/blog', BLOG.strip.action)}</p></section>`
+      : '') +
     `<section id="quiz" aria-label="Business fix plan"><p>${esc(HOME.quiz.label)}</p><h2>${esc(HOME.quiz.h2)}</h2><p>${esc(HOME.quiz.p)}</p><ul>${HOME.quiz.points
       .map((t) => `<li>${esc(t)}</li>`)
       .join('')}</ul><p>${esc(HOME.quiz.meta)}</p></section>` +
@@ -215,6 +238,7 @@ const md = (s: string) => s.replace(/\s+/g, ' ').trim()
 
 export function llmsTxt(full = false): string {
   const pages = Object.values(PAGES).filter((p) => !p.noindex)
+  const posts = ALL_PAGES.filter((p) => p.post && !p.noindex)
   const lines = [
     `# ${site.name}`,
     ``,
@@ -227,18 +251,19 @@ export function llmsTxt(full = false): string {
     `- Based in: the UAE (${ENTITY.country}); we work with businesses in the UAE and worldwide`,
     `- Languages: ${ENTITY.languages.join(' and ')}`,
     `- How we work: ${HOME.approach.steps.map(([t]) => t).join(', then ')}`,
-    `- Contact: email ${site.contact.email}, WhatsApp ${site.contact.whatsapp}, book a call ${site.links.booking}, or ${ORIGIN}/contact`,
+    `- Contact: email ${site.contact.email}, [WhatsApp](${site.contact.whatsapp}), book a consultation ${site.links.booking}, or ${ORIGIN}/contact`,
     ``,
     `## Pages`,
     ``,
     ...pages.map((p) => `- [${p.name}](${absolute(p.path)}): ${p.summary}`),
-    `- [AI discoverability](${AI_URL}): our AI discoverability and lead capture product: an AI ready landing page, your own assistant on ChatGPT, Gemini and Instagram, and connected booking, live in five working days.`,
+    `- [AI discoverability](${AI_URL}): our AI discoverability and lead capture product: an AI ready landing page, your own assistant on ChatGPT, Gemini and Instagram, and connected booking.`,
+    ...(posts.length ? [``, `## Blog`, ``, ...posts.map((p) => `- [${p.name}](${absolute(p.path)}): ${p.summary}`)] : []),
     ``,
     `## Projects`,
     ``,
-    `- [${COMPLEX.index.agents.name}](${ORIGIN}/complex#agents): ${md(COMPLEX.index.agents.change)}`,
+    `- [${COMPLEX.index.agents.name}](${ORIGIN}/projects#agents): ${md(COMPLEX.index.agents.change)}`,
     `- [${COMPLEX.discoverability.name}](${COMPLEX.discoverability.url}): ${md(COMPLEX.discoverability.after)}`,
-    ...COMPLEX.projects.map((p) => `- [${p.card.name}](${ORIGIN}/complex#project-${p.id}): ${p.card.kind}. ${md(p.card.after)}`),
+    ...COMPLEX.projects.map((p) => `- [${p.card.name}](${ORIGIN}/projects#project-${p.id}): ${p.card.kind}. ${md(p.card.after)}`),
     ``,
   ]
   if (!full) {
@@ -255,9 +280,15 @@ export function llmsTxt(full = false): string {
     return lines.join('\n')
   }
   lines.push(
-    `## How we work`,
+    `## What we can do for you`,
     ``,
     HOME.intro,
+    ``,
+    ...HOME_ABILITIES.items.map((item) => `- ${item.title}: ${item.body}`),
+    ``,
+    `## How we work`,
+    ``,
+    HOME.approach.intro,
     ``,
     ...HOME.approach.steps.map(([t, b], i) => `${i + 1}. ${t}: ${b}`),
     ``,
@@ -280,7 +311,7 @@ export function llmsTxt(full = false): string {
     ``,
     ...COMPLEX.finder.needs.map((need) => `- ${need.label}: ${need.plan} Closest projects: ${need.projects.map(projectName).join(', ')}.`),
     ``,
-    `## Custom systems, automation and online user experience`,
+    `## Custom systems, automation and client experience`,
     ``,
     COMPLEX.index.intro,
     ``,
@@ -303,20 +334,11 @@ export function llmsTxt(full = false): string {
       `Result: ${project.result}`,
       ``,
     ]),
-    `## Websites page`,
-    ``,
-    `${SIMPLE.intro[0]} ${SIMPLE.intro[1]}`,
-    ``,
-    ...SIMPLE.second.offers.map(([t, b]) => `- ${t}: ${b}`),
-    ``,
-    `Recent builds: ${PORTFOLIO.map((p) => `${p.name} (${p.tag.toLowerCase()}, ${p.url})`).join('; ')}.`,
-    ``,
     `## Frequently asked questions`,
     ``,
     ...FAQ.flatMap(({ q, a: answer }) => [`### ${q}`, ``, answer, ``]),
-    `## Ways to work with us`,
+    `## Not sure where to start?`,
     ``,
-    ...HOME.ways.options.map(([, t, b]) => `- ${t}: ${b}`),
     `- ${HOME.quiz.h2}: ${HOME.quiz.p} (${ORIGIN}/#quiz)`,
     ``,
   )

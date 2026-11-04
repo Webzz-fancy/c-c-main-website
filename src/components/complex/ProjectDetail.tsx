@@ -90,7 +90,6 @@ export default function ProjectDetail({ project, onClose }: Props) {
         <div ref={bodyRef} className="complex-detail__body">
           <header className="complex-detail__head">
             <h2 id="complex-detail-title">{p.card.name}</h2>
-            <p className="complex-detail__title">{p.title}</p>
             <p className="complex-detail__lede">{p.lede}</p>
             <div className="complex-detail__actions"><BookButton /></div>
           </header>
@@ -99,7 +98,7 @@ export default function ProjectDetail({ project, onClose }: Props) {
             <div className="complex-card__visual"><StopsMiniMap stops={p.stops} /></div>
             <div className="complex-card__shift complex-detail__shift">
               <span className="complex-card__before"><b>Before</b>{p.card.before}</span>
-              <span className="complex-card__after"><b>Now</b>{p.card.after}</span>
+              <span className="complex-card__after"><b>Now</b>{p.title}</span>
             </div>
           </div>
 

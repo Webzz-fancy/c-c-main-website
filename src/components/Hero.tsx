@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import HeroRobot from './HeroRobot'
 import Underline from './Underline'
 import { useRobotMood } from '../context/RobotMood'
-import { site } from '../config/site'
+import { HOME_HERO } from '../content/home'
 
 export default function Hero() {
   const { moodHandlers } = useRobotMood()
@@ -50,22 +50,18 @@ export default function Hero() {
             className="animate-fade-up font-display text-[clamp(2rem,min(5.6vw,7vh),4.15rem)] leading-[1.04] tracking-[-0.02em] text-balance text-ink"
             style={{ animationDelay: '80ms' }}
           >
-            We build the{' '}
+            {HOME_HERO.first}{' '}
             <span className="relative inline-block">
-              <span className="relative z-10 italic text-brand-600">operating system</span>
+              <span className="relative z-10 italic text-brand-600">{HOME_HERO.emphasis}</span>
               <Underline active={drawn} />
-            </span>{' '}
-            behind your growth.
+            </span>
           </h1>
 
           <p
             className="animate-fade-up mt-[clamp(0.75rem,2.1vh,1.35rem)] max-w-xl text-[clamp(0.92rem,min(1.3vw,1.85vh),1.08rem)] font-light leading-relaxed text-ink-soft text-balance"
             style={{ animationDelay: '180ms' }}
           >
-            We start with process mapping because the right solution only comes from
-            understanding how your business actually works. Once we map your operations, we create
-            custom systems, help you adopt the right tools, and make you ready for intelligent
-            automation.
+            {HOME_HERO.intro}
           </p>
 
           <div
@@ -73,25 +69,22 @@ export default function Hero() {
             style={{ animationDelay: '280ms' }}
           >
             <a
-              href="#approach"
+              href={HOME_HERO.primary.href}
+              target="_blank"
+              rel="noopener"
               className="group inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-brand px-3 py-2.5 text-[12px] font-semibold text-ink shadow-brand transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-300 hover:shadow-[0_22px_40px_-14px_rgba(225,173,52,0.85)] active:translate-y-0 sm:flex-none sm:gap-2 sm:px-7 sm:py-3.5 sm:text-[15px]"
             >
-              See Our Approach
+              {HOME_HERO.primary.label}
               <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
             </a>
 
             <a
-              href={site.links.booking}
-              target="_blank"
-              rel="noopener"
+              href={HOME_HERO.secondary.href}
               {...moodHandlers('happy')}
               className="group inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-glass/30 bg-white/50 px-3 py-2.5 text-[12px] font-semibold text-glass backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-glass hover:bg-white hover:shadow-[0_18px_34px_-18px_rgba(27,26,23,0.5)] active:translate-y-0 sm:flex-none sm:gap-2 sm:px-7 sm:py-3.5 sm:text-[15px]"
             >
-              Book a Consultation
-              <span
-                className="inline-block h-1.5 w-1.5 rounded-full bg-brand transition-transform duration-300 group-hover:scale-150"
-                aria-hidden="true"
-              />
+              {HOME_HERO.secondary.label}
+              <span className="transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true">→</span>
             </a>
           </div>
         </div>
