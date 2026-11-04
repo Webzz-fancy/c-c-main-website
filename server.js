@@ -13,6 +13,7 @@
 
 const express = require('express')
 const compression = require('compression')
+const crypto = require('node:crypto')
 const fs = require('node:fs')
 const path = require('node:path')
 
@@ -44,12 +45,55 @@ app.use(compression())
 // oversized or malformed payload from ever being parsed.
 app.use(express.json({ limit: '16kb' }))
 
+/**
+ * Content Security Policy. Scripts run only from this site, plus the one-line
+ * inline script in index.html, allowed by its hash (read from the build at
+ * startup so it can never drift; a deploy restarts the app). WebAssembly is
+ * allowed for the 3D robot's model decoder; that permits no JavaScript eval.
+ * Nothing else may load code, frame the site or receive a form.
+ */
+function inlineScriptHashes() {
+  try {
+    const html = fs.readFileSync(path.join(distDir, 'index.html'), 'utf8')
+    return [...html.matchAll(/<script>([^<]*)<\/script>/g)].map(
+      (m) => `'sha256-${crypto.createHash('sha256').update(m[1]).digest('base64')}'`,
+    )
+  } catch {
+    return []
+  }
+}
+// If the quiz's API ever moves to another origin, it may receive requests too.
+function apiOrigin() {
+  try {
+    return process.env.VITE_API_BASE_URL ? new URL(process.env.VITE_API_BASE_URL).origin : ''
+  } catch {
+    return ''
+  }
+}
+const CSP = [
+  "default-src 'self'",
+  `script-src 'self' 'wasm-unsafe-eval' ${inlineScriptHashes().join(' ')}`.trim(),
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self'",
+  "media-src 'self'",
+  `connect-src 'self' blob: data: ${apiOrigin()}`.trim(),
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  'upgrade-insecure-requests',
+].join('; ')
+
 // Security headers, set by hand so the app keeps to two runtime dependencies.
 app.use((_req, res, next) => {
+  res.setHeader('Content-Security-Policy', CSP)
   res.setHeader('X-Content-Type-Options', 'nosniff')
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN')
+  res.setHeader('X-Frame-Options', 'DENY')
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=()')
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin')
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
   next()
 })
