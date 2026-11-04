@@ -52,15 +52,20 @@ app.use(express.json({ limit: '16kb' }))
  * allowed for the 3D robot's model decoder; that permits no JavaScript eval.
  * Nothing else may load code, frame the site or receive a form.
  */
+// the cc-js line in index.html, so the page still works if the app starts
+// while dist/ is being rebuilt and the file can't be read
+const KNOWN_INLINE = "'sha256-2LIwXKNifSwFHB7/XcI+VsOaF0ofTcUYCq+DhjbcMbo='"
 function inlineScriptHashes() {
+  let found = []
   try {
     const html = fs.readFileSync(path.join(distDir, 'index.html'), 'utf8')
-    return [...html.matchAll(/<script>([^<]*)<\/script>/g)].map(
+    found = [...html.matchAll(/<script>([^<]*)<\/script>/g)].map(
       (m) => `'sha256-${crypto.createHash('sha256').update(m[1]).digest('base64')}'`,
     )
   } catch {
-    return []
+    // keep the known hash
   }
+  return [...new Set([KNOWN_INLINE, ...found])]
 }
 // If the quiz's API ever moves to another origin, it may receive requests too.
 function apiOrigin() {
