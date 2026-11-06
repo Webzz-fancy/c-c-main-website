@@ -22,8 +22,31 @@ export default function ContactPage() {
   }, [])
   const [openFaq, setOpenFaq] = useState(0)
   const [activeWay, setActiveWay] = useState(0)
+  const [channelFocused, setChannelFocused] = useState(false)
   const channels = useReveal<HTMLElement>()
   const faq = useReveal<HTMLElement>()
+
+  useEffect(() => {
+    const touchScreen = window.matchMedia('(hover: none) and (pointer: coarse)')
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    let timer: number | undefined
+
+    const updateCycle = () => {
+      window.clearInterval(timer)
+      if (channels.revealed && !channelFocused && touchScreen.matches && !reducedMotion.matches) {
+        timer = window.setInterval(() => setActiveWay((current) => (current + 1) % CONTACT.ways.length), 1000)
+      }
+    }
+
+    updateCycle()
+    touchScreen.addEventListener('change', updateCycle)
+    reducedMotion.addEventListener('change', updateCycle)
+    return () => {
+      window.clearInterval(timer)
+      touchScreen.removeEventListener('change', updateCycle)
+      reducedMotion.removeEventListener('change', updateCycle)
+    }
+  }, [channels.revealed, channelFocused])
 
   return (
     <div className="min-h-screen bg-cream text-ink">
@@ -130,8 +153,7 @@ export default function ContactPage() {
           </div>
 
           <div className={`mt-9 grid overflow-hidden rounded-[28px] border border-ink/[0.08] bg-white/70 p-3 shadow-soft backdrop-blur-sm md:rounded-[32px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] ${channels.revealed ? 'animate-fade-up' : 'opacity-0'}`} style={{ animationDelay: '140ms' }}>
-            {/* One illuminated screen, like the project cards; the highlighted
-                route follows the link under the pointer or keyboard focus. */}
+            {/* The highlighted route follows hover or focus, and cycles on touch screens. */}
             <div className="relative min-h-[200px] overflow-hidden rounded-[20px] sm:min-h-[250px] lg:min-h-[390px]" aria-hidden="true" style={{ background: 'radial-gradient(120% 80% at 50% 120%, rgba(225,173,52,.2), transparent 60%), linear-gradient(rgba(127,179,204,.07) 1px, transparent 1px) 0 0 / 20px 20px, linear-gradient(90deg, rgba(127,179,204,.07) 1px, transparent 1px) 0 0 / 20px 20px, #17181b' }}>
               <div className="absolute left-6 top-6 text-[12px] font-semibold uppercase tracking-[0.14em] text-glass-300">{CONTACT.label}</div>
               <div className="absolute right-6 top-6 text-[12px] font-semibold tracking-[0.14em] text-white/50">0{activeWay + 1} / 03</div>
@@ -148,7 +170,13 @@ export default function ContactPage() {
               ))}
             </div>
 
-            <div className="divide-y divide-ink/[0.08] px-2 sm:px-5 lg:px-7">
+            <div
+              className="divide-y divide-ink/[0.08] px-2 sm:px-5 lg:px-7"
+              onFocusCapture={() => setChannelFocused(true)}
+              onBlurCapture={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) setChannelFocused(false)
+              }}
+            >
               {CONTACT.ways.map((way, i) => (
                 <a
                   key={way.id}
