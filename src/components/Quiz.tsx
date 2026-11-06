@@ -126,7 +126,7 @@ function FixPlan({ onExit }: { onExit: () => void }) {
               value={draft.otherBusiness ?? ''}
               onChange={(event) => setDraft((d) => ({ ...d, otherBusiness: event.target.value }))}
               placeholder="For example, a catering business"
-              className="mt-2 w-full rounded-2xl border border-black/[0.1] bg-white/80 px-5 py-4 text-[15px] text-ink outline-none placeholder:text-ink-muted/70 focus:border-glass"
+              className="mt-2 w-full rounded-2xl border border-black/[0.1] bg-white/80 px-5 py-4 text-[16px] text-ink outline-none placeholder:text-ink-muted/70 focus:border-glass sm:text-[15px]"
             />
             <button type="submit" disabled={!cleanOtherBusiness(draft.otherBusiness)} className={`${goldButton} mt-4`}>
               Continue <span aria-hidden="true">→</span>
@@ -308,7 +308,7 @@ function PlanView({ answers, headRef, onRestart }: {
     { n: count('unclear'), label: 'not sure', tone: 'text-ink-muted' },
   ].filter((g) => g.n > 0)
 
-  const field = 'mt-1.5 w-full rounded-xl border border-black/[0.1] bg-white/80 px-4 py-3 text-[15px] text-ink outline-none transition-colors placeholder:text-ink-muted/70 focus:border-glass'
+  const field = 'mt-1.5 w-full rounded-xl border border-black/[0.1] bg-white/80 px-4 py-3 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-muted/70 focus:border-glass sm:text-[15px]'
   const step = 'font-display text-[2.4rem] leading-none text-brand-600'
 
   return (
@@ -683,15 +683,17 @@ export default function Quiz() {
           onCancel={(event) => { event.preventDefault(); exit() }}
           className="quiz-dialog fixed inset-0 m-auto h-[100dvh] max-h-none w-full max-w-none overflow-y-auto border-0 bg-cream p-0 text-ink shadow-soft sm:h-auto sm:max-h-[min(90dvh,900px)] sm:w-[min(720px,calc(100%-3rem))] sm:rounded-[32px]"
         >
-          <div className="relative mx-auto max-w-2xl px-6 pb-10 pt-16 sm:px-10 sm:pb-12 sm:pt-16">
+          <div className="pointer-events-none sticky top-0 z-10 flex justify-end bg-gradient-to-b from-cream via-cream/95 to-transparent px-5 pb-2 pt-[max(1rem,env(safe-area-inset-top))] sm:px-7 sm:pt-6">
             <button
               type="button"
               onClick={exit}
               aria-label="Close quiz"
-              className="absolute right-5 top-5 grid h-10 w-10 place-items-center rounded-full border border-ink/10 bg-white/70 text-ink transition-colors duration-300 hover:border-glass/40 hover:bg-white sm:right-7 sm:top-6"
+              className="pointer-events-auto grid h-10 w-10 place-items-center rounded-full border border-ink/10 bg-white/70 text-ink transition-colors duration-300 hover:border-glass/40 hover:bg-white"
             >
               <span aria-hidden="true" className="text-[24px] leading-none">×</span>
             </button>
+          </div>
+          <div className="relative mx-auto max-w-2xl px-6 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-2 sm:px-10 sm:pb-12">
             <FixPlan onExit={exit} />
           </div>
         </dialog>,

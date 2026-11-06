@@ -156,15 +156,16 @@ export default function ContactPage() {
                   {...external(way.external)}
                   onMouseEnter={() => setActiveWay(i)}
                   onFocus={() => setActiveWay(i)}
-                  className="group grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-4 py-6 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-glass sm:gap-x-6 sm:py-7"
+                  className="group grid min-w-0 grid-cols-1 gap-x-4 py-6 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-glass sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-x-6 sm:py-7"
                 >
-                  <span className="pt-1 text-[12px] font-semibold tracking-[0.14em] text-glass">0{i + 1}</span>
+                  <span className="hidden pt-1 text-[12px] font-semibold tracking-[0.14em] text-glass sm:block" aria-hidden="true">0{i + 1}</span>
                   <span className="min-w-0">
+                    <span className="mb-2 block text-[12px] font-semibold tracking-[0.14em] text-glass sm:hidden" aria-hidden="true">0{i + 1}</span>
                     <span className="block font-display text-[1.35rem] leading-tight tracking-[-0.01em] text-ink">{way.name}</span>
                     <span className="mt-2 block max-w-[42ch] text-[15px] font-light leading-relaxed text-ink-soft">{way.body}</span>
-                    <span className="mt-3 inline-block text-[14px] font-semibold text-glass [overflow-wrap:anywhere]">{way.action}</span>
+                    <span className="mt-3 flex min-w-0 items-baseline gap-2 text-[14px] font-semibold text-glass"><span className="min-w-0 [overflow-wrap:anywhere]">{way.action}</span><span className="shrink-0 sm:hidden" aria-hidden="true">{way.external ? '↗' : '→'}</span></span>
                   </span>
-                  <span className="mt-0.5 grid h-9 w-9 place-items-center rounded-full border border-ink/10 text-ink/60 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:border-brand group-hover:bg-brand group-hover:text-ink group-focus-visible:border-brand group-focus-visible:bg-brand group-focus-visible:text-ink" aria-hidden="true">{way.external ? '↗' : '→'}</span>
+                  <span className="mt-0.5 hidden h-9 w-9 place-items-center rounded-full border border-ink/10 text-ink/60 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:border-brand group-hover:bg-brand group-hover:text-ink group-focus-visible:border-brand group-focus-visible:bg-brand group-focus-visible:text-ink sm:grid" aria-hidden="true">{way.external ? '↗' : '→'}</span>
                 </a>
               ))}
             </div>
@@ -189,12 +190,12 @@ export default function ContactPage() {
         <section ref={faq.ref} className="relative w-full bg-cream pb-24 pt-6 md:pt-8" aria-labelledby="faq-title">
           <div className="pointer-events-none absolute inset-0 grain opacity-30" aria-hidden />
           <div className="relative mx-auto w-full max-w-[1240px] px-5 sm:px-8 lg:px-20">
-            <div className="grid gap-12 md:grid-cols-[0.92fr_1.6fr] md:gap-16">
+            <div className="grid grid-cols-1 gap-12 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.6fr)] md:gap-16">
               {/* Left heading — STICKS until Qs pass */}
               <FaqHeading revealed={faq.revealed} />
 
               {/* Q list */}
-              <div className={`flex flex-col gap-2.5 ${faq.revealed ? 'animate-fade-up' : 'opacity-0'}`} style={{ animationDelay: '140ms' }}>
+              <div className={`flex min-w-0 flex-col gap-2.5 ${faq.revealed ? 'animate-fade-up' : 'opacity-0'}`} style={{ animationDelay: '140ms' }}>
                 {FAQ.map(({ q, a }, i) => (
                   <FaqItem
                     key={q}
