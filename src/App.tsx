@@ -13,11 +13,12 @@ import { RobotMoodProvider } from './context/RobotMood'
 import ComplexPage from './pages/ComplexPage'
 import ContactPage from './pages/ContactPage'
 import LegalPage from './pages/LegalPage'
+import PrivacyPage from './pages/PrivacyPage'
 import BlogPage from './pages/BlogPage'
 import PostPage from './pages/PostPage'
 import { BLOG_ON_HOME, postBySlug } from './content/blog'
 import BlogStrip from './components/BlogStrip'
-import { PRIVACY, TERMS } from './content/legal'
+import { TERMS } from './content/legal'
 import { pageForPath } from './config/seo'
 import { applyHead } from './lib/head'
 
@@ -129,10 +130,17 @@ export default function App() {
       </RobotMoodProvider>
     )
   }
-  if (page === 'privacy' || page === 'terms') {
+  if (page === 'privacy') {
     return (
       <RobotMoodProvider>
-        <LegalPage doc={page === 'privacy' ? PRIVACY : TERMS} />
+        <PrivacyPage />
+      </RobotMoodProvider>
+    )
+  }
+  if (page === 'terms') {
+    return (
+      <RobotMoodProvider>
+        <LegalPage doc={TERMS} />
       </RobotMoodProvider>
     )
   }

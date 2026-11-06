@@ -152,7 +152,7 @@ const SOURCES = {
   '/projects': ['src/content/complex.ts', 'src/pages/ComplexPage.tsx', 'src/components/complex', ...COPY],
   '/contact': ['src/content/contact.ts', 'src/pages/ContactPage.tsx', ...COPY],
   '/simple': ['src/pages/SimplePage.tsx', 'src/components/simple'],
-  '/privacy': ['src/content/legal.ts', ...COPY],
+  '/privacy': ['src/pages/PrivacyPage.tsx', ...COPY],
   '/terms': ['src/content/legal.ts', ...COPY],
   '/blog': ['src/content/blog.ts', 'src/pages/BlogPage.tsx', ...COPY],
 }

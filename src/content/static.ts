@@ -10,7 +10,7 @@
  */
 import { site } from '../config/site'
 import { COMPLEX } from './complex'
-import { PRIVACY, TERMS } from './legal'
+import { TERMS } from './legal'
 import { HOME_HERO, HOME_DAY, HOME_ABILITIES, HOME_WORK, HOME_APPROACH } from './home'
 import { CONTACT } from './contact'
 import { QUIZ } from './quiz'
@@ -131,8 +131,19 @@ export function staticHtml(page: PageSeo): string {
       close
     )
   }
-  if (page === PAGES.privacy || page === PAGES.terms) {
-    const doc = page === PAGES.privacy ? PRIVACY : TERMS
+  if (page === PAGES.privacy) {
+    return (
+      open +
+      `<header><p>Privacy</p><h1>The small print, plainly.</h1></header>` +
+      `<section><h2>What I collect</h2><p>Your name and email if you send a contact message or ask me to keep a copy of your fix plan, plus the answers you give the quiz.</p></section>` +
+      `<section><h2>Why</h2><p>To reply and, if you ask, to send you a copy of your plan. I do not sell your data.</p></section>` +
+      `<section><h2>How long I keep it</h2><p>Only as long as needed to reply and for my own records.</p></section>` +
+      `<section><h2>How to ask for it to be deleted</h2><p>Email me at ${a(`mailto:${site.contact.email}`, site.contact.email)} and I will remove it within a week.</p></section>` +
+      close
+    )
+  }
+  if (page === PAGES.terms) {
+    const doc = TERMS
     return (
       open +
       `<header><p>${esc(doc.label)}</p><h1>${esc(doc.heading)} ${esc(doc.emphasis)}</h1><p>Last updated ${esc(doc.updated)}</p><p>${esc(doc.short)}</p></header>` +
