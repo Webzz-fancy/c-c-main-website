@@ -7,6 +7,7 @@ import { CONTACT } from '../content/contact'
 import { FAQ } from '../config/seo'
 import { site } from '../config/site'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useReveal } from '../hooks/useReveal'
 
 const external = (on?: boolean) => (on ? { target: '_blank', rel: 'noopener' } : {})
 
@@ -20,6 +21,8 @@ export default function ContactPage() {
     return () => window.clearTimeout(t)
   }, [])
   const [openFaq, setOpenFaq] = useState(0)
+  const channels = useReveal<HTMLElement>()
+  const faq = useReveal<HTMLElement>()
 
   return (
     <div className="min-h-screen bg-cream text-ink">
@@ -46,9 +49,9 @@ export default function ContactPage() {
           </div>
 
           <div className="relative z-10 mx-auto flex w-full max-w-[1100px] flex-1 flex-col justify-center px-6 pb-10 lg:px-10 lg:pb-16">
-            <Eyebrow>{CONTACT.label}</Eyebrow>
+            <Eyebrow className="animate-fade-up" style={{ animationDelay: '80ms' }}>{CONTACT.label}</Eyebrow>
 
-            <h1 className="mt-5 max-w-3xl font-display text-[clamp(2.6rem,min(6.4vw,8vh),4.9rem)] leading-[1.02] tracking-[-0.03em] text-balance">
+            <h1 className="animate-fade-up mt-5 max-w-3xl font-display text-[clamp(2rem,min(5.6vw,7vh),4.15rem)] leading-[1.04] tracking-[-0.02em] text-balance" style={{ animationDelay: '140ms' }}>
               {CONTACT.heading}
               <br />
               <span className="relative inline-block">
@@ -57,11 +60,11 @@ export default function ContactPage() {
               </span>
             </h1>
 
-            <p className="mt-6 max-w-xl text-[clamp(0.98rem,1.2vw,1.1rem)] font-light leading-relaxed text-balance text-ink-soft">
+            <p className="animate-fade-up mt-6 max-w-xl text-[clamp(0.92rem,min(1.3vw,1.85vh),1.08rem)] font-light leading-relaxed text-balance text-ink-soft" style={{ animationDelay: '220ms' }}>
               {CONTACT.intro}
             </p>
 
-            <div className="mt-8 flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:gap-3">
+            <div className="animate-fade-up mt-8 flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:gap-3" style={{ animationDelay: '300ms' }}>
               <a
                 href={CONTACT.ways[0].href}
                 {...external(CONTACT.ways[0].external)}
@@ -82,29 +85,22 @@ export default function ContactPage() {
         </section>
 
         {/* Contact channels */}
-        <section className="mx-auto w-full max-w-[1100px] px-6 pb-14 lg:px-10 md:pb-20">
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
+        <section ref={channels.ref} className="mx-auto w-full max-w-[1100px] px-6 pb-14 lg:px-10 md:pb-20">
+          <div className="border-t border-dashed border-brand/70">
             {CONTACT.ways.map((way, i) => (
               <a
                 key={way.id}
                 href={way.href}
                 {...external(way.external)}
-                className={[
-                  'group block rounded-2xl p-6 transition-all duration-300',
-                  i === 0 ? 'bg-brand text-ink shadow-brand' : 'bg-white/60 ring-1 ring-ink/[0.06] hover:ring-glass/30 hover:bg-white',
-                ].join(' ')}
+                className={`group grid gap-3 border-b border-dashed border-brand/70 py-7 md:grid-cols-[3rem_1fr_1.35fr_auto] md:items-start md:gap-6 ${channels.revealed ? 'animate-fade-up' : 'opacity-0'}`}
+                style={{ animationDelay: `${i * 80}ms` }}
               >
-                <div className="text-[11px] font-mono uppercase tracking-[0.22em] opacity-70">0{i + 1}</div>
-                <div className="mt-4 font-display text-[1.5rem] leading-tight tracking-[-0.015em]">{way.name}</div>
-                <p className={['mt-3 text-[15px] font-light leading-relaxed', i === 0 ? 'text-ink/80' : 'text-ink-soft'].join(' ')}>
-                  {way.body}
-                </p>
-                <div className="mt-5 inline-flex items-center gap-1.5 text-[14px] font-semibold">
-                  {way.action}
-                  <span className="transition-transform group-hover:translate-x-1" aria-hidden>
-                    {way.external ? '↗' : '→'}
-                  </span>
-                </div>
+                <span className="text-[12px] font-semibold tracking-[0.14em] text-glass">0{i + 1}</span>
+                <h2 className="font-display text-[1.5rem] leading-tight tracking-[-0.02em]">{way.name}</h2>
+                <p className="max-w-md text-[15px] font-light leading-relaxed text-ink-soft">{way.body}</p>
+                <span className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-glass">
+                  {way.action}<span className="transition-transform duration-300 group-hover:translate-x-1" aria-hidden>{way.external ? '↗' : '→'}</span>
+                </span>
               </a>
             ))}
           </div>
@@ -125,15 +121,15 @@ export default function ContactPage() {
         </section>
 
         {/* FAQ */}
-        <section className="relative w-full bg-cream pb-24 pt-6 md:pt-8" aria-labelledby="faq-title">
+        <section ref={faq.ref} className="relative w-full bg-cream pb-24 pt-6 md:pt-8" aria-labelledby="faq-title">
           <div className="pointer-events-none absolute inset-0 grain opacity-30" aria-hidden />
           <div className="relative mx-auto w-full max-w-[1240px] px-5 sm:px-8 lg:px-20">
             <div className="grid gap-12 md:grid-cols-[0.92fr_1.6fr] md:gap-16">
               {/* Left heading — STICKS until Qs pass */}
-              <FaqHeading />
+              <FaqHeading revealed={faq.revealed} />
 
               {/* Q list */}
-              <div className="flex flex-col gap-2.5">
+              <div className={`flex flex-col gap-2.5 ${faq.revealed ? 'animate-fade-up' : 'opacity-0'}`} style={{ animationDelay: '140ms' }}>
                 {FAQ.map(({ q, a }, i) => (
                   <FaqItem
                     key={q}
@@ -154,47 +150,15 @@ export default function ContactPage() {
   )
 }
 
-function FaqHeading() {
-  const ref = useRef<HTMLDivElement>(null)
-  const [stuck, setStuck] = useState(true)
-
-  useEffect(() => {
-    const onScroll = () => {
-      const el = ref.current
-      if (!el) return
-      const parent = el.parentElement?.parentElement // section grid
-      const r = parent?.getBoundingClientRect()
-      if (!r) return
-      // stop sticking when the bottom of the FAQ grid leaves the viewport
-      setStuck(r.bottom > window.innerHeight * 0.55)
-    }
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', onScroll)
-    return () => {
-      window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', onScroll)
-    }
-  }, [])
-
+function FaqHeading({ revealed }: { revealed: boolean }) {
   return (
     <div>
-      <div
-        ref={ref}
-        className={stuck ? 'md:sticky md:top-28' : ''}
-      >
+      <div className={`md:sticky md:top-28 ${revealed ? 'animate-fade-up' : 'opacity-0'}`}>
         <Eyebrow>Frequently asked questions</Eyebrow>
         <h2 id="faq-title" className="mt-5 font-display text-[clamp(2.4rem,4.6vw,4rem)] leading-[1.03] tracking-[-0.025em]">
           Things you<br />might ask.
         </h2>
-        {/* generated robot illustration for under the heading */}
-        <img
-          src="/robot-faq-mark.png"
-          alt=""
-          aria-hidden
-          className="mt-8 h-[120px] w-auto md:h-[150px]"
-          draggable={false}
-        />
+        <img src="/robot-mark.png" alt="" aria-hidden className="mt-8 h-[120px] w-auto md:h-[150px]" draggable={false} />
       </div>
     </div>
   )
@@ -239,7 +203,7 @@ function FaqItem({
           background: open ? 'transparent' : PEACH,
           border: open ? `1.5px solid ${GOLD}` : '1.5px solid transparent',
           color: '#1B1A17',
-          maxWidth: open ? '62%' : '100%',
+          maxWidth: open ? 'min(100%, max(58%, 18rem))' : '100%',
         }}
       >
         <span className="font-display text-[clamp(1.1rem,1.5vw,1.45rem)] leading-[1.15] tracking-[-0.015em]">
@@ -259,56 +223,33 @@ function FaqItem({
         </span>
       </button>
 
-      {/* Answer panel + floating robot head at bottom-right */}
-      <div
-        style={{
-          height: open ? h : 0,
-          overflow: 'hidden',
-          transition: 'height 520ms cubic-bezier(0.22,1,0.36,1)',
-        }}
-      >
-        <div ref={ansRef} className="relative pt-2 md:pt-3">
-          <div
-            className="relative rounded-[28px] px-7 py-7 md:rounded-[32px] md:px-9 md:py-8"
-            style={{ background: PEACH }}
-          >
-            <p
-              className="max-w-[56ch] text-[15px] font-light leading-[1.75] text-ink-soft md:text-[16px]"
-              style={{
-                opacity: open ? 1 : 0,
-                transform: open ? 'translateY(0)' : 'translateY(8px)',
-                transition: 'opacity 420ms ease 180ms, transform 480ms cubic-bezier(0.22,1,0.36,1) 160ms',
-              }}
-            >
-              {a}
-            </p>
+      {/* The badge is a sibling of the clipped height animation, never inside it. */}
+      <div className="relative md:mr-24">
+        <div
+          style={{ height: open ? h : 0, overflow: 'hidden', transition: 'height 520ms cubic-bezier(0.22,1,0.36,1)' }}
+          aria-hidden={!open}
+        >
+          <div ref={ansRef} className="pt-2 md:pt-3">
+            <div className="rounded-[28px] px-7 py-7 md:rounded-[32px] md:px-9 md:py-8" style={{ background: PEACH }}>
+              <p
+                className="max-w-[56ch] text-[15px] font-light leading-[1.75] text-ink-soft md:text-[16px]"
+                style={{ opacity: open ? 1 : 0, transform: open ? 'translateY(0)' : 'translateY(8px)', transition: `opacity 420ms ease ${open ? 180 : 0}ms, transform 480ms cubic-bezier(0.22,1,0.36,1) ${open ? 180 : 0}ms` }}
+              >{a}</p>
+            </div>
           </div>
-
-          {/* Robot head — tight-cropped transparent PNG, to the RIGHT of
-              the answer panel (outside it, where you circled), vertically
-              centered on desktop at the panel's middle, no gold circle,
-              drop shadow. Mobile falls back to bottom-right to stay
-              on-screen. */}
-          <img
-            src="/robot-faq-head.png"
-            alt=""
-            aria-hidden
-            draggable={false}
-            className="faq-bot-head"
-            style={{
-              ['--bot-scale' as any]: open ? 1 : 0.6,
-              position: 'absolute',
-              right: '4px',
-              bottom: '-26px',
-              height: '72px',
-              width: 'auto',
-              objectFit: 'contain',
-              transform: open ? 'scale(1)' : 'scale(0.6)',
-              opacity: open ? 1 : 0,
-              transition: `transform 520ms cubic-bezier(0.22,1,0.36,1) 200ms, opacity 380ms ease ${open ? '180ms' : '0ms'}`,
-              filter: 'drop-shadow(0 8px 18px rgba(27,26,23,0.22))',
-            }}
-          />
+        </div>
+        <div
+          className="faq-bot-head pointer-events-none absolute bottom-[-18px] right-1 h-[42px] w-[53px] overflow-hidden md:h-[50px] md:w-[63px]"
+          style={{
+            ['--bot-scale' as string]: open ? 1 : 0.6,
+            transform: open ? 'scale(1)' : 'scale(0.6)',
+            opacity: open ? 1 : 0,
+            transition: `transform 520ms cubic-bezier(0.22,1,0.36,1) ${open ? 180 : 0}ms, opacity 380ms ease ${open ? 180 : 0}ms`,
+            filter: 'drop-shadow(0 8px 10px rgba(27,26,23,0.22))',
+          }}
+          aria-hidden
+        >
+          <img src="/robot-mark.png" alt="" className="block w-full max-w-none" draggable={false} />
         </div>
       </div>
     </div>
