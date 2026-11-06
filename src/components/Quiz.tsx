@@ -12,6 +12,7 @@ import {
   TEAM_SIZES,
   VERIFY_SCALE,
   buildPlan,
+  cleanOtherBusiness,
   nounsFor,
   verifyTarget,
   whatsappLink,
@@ -22,6 +23,7 @@ import { site } from '../config/site'
 
 type Draft = {
   model?: string
+  otherBusiness?: string
   team?: number
   belief?: string
   answers: number[]
@@ -75,7 +77,7 @@ function FixPlan({ onExit }: { onExit: () => void }) {
     setStep(0)
   }
   const finish = (answers: number[], extra: number | null) =>
-    setPlan({ model: draft.model!, team: draft.team!, belief: draft.belief!, answers, extra })
+    setPlan({ model: draft.model!, ...(draft.model === 'other' && draft.otherBusiness ? { otherBusiness: draft.otherBusiness } : {}), team: draft.team!, belief: draft.belief!, answers, extra })
 
   if (plan) return <PlanView answers={plan} headRef={headRef} onRestart={restart} />
 
@@ -101,7 +103,38 @@ function FixPlan({ onExit }: { onExit: () => void }) {
   if (current === 'model') {
     label = 'Your business'
     question = 'What kind of business do you run?'
-    body = choose(MODELS.map((m) => ({ text: m.label, hint: m.hint })), MODELS.findIndex((m) => m.id === draft.model), (i) => next({ model: MODELS[i].id }))
+    body = (
+      <>
+        {choose(MODELS.map((m) => ({ text: m.label, hint: m.hint })), MODELS.findIndex((m) => m.id === draft.model), (i) => {
+          const model = MODELS[i].id
+          if (model === 'other') setDraft((d) => ({ ...d, model }))
+          else next({ model, otherBusiness: undefined })
+        })}
+        {draft.model === 'other' && (
+          <form className="mt-5" onSubmit={(event) => {
+            event.preventDefault()
+            const otherBusiness = cleanOtherBusiness(draft.otherBusiness)
+            if (otherBusiness) next({ otherBusiness })
+          }}>
+            <label htmlFor="other-business" className="block text-[14px] font-semibold text-ink">Tell us a little about your business</label>
+            <input
+              id="other-business"
+              type="text"
+              required
+              maxLength={80}
+              autoFocus
+              value={draft.otherBusiness ?? ''}
+              onChange={(event) => setDraft((d) => ({ ...d, otherBusiness: event.target.value }))}
+              placeholder="For example, a catering business"
+              className="mt-2 w-full rounded-2xl border border-black/[0.1] bg-white/80 px-5 py-4 text-[15px] text-ink outline-none placeholder:text-ink-muted/70 focus:border-glass"
+            />
+            <button type="submit" disabled={!cleanOtherBusiness(draft.otherBusiness)} className={`${goldButton} mt-4`}>
+              Continue <span aria-hidden="true">→</span>
+            </button>
+          </form>
+        )}
+      </>
+    )
   } else if (current === 'team') {
     label = 'Your business'
     question = 'How many people work in it, including you?'
@@ -281,6 +314,9 @@ function PlanView({ answers, headRef, onRestart }: {
   return (
     <div ref={planRef} className="quiz-plan w-full text-left">
       <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-glass">Your business fix plan</p>
+      {answers.model === 'other' && answers.otherBusiness && (
+        <p className="mt-4 text-[14px] font-light leading-relaxed text-ink-soft">Business: {answers.otherBusiness}</p>
+      )}
       {p.area && <p className="mt-4 text-[14px] font-semibold text-brand-600">Fix first: {p.area.stage.toLowerCase()}</p>}
       <h3 ref={headRef} tabIndex={-1} className="mt-2 font-display text-[clamp(1.9rem,3.4vw,2.6rem)] leading-[1.08] tracking-[-0.02em] text-ink outline-none">
         {p.headline}

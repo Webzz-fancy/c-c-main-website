@@ -12,8 +12,8 @@
  *
  * Scores stay in here and are never shown. Everything the plan says is built
  * from the answers, so the page and the emailed copy (see
- * docs/quiz-backend.md) always match. No free text from the visitor goes into
- * a plan.
+ * docs/quiz-backend.md) always match. A visitor can also describe their
+ * business when none of the listed types fit; that detail does not affect scoring.
  */
 
 import { site } from '../config/site'
@@ -337,12 +337,21 @@ export const QUIZ = {
 /** What a visitor answered, as indexes into the lists above. */
 export type QuizAnswers = {
   model: string
+  /** An optional description when the business type is "Something else". */
+  otherBusiness?: string
   team: number
   belief: string
   /** one option index per area, in AREAS order */
   answers: number[]
   /** the VERIFY_SCALE index for the check, or null when it wasn't asked */
   extra: number | null
+}
+
+/** Keep a short, single-line description safe for summaries and storage. */
+export function cleanOtherBusiness(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const cleaned = value.replace(/\p{Cc}+/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 80).trim()
+  return /[\p{L}\p{N}]/u.test(cleaned) ? cleaned : null
 }
 
 export const nounsFor = (model: string) => (MODELS.find((m) => m.id === model) ?? MODELS[MODELS.length - 1]).nouns
@@ -388,10 +397,13 @@ export function cleanAnswers(raw: unknown): QuizAnswers | null {
   const belief = typeof r.belief === 'string' && BELIEFS.some((b) => b.id === r.belief) ? r.belief : null
   const team = index(r.team, TEAM_SIZES.length)
   if (model === null || belief === null || team === null) return null
+  // Older quiz sessions may not have a description; validate it when present.
+  const otherBusiness = model === 'other' && r.otherBusiness !== undefined ? cleanOtherBusiness(r.otherBusiness) : undefined
+  if (otherBusiness === null) return null
   const n = nounsFor(model)
   const answers = Array.isArray(r.answers) ? r.answers.map((v, i) => (AREAS[i] ? index(v, AREAS[i].options(n, team === 0).length) : null)) : []
   if (answers.length !== AREAS.length || answers.some((v) => v === null)) return null
-  const clean = { model, team, belief, answers: answers as number[] }
+  const clean = { model, ...(otherBusiness ? { otherBusiness } : {}), team, belief, answers: answers as number[] }
   // the check is only asked when a stage stands out
   const extra = verifyTarget(clean) ? index(r.extra, VERIFY_SCALE.length) : null
   if (verifyTarget(clean) && extra === null) return null
@@ -544,7 +556,7 @@ export function answerSummary(a: QuizAnswers): string[] {
   const solo = a.team === 0
   const target = verifyTarget(a)
   return [
-    `Business: ${MODELS.find((m) => m.id === a.model)!.label}, team: ${TEAM_SIZES[a.team].toLowerCase()}`,
+    `Business: ${MODELS.find((m) => m.id === a.model)!.label}${a.model === 'other' && a.otherBusiness ? ` — ${a.otherBusiness}` : ''}, team: ${TEAM_SIZES[a.team].toLowerCase()}`,
     `Thinks the problem is: ${BELIEFS.find((b) => b.id === a.belief)!.label}`,
     ...AREAS.map((area, i) => `${area.stage}: ${area.options(n, solo)[a.answers[i]].text}`),
     ...(target && a.extra !== null ? [`Check (${target.stage.toLowerCase()}): ${VERIFY_SCALE[a.extra].text}`] : []),
