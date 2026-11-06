@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type RefObject } from 'react'
+import { useEffect, useRef, type RefObject } from 'react'
 import type { ComplexProject } from '../../content/complex'
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value))
@@ -75,7 +75,9 @@ export default function WorkflowWalk({ project, scrollRoot }: {
   const stops = project.stops.slice(0, layout.nodes.length)
   const count = String(stops.length).padStart(2, '0')
 
-  useLayoutEffect(() => {
+  // The scroll container is a parent ref; it is guaranteed to be attached by
+  // the time passive effects run, including in production's single mount.
+  useEffect(() => {
     const root = scrollRoot.current
     const walk = ref.current
     if (!root || !walk) return
