@@ -21,14 +21,42 @@ export default function ContactPage() {
     return () => window.clearTimeout(t)
   }, [])
   const [openFaq, setOpenFaq] = useState(0)
+  const [activeWay, setActiveWay] = useState(0)
   const channels = useReveal<HTMLElement>()
   const faq = useReveal<HTMLElement>()
 
   return (
     <div className="min-h-screen bg-cream text-ink">
       <style>{`
-        @media (min-width: 768px) {
-          .faq-bot-head { right: -78px !important; top: 50% !important; bottom: auto !important; transform: translateY(-50%) scale(var(--bot-scale,1)) !important; }
+        @keyframes contact-chat-in {
+          0%, 5% { opacity: 0; transform: translateY(8px) scale(.94); }
+          14%, 86% { opacity: 1; transform: translateY(0) scale(1); }
+          96%, 100% { opacity: 0; transform: translateY(0) scale(1); }
+        }
+        @keyframes contact-chat-typing {
+          0%, 16% { opacity: 0; transform: translateY(6px); }
+          22%, 39% { opacity: 1; transform: translateY(0); }
+          44%, 100% { opacity: 0; transform: translateY(0); }
+        }
+        @keyframes contact-chat-reply {
+          0%, 39% { opacity: 0; transform: translateY(8px) scale(.94); }
+          49%, 86% { opacity: 1; transform: translateY(0) scale(1); }
+          96%, 100% { opacity: 0; transform: translateY(0) scale(1); }
+        }
+        @keyframes contact-dot {
+          0%, 60%, 100% { opacity: .35; transform: translateY(0); }
+          30% { opacity: 1; transform: translateY(-3px); }
+        }
+        .contact-chat-in { animation: contact-chat-in 6s cubic-bezier(.22,1,.36,1) infinite; }
+        .contact-chat-typing { animation: contact-chat-typing 6s cubic-bezier(.22,1,.36,1) infinite; }
+        .contact-chat-reply { animation: contact-chat-reply 6s cubic-bezier(.22,1,.36,1) infinite; }
+        .contact-dot { animation: contact-dot .9s ease-in-out infinite; }
+        .contact-dot:nth-child(2) { animation-delay: .15s; }
+        .contact-dot:nth-child(3) { animation-delay: .3s; }
+        @media (prefers-reduced-motion: reduce) {
+          .contact-chat-in, .contact-chat-reply { animation: none; opacity: 1; transform: none; }
+          .contact-chat-typing { animation: none; opacity: 0; }
+          .contact-dot { animation: none; opacity: .7; }
         }
       `}</style>
       <ScrollRope />
@@ -84,51 +112,57 @@ export default function ContactPage() {
           </div>
         </section>
 
-        {/* Contact channels — one editorial directory, rather than three cards. */}
+        {/* A single connected directory, in the visual language of the projects page. */}
         <section ref={channels.ref} className="mx-auto w-full max-w-[1100px] px-6 pb-14 lg:px-10 md:pb-20" aria-labelledby="contact-ways-title">
-          <div className="grid gap-9 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.35fr)] md:gap-12 lg:gap-20">
-            <div className={channels.revealed ? 'animate-fade-up' : 'opacity-0'}>
-              <Eyebrow>{CONTACT.label}</Eyebrow>
-              <h2 id="contact-ways-title" className="mt-5 max-w-[9ch] font-display text-[clamp(2.4rem,4.2vw,4rem)] leading-[1.03] tracking-[-0.03em] text-ink">
-                Three ways to{' '}
-                <span className="relative inline-block">
-                  <span className="relative z-10 italic text-brand-600">connect.</span>
-                  <Underline active={channels.revealed} />
-                </span>
-              </h2>
-              {/* A quiet echo of the routes and nodes on the projects page. */}
-              <svg viewBox="0 0 220 105" className="mt-10 hidden h-[105px] w-[220px] md:block" fill="none" aria-hidden="true">
-                <path d="M14 87C57 87 59 26 108 26S164 77 205 77" stroke="#E1AD34" strokeWidth="1.5" strokeDasharray="7 7" />
-                <circle cx="14" cy="87" r="4" fill="#E1AD34" />
-                <circle cx="108" cy="26" r="10" fill="#F8F5F0" stroke="#E1AD34" strokeWidth="1.5" />
-                <circle cx="108" cy="26" r="3" fill="#E1AD34" />
-                <circle cx="205" cy="77" r="5" fill="#2D6D8B" />
+          <div className={channels.revealed ? 'animate-fade-up' : 'opacity-0'}>
+            <Eyebrow>{CONTACT.label}</Eyebrow>
+            <h2 id="contact-ways-title" className="mt-5 max-w-xl font-display text-[clamp(2.1rem,3.6vw,3.3rem)] leading-[1.05] tracking-[-0.02em] text-ink">
+              Three ways to{' '}
+              <span className="relative inline-block">
+                <span className="relative z-10 italic text-brand-600">connect.</span>
+                <Underline active={channels.revealed} />
+              </span>
+            </h2>
+          </div>
+
+          <div className={`mt-9 grid overflow-hidden rounded-[28px] border border-ink/[0.08] bg-white/70 p-3 shadow-soft backdrop-blur-sm md:rounded-[32px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] ${channels.revealed ? 'animate-fade-up' : 'opacity-0'}`} style={{ animationDelay: '140ms' }}>
+            {/* One illuminated screen, like the project cards; the highlighted
+                route follows the link under the pointer or keyboard focus. */}
+            <div className="relative min-h-[200px] overflow-hidden rounded-[20px] sm:min-h-[250px] lg:min-h-[390px]" aria-hidden="true" style={{ background: 'radial-gradient(120% 80% at 50% 120%, rgba(225,173,52,.2), transparent 60%), linear-gradient(rgba(127,179,204,.07) 1px, transparent 1px) 0 0 / 20px 20px, linear-gradient(90deg, rgba(127,179,204,.07) 1px, transparent 1px) 0 0 / 20px 20px, #17181b' }}>
+              <div className="absolute left-6 top-6 text-[12px] font-semibold uppercase tracking-[0.14em] text-glass-300">{CONTACT.label}</div>
+              <div className="absolute right-6 top-6 text-[12px] font-semibold tracking-[0.14em] text-white/50">0{activeWay + 1} / 03</div>
+              <svg viewBox="0 0 400 260" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" fill="none">
+                {['M135 146 C205 146 198 94 280 94', 'M135 146 H280', 'M135 146 C205 146 198 198 280 198'].map((d, i) => (
+                  <path key={d} d={d} stroke={activeWay === i ? '#E1AD34' : 'rgba(143,192,214,.25)'} strokeWidth="1.5" strokeDasharray="5 6" className="transition-colors duration-300" />
+                ))}
               </svg>
+              <div className="absolute left-[33.75%] top-[56%] grid h-16 w-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-brand/50 bg-brand/10 shadow-[0_0_42px_rgba(225,173,52,0.15)] sm:h-20 sm:w-20">
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-brand text-ink sm:h-12 sm:w-12"><ContactIcon id={CONTACT.ways[activeWay].id} /></span>
+              </div>
+              {CONTACT.ways.map((way, i) => (
+                <div key={way.id} className={`absolute left-[70%] grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border text-[12px] font-semibold tracking-[0.14em] transition-all duration-300 ${activeWay === i ? 'border-brand bg-brand text-ink shadow-[0_0_25px_rgba(225,173,52,0.25)]' : 'border-glass-300/40 bg-[#17181b] text-glass-300'}`} style={{ top: `${36 + i * 20}%` }}>0{i + 1}</div>
+              ))}
             </div>
 
-            <div className={`relative overflow-hidden rounded-[28px] border border-white/80 bg-white/45 shadow-soft backdrop-blur-sm md:rounded-[32px] ${channels.revealed ? 'animate-fade-up' : 'opacity-0'}`} style={{ animationDelay: '140ms' }}>
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand/70 to-transparent" aria-hidden="true" />
-              <div className="relative divide-y divide-ink/[0.08]">
-                {CONTACT.ways.map((way, i) => (
-                  <a
-                    key={way.id}
-                    href={way.href}
-                    {...external(way.external)}
-                    className="group relative grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-4 px-5 py-6 transition-colors duration-300 hover:bg-white/65 focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-glass sm:gap-x-6 sm:px-8 sm:py-8"
-                  >
-                    <span className="relative mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-full border border-brand/30 bg-[#F1E4D1]/70 text-brand-600 transition-all duration-300 group-hover:border-brand group-hover:bg-brand/20 sm:h-12 sm:w-12" aria-hidden="true">
-                      <ContactIcon id={way.id} />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-[12px] font-semibold tracking-[0.14em] text-glass">0{i + 1}</span>
-                      <span className="mt-2 block font-display text-[clamp(1.5rem,1.9vw,1.875rem)] leading-[1.12] tracking-[-0.02em] text-ink">{way.name}</span>
-                      <span className="mt-2.5 block max-w-[38ch] text-[15px] font-light leading-relaxed text-ink-soft">{way.body}</span>
-                      <span className="mt-4 block text-[14px] font-semibold text-glass [overflow-wrap:anywhere]">{way.action}</span>
-                    </span>
-                    <span className="mt-1 grid h-8 w-8 place-items-center rounded-full border border-ink/10 text-ink/50 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:border-brand group-hover:bg-brand group-hover:text-ink" aria-hidden="true">{way.external ? '↗' : '→'}</span>
-                  </a>
-                ))}
-              </div>
+            <div className="divide-y divide-ink/[0.08] px-2 sm:px-5 lg:px-7">
+              {CONTACT.ways.map((way, i) => (
+                <a
+                  key={way.id}
+                  href={way.href}
+                  {...external(way.external)}
+                  onMouseEnter={() => setActiveWay(i)}
+                  onFocus={() => setActiveWay(i)}
+                  className="group grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-4 py-6 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-glass sm:gap-x-6 sm:py-7"
+                >
+                  <span className="pt-1 text-[12px] font-semibold tracking-[0.14em] text-glass">0{i + 1}</span>
+                  <span className="min-w-0">
+                    <span className="block font-display text-[1.35rem] leading-tight tracking-[-0.01em] text-ink">{way.name}</span>
+                    <span className="mt-2 block max-w-[42ch] text-[15px] font-light leading-relaxed text-ink-soft">{way.body}</span>
+                    <span className="mt-3 inline-block text-[14px] font-semibold text-glass [overflow-wrap:anywhere]">{way.action}</span>
+                  </span>
+                  <span className="mt-0.5 grid h-9 w-9 place-items-center rounded-full border border-ink/10 text-ink/60 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:border-brand group-hover:bg-brand group-hover:text-ink group-focus-visible:border-brand group-focus-visible:bg-brand group-focus-visible:text-ink" aria-hidden="true">{way.external ? '↗' : '→'}</span>
+                </a>
+              ))}
             </div>
           </div>
         </section>
@@ -191,15 +225,25 @@ function ContactIcon({ id }: { id: 'call' | 'whatsapp' | 'email' }) {
   )
 }
 
+function TypingDots() {
+  return <>{[0, 1, 2].map((dot) => <span key={dot} className="contact-dot h-1.5 w-1.5 rounded-full bg-glass" />)}</>
+}
+
 function FaqHeading({ revealed }: { revealed: boolean }) {
   return (
     <div>
       <div className={`md:sticky md:top-28 ${revealed ? 'animate-fade-up' : 'opacity-0'}`}>
         <Eyebrow>Frequently asked questions</Eyebrow>
-        <h2 id="faq-title" className="mt-5 font-display text-[clamp(2.4rem,4.2vw,4rem)] leading-[1.03] tracking-[-0.03em]">
+        <h2 id="faq-title" className="mt-5 font-display text-[clamp(2.1rem,3.6vw,3.3rem)] leading-[1.05] tracking-[-0.02em]">
           Things you<br />might ask.
         </h2>
-        <img src="/robot-faq-mark.png" alt="" aria-hidden className="mt-8 h-[120px] w-auto md:h-[150px]" draggable={false} />
+        <div className="relative mt-8 h-[126px] w-[210px]" aria-hidden="true">
+          <div className="contact-chat-in absolute right-0 top-0 h-11 w-[138px] rounded-[20px] rounded-br-md border border-glass/15 bg-white/70 shadow-[0_10px_24px_-18px_rgba(27,26,23,.35)]" />
+          <div className="contact-chat-typing absolute left-0 top-[60px] flex h-11 w-[72px] items-center justify-center gap-1.5 rounded-[20px] rounded-bl-md bg-[#F1E4D1]">
+            <TypingDots />
+          </div>
+          <div className="contact-chat-reply absolute left-0 top-[60px] h-11 w-[156px] rounded-[20px] rounded-bl-md bg-[#F1E4D1]" />
+        </div>
       </div>
     </div>
   )
@@ -220,6 +264,20 @@ function FaqItem({
 }) {
   const ansRef = useRef<HTMLDivElement>(null)
   const [h, setH] = useState(0)
+  const [answerReady, setAnswerReady] = useState(false)
+
+  useEffect(() => {
+    if (!open) {
+      setAnswerReady(false)
+      return
+    }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setAnswerReady(true)
+      return
+    }
+    const timer = window.setTimeout(() => setAnswerReady(true), 1000)
+    return () => window.clearTimeout(timer)
+  }, [open])
 
   useLayoutEffect(() => {
     if (!ansRef.current) return
@@ -247,7 +305,7 @@ function FaqItem({
           maxWidth: open ? 'min(100%, max(58%, 18rem))' : '100%',
         }}
       >
-        <span className="font-display text-[clamp(1.2rem,1.6vw,1.5rem)] leading-[1.12] tracking-[-0.02em]">
+        <span className="font-display text-[clamp(1rem,1.2vw,1.15rem)] leading-snug tracking-[-0.01em]">
           {q}
         </span>
         <span
@@ -264,35 +322,24 @@ function FaqItem({
         </span>
       </button>
 
-      {/* The badge is a sibling of the clipped height animation, never inside it. */}
-      <div className="relative md:mr-24">
-        <div
-          style={{ height: open ? h : 0, overflow: 'hidden', transition: 'height 520ms cubic-bezier(0.22,1,0.36,1)' }}
-          aria-hidden={!open}
-        >
-          <div ref={ansRef} className="pt-2 md:pt-3">
-            <div className="rounded-[28px] px-7 py-7 pr-20 md:rounded-[32px] md:px-9 md:py-8" style={{ background: PEACH }}>
-              <p
-                className="max-w-[56ch] text-[15px] font-light leading-[1.75] text-ink-soft md:text-[16px]"
-                style={{ opacity: open ? 1 : 0, transform: open ? 'translateY(0)' : 'translateY(8px)', transition: `opacity 420ms ease ${open ? 180 : 0}ms, transform 480ms cubic-bezier(0.22,1,0.36,1) ${open ? 180 : 0}ms` }}
-              >{a}</p>
+      <div
+        style={{ height: open ? h : 0, overflow: 'hidden', transition: 'height 520ms cubic-bezier(0.22,1,0.36,1)' }}
+        aria-hidden={!open}
+      >
+        <div ref={ansRef} className="pt-2 md:pt-3">
+          <div className="relative rounded-[28px] px-7 py-7 md:rounded-[32px] md:px-9 md:py-8" style={{ background: PEACH }}>
+            <div className="absolute left-7 top-7 flex h-6 items-center gap-1.5 transition-opacity duration-200 md:left-9 md:top-8" style={{ opacity: open && !answerReady ? 1 : 0 }} aria-hidden="true">
+              <TypingDots />
             </div>
+            <p
+              className="max-w-[56ch] text-[15px] font-light leading-[1.75] text-ink-soft"
+              style={{ opacity: open && answerReady ? 1 : 0, transform: open && answerReady ? 'translateY(0)' : 'translateY(8px)', transition: 'opacity 350ms ease, transform 480ms cubic-bezier(0.22,1,0.36,1)' }}
+              aria-hidden={!answerReady}
+              aria-live="polite"
+            >{a}</p>
+            {open && !answerReady && <span className="sr-only" role="status">Loading answer</span>}
           </div>
         </div>
-        <img
-          src="/robot-faq-head.png"
-          alt=""
-          draggable={false}
-          className="faq-bot-head pointer-events-none absolute bottom-[-18px] right-1 h-auto w-[64px] md:w-[72px]"
-          style={{
-            ['--bot-scale' as string]: open ? 1 : 0.6,
-            transform: open ? 'scale(1)' : 'scale(0.6)',
-            opacity: open ? 1 : 0,
-            transition: `transform 520ms cubic-bezier(0.22,1,0.36,1) ${open ? 180 : 0}ms, opacity 380ms ease ${open ? 180 : 0}ms`,
-            filter: 'drop-shadow(0 8px 10px rgba(27,26,23,0.22))',
-          }}
-          aria-hidden
-        />
       </div>
     </div>
   )
