@@ -134,6 +134,57 @@ app.post('/api/drop-problem', (req, res) => {
   res.status(202).json({ ok: true })
 })
 
+app.post('/api/quiz-plan', async (req, res) => {
+  if (rateLimited(req.ip)) {
+    return res.status(429).json({ ok: false, error: 'Too many requests' })
+  }
+
+  const body = req.body && typeof req.body === 'object' ? req.body : {}
+  const name = clean(body.name, 60)
+  const email = clean(body.email, 160)
+  if (!name || !EMAIL.test(email)) {
+    return res.status(400).json({ error: 'invalid name or email' })
+  }
+
+  const { cleanAnswers, answerSummary } = require('./scripts/quiz-bundle.cjs')
+  const answers = cleanAnswers(body.answers)
+  if (!answers) return res.status(400).json({ error: 'invalid answers' })
+
+  const lead = { ts: new Date().toISOString(), name, email, marketing: body.marketing === true, answers }
+  try {
+    const dir = path.join(__dirname, 'data')
+    fs.mkdirSync(dir, { recursive: true })
+    fs.appendFileSync(path.join(dir, 'quiz-leads.jsonl'), JSON.stringify(lead) + '\n', { mode: 0o600 })
+  } catch (err) {
+    console.error('[quiz-plan] Could not save lead:', err)
+    return res.status(500).json({ error: 'could not save lead' })
+  }
+
+  if (!process.env.MAIL_HOST) {
+    console.warn('[quiz-plan] Mail not configured; lead saved')
+  } else {
+    try {
+      const nodemailer = require('nodemailer')
+      const transport = nodemailer.createTransport({
+        host: process.env.MAIL_HOST,
+        port: Number(process.env.MAIL_PORT) || (process.env.MAIL_SECURE === 'true' ? 465 : 587),
+        secure: process.env.MAIL_SECURE === 'true',
+        ...(process.env.MAIL_USER ? { auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS } } : {}),
+      })
+      if (!process.env.MAIL_FROM || !process.env.LEADS_TO) throw new Error('MAIL_FROM and LEADS_TO are required')
+      await transport.sendMail({
+        from: process.env.MAIL_FROM,
+        to: process.env.LEADS_TO,
+        subject: `New quiz plan — ${name}`,
+        text: [`Name: ${name}`, `Email: ${email}`, `Marketing: ${lead.marketing ? 'yes' : 'no'}`, `Timestamp: ${lead.ts}`, '', ...answerSummary(answers)].join('\n'),
+      })
+    } catch (err) {
+      console.error('[quiz-plan] Notification failed; lead saved:', err)
+    }
+  }
+  return res.json({ ok: true })
+})
+
 // ---------------------------------------------------------------------------
 // Static site
 // ---------------------------------------------------------------------------

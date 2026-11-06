@@ -5,8 +5,8 @@
   "main": "server.js",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/prerender.mjs",
-    "postinstall": "vite build && node scripts/prerender.mjs",
+    "build": "node scripts/bundle-quiz.cjs && vite build && node scripts/prerender.mjs",
+    "postinstall": "node scripts/bundle-quiz.cjs && vite build && node scripts/prerender.mjs",
     "typecheck": "tsc -b",
     "lint": "oxlint",
     "preview": "vite preview",
@@ -19,6 +19,7 @@
     "autoprefixer": "^10.5.4",
     "compression": "^1.8.2",
     "express": "^4.21.2",
+    "nodemailer": "^9.1.1",
     "postcss": "^8.5.26",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
