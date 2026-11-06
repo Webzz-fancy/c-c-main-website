@@ -53,6 +53,9 @@ export default function ContactPage() {
         .contact-dot { animation: contact-dot .9s ease-in-out infinite; }
         .contact-dot:nth-child(2) { animation-delay: .15s; }
         .contact-dot:nth-child(3) { animation-delay: .3s; }
+        @media (min-width: 768px) {
+          .faq-bot-head { right: -78px; top: 50%; bottom: auto; transform: translateY(-50%) scale(var(--bot-scale, 1)) !important; }
+        }
         @media (prefers-reduced-motion: reduce) {
           .contact-chat-in, .contact-chat-reply { animation: none; opacity: 1; transform: none; }
           .contact-chat-typing { animation: none; opacity: 0; }
@@ -74,6 +77,7 @@ export default function ContactPage() {
               className="absolute -bottom-36 -left-40 h-[620px] w-[760px] rounded-full blur-3xl"
               style={{ background: 'radial-gradient(ellipse at center, rgba(45,109,139,0.10) 0%, rgba(45,109,139,0) 68%)' }}
             />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-cream to-transparent" />
           </div>
 
           <div className="relative z-10 mx-auto flex w-full max-w-[1100px] flex-1 flex-col justify-center px-6 pb-10 lg:px-10 lg:pb-16">
@@ -113,7 +117,7 @@ export default function ContactPage() {
         </section>
 
         {/* A single connected directory, in the visual language of the projects page. */}
-        <section ref={channels.ref} className="mx-auto w-full max-w-[1100px] px-6 pb-14 lg:px-10 md:pb-20" aria-labelledby="contact-ways-title">
+        <section ref={channels.ref} className="mx-auto w-full max-w-[1100px] px-6 pb-14 pt-[clamp(56px,9vh,96px)] lg:px-10 md:pb-20" aria-labelledby="contact-ways-title">
           <div className={channels.revealed ? 'animate-fade-up' : 'opacity-0'}>
             <Eyebrow>{CONTACT.label}</Eyebrow>
             <h2 id="contact-ways-title" className="mt-5 max-w-xl font-display text-[clamp(2.1rem,3.6vw,3.3rem)] leading-[1.05] tracking-[-0.02em] text-ink">
@@ -322,24 +326,41 @@ function FaqItem({
         </span>
       </button>
 
-      <div
-        style={{ height: open ? h : 0, overflow: 'hidden', transition: 'height 520ms cubic-bezier(0.22,1,0.36,1)' }}
-        aria-hidden={!open}
-      >
-        <div ref={ansRef} className="pt-2 md:pt-3">
-          <div className="relative rounded-[28px] px-7 py-7 md:rounded-[32px] md:px-9 md:py-8" style={{ background: PEACH }}>
-            <div className="absolute left-7 top-7 flex h-6 items-center gap-1.5 transition-opacity duration-200 md:left-9 md:top-8" style={{ opacity: open && !answerReady ? 1 : 0 }} aria-hidden="true">
-              <TypingDots />
+      {/* The head sits outside the height-clipped panel, so it stays visible. */}
+      <div className="relative md:mr-24">
+        <div
+          style={{ height: open ? h : 0, overflow: 'hidden', transition: 'height 520ms cubic-bezier(0.22,1,0.36,1)' }}
+          aria-hidden={!open}
+        >
+          <div ref={ansRef} className="pt-2 md:pt-3">
+            <div className="relative rounded-[28px] px-7 py-7 pr-20 md:rounded-[32px] md:px-9 md:py-8" style={{ background: PEACH }}>
+              <div className="absolute left-7 top-7 flex h-6 items-center gap-1.5 transition-opacity duration-200 md:left-9 md:top-8" style={{ opacity: open && !answerReady ? 1 : 0 }} aria-hidden="true">
+                <TypingDots />
+              </div>
+              <p
+                className="max-w-[56ch] text-[15px] font-light leading-[1.75] text-ink-soft"
+                style={{ opacity: open && answerReady ? 1 : 0, transform: open && answerReady ? 'translateY(0)' : 'translateY(8px)', transition: 'opacity 350ms ease, transform 480ms cubic-bezier(0.22,1,0.36,1)' }}
+                aria-hidden={!answerReady}
+                aria-live="polite"
+              >{a}</p>
+              {open && !answerReady && <span className="sr-only" role="status">Loading answer</span>}
             </div>
-            <p
-              className="max-w-[56ch] text-[15px] font-light leading-[1.75] text-ink-soft"
-              style={{ opacity: open && answerReady ? 1 : 0, transform: open && answerReady ? 'translateY(0)' : 'translateY(8px)', transition: 'opacity 350ms ease, transform 480ms cubic-bezier(0.22,1,0.36,1)' }}
-              aria-hidden={!answerReady}
-              aria-live="polite"
-            >{a}</p>
-            {open && !answerReady && <span className="sr-only" role="status">Loading answer</span>}
           </div>
         </div>
+        <img
+          src="/robot-faq-head.png"
+          alt=""
+          draggable={false}
+          className="faq-bot-head pointer-events-none absolute bottom-[-18px] right-1 h-auto w-[64px] md:w-[72px]"
+          style={{
+            ['--bot-scale' as string]: open && answerReady ? 1 : 0.6,
+            transform: open && answerReady ? 'scale(1)' : 'scale(0.6)',
+            opacity: open && answerReady ? 1 : 0,
+            transition: 'transform 520ms cubic-bezier(0.22,1,0.36,1), opacity 380ms ease',
+            filter: 'drop-shadow(0 8px 10px rgba(27,26,23,0.22))',
+          }}
+          aria-hidden="true"
+        />
       </div>
     </div>
   )
