@@ -158,7 +158,7 @@ function FaqHeading({ revealed }: { revealed: boolean }) {
         <h2 id="faq-title" className="mt-5 font-display text-[clamp(2.4rem,4.6vw,4rem)] leading-[1.03] tracking-[-0.025em]">
           Things you<br />might ask.
         </h2>
-        <img src="/robot-mark.png" alt="" aria-hidden className="mt-8 h-[120px] w-auto md:h-[150px]" draggable={false} />
+        <img src="/robot-faq-mark.png" alt="" aria-hidden className="mt-8 h-[120px] w-auto md:h-[150px]" draggable={false} />
       </div>
     </div>
   )
@@ -230,7 +230,7 @@ function FaqItem({
           aria-hidden={!open}
         >
           <div ref={ansRef} className="pt-2 md:pt-3">
-            <div className="rounded-[28px] px-7 py-7 md:rounded-[32px] md:px-9 md:py-8" style={{ background: PEACH }}>
+            <div className="rounded-[28px] px-7 py-7 pr-20 md:rounded-[32px] md:px-9 md:py-8" style={{ background: PEACH }}>
               <p
                 className="max-w-[56ch] text-[15px] font-light leading-[1.75] text-ink-soft md:text-[16px]"
                 style={{ opacity: open ? 1 : 0, transform: open ? 'translateY(0)' : 'translateY(8px)', transition: `opacity 420ms ease ${open ? 180 : 0}ms, transform 480ms cubic-bezier(0.22,1,0.36,1) ${open ? 180 : 0}ms` }}
@@ -238,8 +238,11 @@ function FaqItem({
             </div>
           </div>
         </div>
-        <div
-          className="faq-bot-head pointer-events-none absolute bottom-[-18px] right-1 h-[42px] w-[53px] overflow-hidden md:h-[50px] md:w-[63px]"
+        <img
+          src="/robot-faq-head.png"
+          alt=""
+          draggable={false}
+          className="faq-bot-head pointer-events-none absolute bottom-[-18px] right-1 h-auto w-[64px] md:w-[72px]"
           style={{
             ['--bot-scale' as string]: open ? 1 : 0.6,
             transform: open ? 'scale(1)' : 'scale(0.6)',
@@ -248,9 +251,7 @@ function FaqItem({
             filter: 'drop-shadow(0 8px 10px rgba(27,26,23,0.22))',
           }}
           aria-hidden
-        >
-          <img src="/robot-mark.png" alt="" className="block w-full max-w-none" draggable={false} />
-        </div>
+        />
       </div>
     </div>
   )
