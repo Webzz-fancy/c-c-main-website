@@ -109,14 +109,21 @@
   outline-offset: 3px;
 }
 
-/*
- * Saving the fix plan as a PDF prints the plan alone, on white, without the
- * buttons that only work on screen.
- */
+/* The quiz lives in the top layer so its questions stay focused and legible. */
+.quiz-dialog::backdrop {
+  background: rgba(18, 38, 47, 0.56);
+  backdrop-filter: blur(5px);
+}
+
+/* A print-only, normal-flow copy is appended to the body when requested.
+   It is outside the modal and all overflow-clipped page containers, allowing
+   the browser to paginate the full plan instead of clipping its contents. */
+.quiz-print { display: none; }
 @media print {
-  body * { visibility: hidden; }
-  .quiz-plan, .quiz-plan * { visibility: visible; }
-  .quiz-plan { position: absolute; inset: 0 auto auto 0; width: 100%; padding: 0 8mm; background: #fff; }
-  .quiz-plan__actions { display: none; }
-  html, body { background: #fff !important; }
+  body.printing-quiz-plan > :not(.quiz-print) { display: none !important; }
+  body.printing-quiz-plan { overflow: visible !important; height: auto; background: #fff !important; }
+  body.printing-quiz-plan .quiz-print { display: block; color: #1b1a17; background: #fff; }
+  body.printing-quiz-plan .quiz-plan { position: static; width: auto; padding: 0; }
+  body.printing-quiz-plan .quiz-plan__actions { display: none; }
+  body.printing-quiz-plan .quiz-print * { animation: none !important; }
 }

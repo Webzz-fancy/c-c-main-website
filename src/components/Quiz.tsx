@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { useReveal } from '../hooks/useReveal'
 import { useRobotMood } from '../context/RobotMood'
 import Eyebrow from './Eyebrow'
@@ -57,7 +58,10 @@ function FixPlan({ onExit }: { onExit: () => void }) {
 
   // keyboard and screen reader users land on each new question
   useEffect(() => {
-    headRef.current?.focus({ preventScroll: true })
+    const heading = headRef.current
+    const dialog = heading?.closest('dialog')
+    if (dialog) dialog.scrollTop = 0
+    heading?.focus({ preventScroll: true })
   }, [step, plan])
 
   const next = (change: Partial<Draft> = {}) => {
@@ -214,6 +218,7 @@ function PlanView({ answers, headRef, onRestart }: {
   const p = buildPlan(answers)
   const [lead, setLead] = useState({ name: '', email: '', marketing: false })
   const [sent, setSent] = useState<'sending' | 'sent' | 'failed' | null>(null)
+  const planRef = useRef<HTMLDivElement>(null)
   const valid = lead.name.trim() && EMAIL.test(lead.email.trim())
 
   const submit = (e: FormEvent) => {
@@ -229,6 +234,39 @@ function PlanView({ answers, headRef, onRestart }: {
       .catch(() => setSent('failed'))
   }
 
+  // Print a normal-flow copy outside the modal's scrolling and clipping
+  // containers, so the browser can paginate the entire plan into a PDF.
+  const printPlan = () => {
+    if (!planRef.current) return
+    const existing = document.querySelector('.quiz-print')
+    existing?.remove()
+    const printRoot = document.createElement('div')
+    printRoot.className = 'quiz-print'
+    printRoot.setAttribute('aria-hidden', 'true')
+    const copy = planRef.current.cloneNode(true) as HTMLElement
+    copy.querySelectorAll('.quiz-plan__actions').forEach((section) => section.remove())
+    printRoot.appendChild(copy)
+    document.body.appendChild(printRoot)
+    document.body.classList.add('printing-quiz-plan')
+
+    let timeout: number | undefined
+    const cleanup = () => {
+      printRoot.remove()
+      document.body.classList.remove('printing-quiz-plan')
+      window.removeEventListener('afterprint', cleanup)
+      if (timeout !== undefined) window.clearTimeout(timeout)
+    }
+    window.addEventListener('afterprint', cleanup, { once: true })
+    // Some browsers do not fire afterprint when the dialog is dismissed.
+    timeout = window.setTimeout(cleanup, 60000)
+    try {
+      window.print()
+    } catch (error) {
+      cleanup()
+      throw error
+    }
+  }
+
   const count = (...s: Status[]) => p.map.filter((row) => s.includes(row.status)).length
   const glance = [
     { n: count('working'), label: 'working well', tone: 'text-glass-600' },
@@ -241,7 +279,7 @@ function PlanView({ answers, headRef, onRestart }: {
   const step = 'font-display text-[2.4rem] leading-none text-brand-600'
 
   return (
-    <div className="quiz-plan w-full text-left">
+    <div ref={planRef} className="quiz-plan w-full text-left">
       <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-glass">Your business fix plan</p>
       {p.area && <p className="mt-4 text-[14px] font-semibold text-brand-600">Fix first: {p.area.stage.toLowerCase()}</p>}
       <h3 ref={headRef} tabIndex={-1} className="mt-2 font-display text-[clamp(1.9rem,3.4vw,2.6rem)] leading-[1.08] tracking-[-0.02em] text-ink outline-none">
@@ -374,7 +412,7 @@ function PlanView({ answers, headRef, onRestart }: {
           <a href={whatsappLink(answers)} target="_blank" rel="noopener noreferrer" className={blueButton}>
             Send it to us on WhatsApp <span aria-hidden="true">↗</span>
           </a>
-          <button type="button" onClick={() => window.print()} className={quiet}>
+          <button type="button" onClick={printPlan} className={quiet}>
             Save as PDF
           </button>
         </div>
@@ -492,6 +530,17 @@ export default function Quiz() {
   const { moodHandlers } = useRobotMood()
   const [taking, setTaking] = useState(false)
   const startRef = useRef<HTMLButtonElement>(null)
+  const dialogRef = useRef<HTMLDialogElement>(null)
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!taking || !dialog) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    dialog.showModal()
+    dialog.querySelector<HTMLElement>('h3')?.focus({ preventScroll: true })
+    return () => { document.body.style.overflow = previousOverflow }
+  }, [taking])
 
   const exit = () => {
     setTaking(false)
@@ -545,11 +594,6 @@ export default function Quiz() {
             aria-hidden="true"
           />
 
-          {taking ? (
-            <div className="mx-auto flex max-w-2xl">
-              <FixPlan onExit={exit} />
-            </div>
-          ) : (
           <div className="mx-auto flex max-w-2xl flex-col items-center">
             <div style={rise(0)}>
               <DrawnQuestionMark active={revealed} />
@@ -594,9 +638,29 @@ export default function Quiz() {
               <p className="mt-3 text-[12.5px] text-ink-muted">{QUIZ.meta}</p>
             </div>
           </div>
-          )}
         </div>
       </div>
+      {taking && createPortal(
+        <dialog
+          ref={dialogRef}
+          aria-label={`${QUIZ.heading} ${QUIZ.emphasis}`}
+          onCancel={(event) => { event.preventDefault(); exit() }}
+          className="quiz-dialog fixed inset-0 m-auto h-[100dvh] max-h-none w-full max-w-none overflow-y-auto border-0 bg-cream p-0 text-ink shadow-soft sm:h-auto sm:max-h-[min(90dvh,900px)] sm:w-[min(720px,calc(100%-3rem))] sm:rounded-[32px]"
+        >
+          <div className="relative mx-auto max-w-2xl px-6 pb-10 pt-16 sm:px-10 sm:pb-12 sm:pt-16">
+            <button
+              type="button"
+              onClick={exit}
+              aria-label="Close quiz"
+              className="absolute right-5 top-5 grid h-10 w-10 place-items-center rounded-full border border-ink/10 bg-white/70 text-ink transition-colors duration-300 hover:border-glass/40 hover:bg-white sm:right-7 sm:top-6"
+            >
+              <span aria-hidden="true" className="text-[24px] leading-none">×</span>
+            </button>
+            <FixPlan onExit={exit} />
+          </div>
+        </dialog>,
+        document.body,
+      )}
     </section>
   )
 }
