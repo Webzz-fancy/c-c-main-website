@@ -135,8 +135,8 @@ export function staticHtml(page: PageSeo): string {
     return (
       open +
       `<header><p>Privacy</p><h1>The small print, plainly.</h1></header>` +
-      `<section><h2>What I collect</h2><p>Your name and email if you send a contact message or ask me to keep a copy of your fix plan, plus the answers you give the quiz.</p></section>` +
-      `<section><h2>Why</h2><p>To reply and, if you ask, to send you a copy of your plan. I do not sell your data.</p></section>` +
+      `<section><h2>What I collect</h2><p>Your name and contact details when you send a message or request a follow-up, and the quiz answers you choose to share with us.</p></section>` +
+      `<section><h2>Why</h2><p>To reply to your message or follow-up request. I do not sell your data.</p></section>` +
       `<section><h2>How long I keep it</h2><p>Only as long as needed to reply and for my own records.</p></section>` +
       `<section><h2>How to ask for it to be deleted</h2><p>Email me at ${a(`mailto:${site.contact.email}`, site.contact.email)} and I will remove it within a week.</p></section>` +
       close

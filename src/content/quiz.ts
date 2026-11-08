@@ -11,8 +11,7 @@
  * system. It also says what the answers could not tell.
  *
  * Scores stay in here and are never shown. Everything the plan says is built
- * from the answers, so the page and the emailed copy (see
- * docs/quiz-backend.md) always match. A visitor can also describe their
+ * from the answers. A visitor can also describe their
  * business when none of the listed types fit; that detail does not affect scoring.
  */
 
@@ -325,12 +324,6 @@ export const QUIZ = {
   close: {
     heading: 'Let’s look at what’s actually causing this.',
     body: 'On a 45-minute call we go through your answers, look at how this part of your business really runs, and tell you whether it needs a checklist, a better process or a system. If a checklist is enough, we’ll say so.',
-  },
-  email: {
-    heading: 'Keep a copy',
-    body: 'We’ll send this plan to your inbox, so it’s there when you sit down to run the check.',
-    marketing: 'And nudge me once in a few days to see how the check went. Just once.',
-    action: 'Email me my plan',
   },
 }
 

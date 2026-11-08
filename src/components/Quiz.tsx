@@ -30,6 +30,7 @@ type Draft = {
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+const validPhone = (value: string) => /^\+[0-9 ()-]+$/.test(value.trim()) && /^[0-9]{7,15}$/.test(value.replace(/\D/g, ''))
 
 const option =
   'group flex w-full items-center justify-between gap-4 rounded-2xl border px-5 py-4 text-left text-[15px] text-ink transition-all duration-200 hover:border-glass/50 hover:bg-white focus-visible:border-glass'
@@ -45,7 +46,7 @@ const quiet = '-my-2 py-2 text-[13.5px] font-medium text-ink-muted underline-off
  * The quiz: what kind of business, how big, what they think is wrong, then
  * what actually happens at each stage of the work, and one check against
  * their own records on the stage that stands out. The plan follows straight
- * away; the email comes after, for those who want a copy.
+ * away; visitors can optionally ask the team to reach out afterwards.
  */
 function FixPlan({ onExit }: { onExit: () => void }) {
   const [draft, setDraft] = useState<Draft>({ answers: [] })
@@ -249,22 +250,33 @@ function PlanView({ answers, headRef, onRestart }: {
   onRestart: () => void
 }) {
   const p = buildPlan(answers)
-  const [lead, setLead] = useState({ name: '', email: '', marketing: false })
-  const [sent, setSent] = useState<'sending' | 'sent' | 'failed' | null>(null)
+  const [reachOut, setReachOut] = useState<'yes' | 'no' | ''>('')
+  const [lead, setLead] = useState({ name: '', method: '' as 'email' | 'whatsapp' | '', email: '', phone: '' })
+  const [sent, setSent] = useState<'sending' | 'notified' | 'saved' | 'failed' | null>(null)
   const planRef = useRef<HTMLDivElement>(null)
-  const valid = lead.name.trim() && EMAIL.test(lead.email.trim())
+  const valid = !!lead.name.trim() && (lead.method === 'email' ? EMAIL.test(lead.email.trim()) : lead.method === 'whatsapp' && validPhone(lead.phone))
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault()
+    if (reachOut !== 'yes' || !valid || sent === 'sending') return
     setSent('sending')
-    // the plan is already on the page; this only sends the copy (see docs/quiz-backend.md)
-    fetch(`${site.apiBaseUrl}/api/quiz-plan`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: lead.name.trim(), email: lead.email.trim(), marketing: lead.marketing, answers }),
-    })
-      .then(async (res) => setSent(res.ok && (await res.json()).ok ? 'sent' : 'failed'))
-      .catch(() => setSent('failed'))
+    try {
+      const res = await fetch(`${site.apiBaseUrl}/api/quiz-plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: lead.name.trim(),
+          reachOut: true,
+          contactMethod: lead.method,
+          ...(lead.method === 'email' ? { email: lead.email.trim() } : { phone: lead.phone.trim() }),
+          answers,
+        }),
+      })
+      const result = await res.json()
+      setSent(res.ok && result.ok ? (result.notified === true ? 'notified' : 'saved') : 'failed')
+    } catch {
+      setSent('failed')
+    }
   }
 
   // Print a normal-flow copy outside the modal's scrolling and clipping
@@ -454,34 +466,76 @@ function PlanView({ answers, headRef, onRestart }: {
         </div>
       </PlanSection>
 
-      <PlanSection title={QUIZ.email.heading} className="quiz-plan__actions">
-        {sent === 'sent' ? (
-          <p className="mt-3 text-[15px] text-ink" aria-live="polite">Sent. Your plan is on its way to {lead.email.trim()}.</p>
+      <PlanSection title="Would you like us to reach out?" className="quiz-plan__actions">
+        {sent === 'notified' ? (
+          <p className="mt-3 text-[15px] text-ink" role="status">Thanks! We’ve received your request and notified the team. We’ll reach out using your chosen method.</p>
+        ) : sent === 'saved' ? (
+          <div className="mt-3 text-[15px] leading-relaxed text-ink-soft" role="status">
+            <p>Your request was saved, but we couldn’t notify the team just now. Please contact us directly so we don’t miss you.</p>
+            <p className="mt-2"><a href={whatsappLink(answers)} target="_blank" rel="noopener noreferrer" className="font-semibold text-glass-600 underline underline-offset-4">Message us on WhatsApp</a> or <a href={`mailto:${site.contact.email}`} className="font-semibold text-glass-600 underline underline-offset-4">email us</a>.</p>
+          </div>
         ) : (
           <form onSubmit={submit} className="mt-3">
-            <p className="max-w-xl text-[15px] leading-relaxed text-ink-soft">{QUIZ.email.body}</p>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <label className="text-[13px] font-semibold text-ink">
-                First name
-                <input required autoComplete="given-name" value={lead.name} onChange={(e) => setLead({ ...lead, name: e.target.value.slice(0, 60) })} className={field} />
-              </label>
-              <label className="text-[13px] font-semibold text-ink">
-                Email
-                <input required type="email" autoComplete="email" value={lead.email} onChange={(e) => setLead({ ...lead, email: e.target.value.slice(0, 160) })} className={field} />
-              </label>
-            </div>
-            <label className="mt-4 flex max-w-xl items-start gap-3 text-[13.5px] leading-relaxed text-ink-soft">
-              <input type="checkbox" checked={lead.marketing} onChange={(e) => setLead({ ...lead, marketing: e.target.checked })} className="mt-1 h-4 w-4 shrink-0 accent-[#2D6D8B]" />
-              {QUIZ.email.marketing}
-            </label>
-            <div className="mt-5 flex flex-wrap items-center gap-4">
-              <button type="submit" disabled={!valid || sent === 'sending'} className={goldButton}>
-                {QUIZ.email.action} <span aria-hidden="true">→</span>
-              </button>
-              <p className="text-[13.5px] text-ink-muted" aria-live="polite">
-                {sent === 'failed' && 'We couldn’t send it just now. Save it as a PDF to keep it.'}
-              </p>
-            </div>
+            <fieldset disabled={sent === 'sending'}>
+              <p className="max-w-xl text-[15px] leading-relaxed text-ink-soft">If you’d like to talk about your plan, tell us and we’ll get in touch. It’s completely optional.</p>
+              <fieldset className="mt-5">
+                <legend className="text-[14px] font-semibold text-ink">Would you like us to contact you about your plan?</legend>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  {(['yes', 'no'] as const).map((choice) => (
+                    <label key={choice} className={`flex cursor-pointer items-center gap-2 rounded-full border px-5 py-3 text-[15px] ${reachOut === choice ? optionOn : optionIdle}`}>
+                      <input type="radio" name="quiz-reach-out" value={choice} checked={reachOut === choice} onChange={() => setReachOut(choice)} className="h-4 w-4 accent-[#2D6D8B]" />
+                      {choice === 'yes' ? 'Yes, please' : 'No, thanks'}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              {reachOut === 'no' && <p className="mt-4 text-[14px] text-ink-muted">No problem—your plan is yours to keep.</p>}
+              {reachOut === 'yes' && (
+                <>
+                  <fieldset className="mt-6">
+                    <legend className="text-[14px] font-semibold text-ink">How would you like us to reach you?</legend>
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      {(['whatsapp', 'email'] as const).map((method) => (
+                        <label key={method} className={`flex cursor-pointer items-center gap-2 rounded-full border px-5 py-3 text-[15px] ${lead.method === method ? optionOn : optionIdle}`}>
+                          <input type="radio" name="quiz-contact-method" value={method} checked={lead.method === method} onChange={() => setLead((current) => ({ ...current, method }))} className="h-4 w-4 accent-[#2D6D8B]" />
+                          {method === 'whatsapp' ? 'WhatsApp' : 'Email'}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                  {lead.method === 'email' && <p className="mt-3 text-[14px] leading-relaxed text-ink-muted">Email it is! Our robot just hopes we don’t get lost in your inbox.</p>}
+                  {lead.method && (
+                    <>
+                      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                        <label className="text-[13px] font-semibold text-ink">
+                          First name
+                          <input required maxLength={60} autoComplete="given-name" value={lead.name} onChange={(e) => setLead({ ...lead, name: e.target.value })} className={field} />
+                        </label>
+                        {lead.method === 'email' ? (
+                          <label className="text-[13px] font-semibold text-ink">
+                            Email address
+                            <input required type="email" maxLength={160} autoComplete="email" value={lead.email} onChange={(e) => setLead({ ...lead, email: e.target.value })} className={field} />
+                          </label>
+                        ) : (
+                          <label className="text-[13px] font-semibold text-ink">
+                            WhatsApp number
+                            <input required type="tel" maxLength={30} autoComplete="tel" inputMode="tel" placeholder="e.g. +971 50 123 4567" aria-describedby="quiz-phone-help" value={lead.phone} onChange={(e) => setLead({ ...lead, phone: e.target.value })} className={field} />
+                          </label>
+                        )}
+                      </div>
+                      {lead.method === 'whatsapp' && <p id="quiz-phone-help" className="mt-2 text-[13.5px] text-ink-muted">Include your country code, starting with +.</p>}
+                      <p className="mt-3 text-[13.5px] leading-relaxed text-ink-muted">By sending, you’re asking us to contact you about your plan using your chosen method. Your answers and contact details will be shared with our team. <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-glass-600 underline underline-offset-4">Privacy</a></p>
+                      <div className="mt-5 flex flex-wrap items-center gap-4">
+                        <button type="submit" disabled={!valid || sent === 'sending'} className={goldButton}>
+                          {sent === 'sending' ? 'Sending…' : 'Ask us to reach out'} <span aria-hidden="true">→</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+              {sent === 'failed' && <p className="mt-3 text-[13.5px] text-ink-muted" role="alert">We couldn’t send your request just now. Please try again or <a href={`mailto:${site.contact.email}`} className="text-glass-600 underline underline-offset-4">email us directly</a>.</p>}
+            </fieldset>
           </form>
         )}
         <button type="button" onClick={onRestart} className={`${quiet} mt-6`}>

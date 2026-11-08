@@ -7,11 +7,11 @@ import { site } from '../config/site'
 const sections = [
   {
     heading: 'What I collect',
-    body: 'Your name and email if you send a contact message or ask me to keep a copy of your fix plan, plus the answers you give the quiz.',
+    body: 'Your name and contact details when you send a message or request a follow-up, and the quiz answers you choose to share with us.',
   },
   {
     heading: 'Why',
-    body: 'To reply and, if you ask, to send you a copy of your plan. I do not sell your data.',
+    body: 'To reply to your message or follow-up request. I do not sell your data.',
   },
   {
     heading: 'How long I keep it',

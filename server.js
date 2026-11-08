@@ -140,17 +140,34 @@ app.post('/api/quiz-plan', async (req, res) => {
   }
 
   const body = req.body && typeof req.body === 'object' ? req.body : {}
-  const name = clean(body.name, 60)
-  const email = clean(body.email, 160)
-  if (!name || !EMAIL.test(email)) {
-    return res.status(400).json({ error: 'invalid name or email' })
+  const name = clean(body.name, 60).replace(/\p{Cc}/gu, ' ').trim()
+  const isReachOut = body.reachOut === true
+  // Older clients only submit the original email-copy form. Keep accepting
+  // those requests without treating them as consent to a personal follow-up.
+  const isLegacy = body.reachOut === undefined && body.contactMethod === undefined
+  if (!isReachOut && !isLegacy) return res.status(400).json({ error: 'reach-out consent required' })
+  const contactMethod = isLegacy ? 'email' : body.contactMethod
+  if (contactMethod !== 'email' && contactMethod !== 'whatsapp') {
+    return res.status(400).json({ error: 'invalid contact method' })
+  }
+  const email = contactMethod === 'email' ? clean(body.email, 160) : ''
+  const phone = contactMethod === 'whatsapp' ? clean(body.phone, 30) : ''
+  const validPhone = /^\+[0-9 ()-]+$/.test(phone) && /^[0-9]{7,15}$/.test(phone.replace(/\D/g, ''))
+  if (!name || (contactMethod === 'email' ? !EMAIL.test(email) : !validPhone)) {
+    return res.status(400).json({ error: 'invalid name or contact details' })
   }
 
   const { cleanAnswers, answerSummary } = require('./scripts/quiz-bundle.cjs')
   const answers = cleanAnswers(body.answers)
   if (!answers) return res.status(400).json({ error: 'invalid answers' })
 
-  const lead = { ts: new Date().toISOString(), name, email, marketing: body.marketing === true, answers }
+  const lead = {
+    ts: new Date().toISOString(), name,
+    ...(isLegacy ? { email, marketing: body.marketing === true } : {
+      reachOut: true, contactMethod, ...(contactMethod === 'email' ? { email } : { phone }),
+    }),
+    answers,
+  }
   try {
     const dir = path.join(__dirname, 'data')
     fs.mkdirSync(dir, { recursive: true })
@@ -160,6 +177,7 @@ app.post('/api/quiz-plan', async (req, res) => {
     return res.status(500).json({ error: 'could not save lead' })
   }
 
+  let notified = false
   if (!process.env.MAIL_HOST) {
     console.warn('[quiz-plan] Mail not configured; lead saved')
   } else {
@@ -169,20 +187,32 @@ app.post('/api/quiz-plan', async (req, res) => {
         host: process.env.MAIL_HOST,
         port: Number(process.env.MAIL_PORT) || (process.env.MAIL_SECURE === 'true' ? 465 : 587),
         secure: process.env.MAIL_SECURE === 'true',
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
         ...(process.env.MAIL_USER ? { auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS } } : {}),
       })
       if (!process.env.MAIL_FROM || !process.env.LEADS_TO) throw new Error('MAIL_FROM and LEADS_TO are required')
-      await transport.sendMail({
+      const info = await transport.sendMail({
         from: process.env.MAIL_FROM,
         to: process.env.LEADS_TO,
-        subject: `New quiz plan — ${name}`,
-        text: [`Name: ${name}`, `Email: ${email}`, `Marketing: ${lead.marketing ? 'yes' : 'no'}`, `Timestamp: ${lead.ts}`, '', ...answerSummary(answers)].join('\n'),
+        subject: `${isLegacy ? 'New quiz plan' : 'Quiz follow-up request'} — ${name}`,
+        text: [
+          `Name: ${name}`,
+          ...(isLegacy
+            ? [`Email: ${email}`, `Legacy email-copy request; no personal follow-up requested`, `Marketing: ${lead.marketing ? 'yes' : 'no'}`]
+            : [`Reach-out requested: yes`, `Preferred contact: ${contactMethod === 'whatsapp' ? 'WhatsApp' : 'Email'}`, contactMethod === 'email' ? `Email: ${email}` : `WhatsApp: ${phone}`]),
+          `Timestamp: ${lead.ts}`, '', ...answerSummary(answers),
+        ].join('\n'),
       })
+      notified = info.accepted.length > 0
     } catch (err) {
       console.error('[quiz-plan] Notification failed; lead saved:', err)
     }
   }
-  return res.json({ ok: true })
+  // The retired form promised an emailed copy, which is not implemented.
+  // Let cached older clients show their PDF fallback instead of a false claim.
+  return res.json({ ok: !isLegacy, notified })
 })
 
 // ---------------------------------------------------------------------------

@@ -1,39 +1,17 @@
-# Business fix plan: what the backend needs to do
+# Business fix plan: contact requests
 
-The fix plan on the home page (`#quiz`) is finished on the front end.
+The quiz shows the plan immediately, without collecting contact details. Visitors can save it as a PDF or send it to the team via WhatsApp. They can also choose whether to request a personal follow-up. Only when they choose **Yes**, select WhatsApp or email, provide their name and the relevant contact details, and submit the form does it send the request and quiz answers to the server.
 
-**How it works today**
+## Endpoint
 
-- A visitor answers 12 or 13 short questions:
-  - three about their business: kind of business, team size, and what they think the problem is;
-  - nine about what actually happens at each stage of the work;
-  - one check against their own records, asked only when a stage stands out.
-- They see their plan on the page straight away, with no email needed.
-- They can save the plan as a PDF or send it to us on WhatsApp. Neither needs a server.
-
-**What the server is for**
-
-- Under the plan there is a "Keep a copy" form: first name, email, and a separate, unticked box for one nudge 3 days later.
-- Sending that copy, and anything after it, needs the server.
-- Until the server exists, the form tells the visitor the copy could not be sent and suggests saving a PDF.
-
-**Where the code lives**
-
-- `src/content/quiz.ts` has all the questions, scoring and plan wording.
-- `src/components/Quiz.tsx` is the component.
-- `server.js` is the existing server (Express, CommonJS, on Hostinger).
-
-## 1. The endpoint: `POST /api/quiz-plan`
-
-The page already calls `${VITE_API_BASE_URL}/api/quiz-plan` from `submit` in `PlanView`. If that variable is empty, the request goes to the same site.
-
-Request body (JSON):
+`POST /api/quiz-plan` accepts JSON such as:
 
 ```json
 {
   "name": "Sam",
-  "email": "sam@example.com",
-  "marketing": false,
+  "reachOut": true,
+  "contactMethod": "whatsapp",
+  "phone": "+971 50 123 4567",
   "answers": {
     "model": "services",
     "team": 1,
@@ -44,77 +22,19 @@ Request body (JSON):
 }
 ```
 
-The `answers` fields are all ids or indexes into `src/content/quiz.ts`:
+For email, use `"contactMethod": "email"` and `"email": "sam@example.com"` instead of `phone`. The optional `otherBusiness` field inside `answers` is supported when `model` is `other`. The server validates the answers and selected contact details and saves the request to `data/quiz-leads.jsonl` before attempting an internal email notification. The file is excluded from Git; arrange access, backups, retention, and deletion securely on the host.
 
-- `model` is an id from `MODELS`.
-- `team` indexes `TEAM_SIZES`. Index 0, "Just me", changes some questions.
-- `belief` is an id from `BELIEFS`.
-- `answers[i]` indexes the options of `AREAS[i]`. There are always nine.
-- `extra` indexes `VERIFY_SCALE`. It is `null` when nothing stood out and the check was not asked.
+The response `{ "ok": true, "notified": true }` means the SMTP server accepted the team notification, not that an inbox delivered or read it. `{ "ok": true, "notified": false }` means the request was saved but the notification was not sent. In that case, the page asks the visitor to contact the team directly. Saving or validation errors return a non-2xx response. Legacy name/email/marketing submissions remain accepted for older cached clients, but are not consent to a personal follow-up. Their response has `ok: false` so the old page does not falsely claim a plan email was sent.
 
-Response:
+## Email configuration
 
-- Return JSON `{ "ok": true }` when the email was sent.
-- Anything else, including a non-2xx status, makes the page show the "save it as a PDF" note.
+Set these **server-side environment variables** on the host; never commit credentials:
 
-What the endpoint must do:
+- `MAIL_HOST`, `MAIL_PORT`, and `MAIL_SECURE` (`true` for implicit TLS, otherwise STARTTLS as negotiated by the server)
+- `MAIL_USER` and `MAIL_PASS` if authentication is required
+- `MAIL_FROM`: the sender address permitted by the mail provider
+- `LEADS_TO`: the team inbox receiving requests
 
-1. **Validate.**
-   - Rate limit with the existing `rateLimited(req.ip)`.
-   - Clean `name` (max 60) and `email` (max 160) with the existing `clean()`.
-   - Check `email` against the existing `EMAIL` pattern.
-   - Treat `marketing` as true only if it is exactly `true`.
-   - Run `answers` through `cleanAnswers()` from `src/content/quiz.ts`. It returns `null` for anything invalid, including a missing check when one was due.
-   - Reject with `400` if any of these checks fail.
-2. **Email the visitor their plan.**
-   - Send `planEmail(answers, name)`. It is built from `buildPlan(answers)`, so the email says exactly what the page says.
-   - The only visitor text allowed in the email is their first name, escaped. This stops the form being used to send spam.
-3. **Notify us.**
-   - Send `teamEmail()` to our inbox. It has the name, the email, whether they ticked the box, and every answer.
-4. **Schedule the nudge only if `marketing` is true.**
-   - Send `nudgeEmail()` 3 days later. A scheduled send in the email service, or a simple queue, is enough. No list or automation is needed.
-   - Without the tick, they get the plan email and nothing else.
-5. **Log only what is needed:** name, email, first priority. No full answers in logs.
+A configured and working SMTP service is required for the team notifications. Check server logs and the team inbox after a test submission. If settings are missing or sending fails, requests are still saved and the page explains that the team could not be notified.
 
-To use `src/content/quiz.ts` and `src/content/quizEmails.ts` from `server.js`, bundle them for Node at build time.
-
-- `scripts/prerender.mjs` already does this for `src/content/static.ts` with vite's SSR build. The same pattern works, with output format `cjs`.
-- `quiz.ts` imports `src/config/site.ts`, which reads `import.meta.env`. Vite fills that in at build time.
-
-## 2. The emails are already written
-
-There are two emails for the visitor and one notice for us, all written and rendered in `src/content/quizEmails.ts`. The server only sends them.
-
-Preview: https://claude.ai/artifact/VRqNF7uTptH5GP2WPE6jd9 (ask the owner to share it with you).
-
-| Function | Email | Who gets it | When |
-|---|---|---|---|
-| `planEmail(answers, name)` | Their fix plan again, so it lives in their inbox | Everyone who asks for a copy | Straight away |
-| `nudgeEmail(answers, name)` | "Did the check surprise you?", one friendly nudge asking for a reply | Only if `marketing` is true | 3 days later |
-| `teamEmail(answers, { name, email, marketing })` | New plan notice with every answer | Our inbox (`LEADS_TO`) | Straight away |
-
-Each email has `subject`, `preheader`, `day` and `marketing`.
-
-To send:
-
-- Turn each email into HTML with `renderHtml(email, unsubscribeUrl)` and into plain text with `renderText(email, unsubscribeUrl)`, and send both versions.
-- Only the nudge needs the email tool's unsubscribe link.
-- Images load from `https://clauseandcode.com/logo.png` and `https://clauseandcode.com/email/`, so the site must be live first.
-- The nudge asks people to reply. Set the reply-to address to an inbox someone reads and answers, for example `support@clauseandcode.com`.
-- There is no other sequence. Don't add people to any list unless they have given separate consent.
-
-## 3. Services and settings to set up
-
-- **An email sending service**, with clauseandcode.com verified (SPF and DKIM).
-  - Options: Resend, Postmark, Brevo, or the Hostinger mailbox over SMTP.
-  - It needs a from address, such as `plans@clauseandcode.com`.
-- **Environment variables on Hostinger**, never committed:
-  - `MAIL_API_KEY`
-  - `MAIL_FROM`
-  - `LEADS_TO`, our inbox
-
-## 4. Privacy
-
-- Store only what the form collects: first name, email, the consent choice with its date, and the answers.
-- Keep the consent choice. If someone did not tick the box, they must never be added to the list.
-- Before the email form goes live, add a short privacy page linked from the footer. It should say what is collected, why, and how to ask for it to be deleted.
+**No automated visitor emails are sent.** The old plan and nudge templates in `src/content/quizEmails.ts` are not wired to the server, and no nudge is scheduled. The new form does not collect marketing consent or subscribe visitors to a mailing list. The team should manually contact only people who requested a follow-up, using the selected method.
