@@ -30,8 +30,8 @@ The response `{ "ok": true, "notified": true }` means the SMTP server accepted t
 
 Set these **server-side environment variables** on the host; never commit credentials:
 
-- `MAIL_HOST`, `MAIL_PORT`, and `MAIL_SECURE` (`true` for implicit TLS, otherwise STARTTLS as negotiated by the server)
-- `MAIL_USER` and `MAIL_PASS` if authentication is required
+- `MAIL_HOST`, `MAIL_PORT`, and `MAIL_SECURE` (must be `true`; implicit TLS with certificate verification is required, for example Gmail port 465)
+- `MAIL_USER` and `MAIL_PASS` for SMTP authentication
 - `MAIL_FROM`: the sender address permitted by the mail provider
 - `LEADS_TO`: the team inbox receiving requests
 

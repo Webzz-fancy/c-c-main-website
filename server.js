@@ -182,32 +182,45 @@ app.post('/api/quiz-plan', async (req, res) => {
     console.warn('[quiz-plan] Mail not configured; lead saved')
   } else {
     try {
-      const nodemailer = require('nodemailer')
-      const transport = nodemailer.createTransport({
-        host: process.env.MAIL_HOST,
-        port: Number(process.env.MAIL_PORT) || (process.env.MAIL_SECURE === 'true' ? 465 : 587),
-        secure: process.env.MAIL_SECURE === 'true',
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
-        ...(process.env.MAIL_USER ? { auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS } } : {}),
+      // Fail closed: credentials and quiz answers must only travel over a
+      // certificate-verified implicit TLS connection (e.g. Gmail port 465).
+      const host = process.env.MAIL_HOST.trim()
+      const port = Number(process.env.MAIL_PORT || 465)
+      if (process.env.MAIL_SECURE !== 'true' || !host || !Number.isInteger(port) || port < 1 || port > 65535) {
+        throw new Error('Set MAIL_SECURE=true and use an implicit TLS SMTP port')
+      }
+      if (!process.env.MAIL_USER || !process.env.MAIL_PASS || !process.env.MAIL_FROM || !process.env.LEADS_TO) {
+        throw new Error('SMTP sender, credentials, and recipient are required')
+      }
+      // emailjs is ESM; dynamic import keeps this entry point CommonJS on Node 18.
+      const { SMTPClient } = await import('emailjs')
+      const client = new SMTPClient({
+        host,
+        port,
+        ssl: { servername: host },
+        user: process.env.MAIL_USER,
+        password: process.env.MAIL_PASS,
+        timeout: 15000,
       })
-      if (!process.env.MAIL_FROM || !process.env.LEADS_TO) throw new Error('MAIL_FROM and LEADS_TO are required')
-      const info = await transport.sendMail({
-        from: process.env.MAIL_FROM,
-        to: process.env.LEADS_TO,
-        subject: `${isLegacy ? 'New quiz plan' : 'Quiz follow-up request'} — ${name}`,
-        text: [
-          `Name: ${name}`,
-          ...(isLegacy
-            ? [`Email: ${email}`, `Legacy email-copy request; no personal follow-up requested`, `Marketing: ${lead.marketing ? 'yes' : 'no'}`]
-            : [`Reach-out requested: yes`, `Preferred contact: ${contactMethod === 'whatsapp' ? 'WhatsApp' : 'Email'}`, contactMethod === 'email' ? `Email: ${email}` : `WhatsApp: ${phone}`]),
-          `Timestamp: ${lead.ts}`, '', ...answerSummary(answers),
-        ].join('\n'),
-      })
-      notified = info.accepted.length > 0
+      try {
+        await client.sendAsync({
+          from: process.env.MAIL_FROM,
+          to: process.env.LEADS_TO,
+          subject: `${isLegacy ? 'New quiz plan' : 'Quiz follow-up request'} — ${name}`,
+          text: [
+            `Name: ${name}`,
+            ...(isLegacy
+              ? [`Email: ${email}`, `Legacy email-copy request; no personal follow-up requested`, `Marketing: ${lead.marketing ? 'yes' : 'no'}`]
+              : [`Reach-out requested: yes`, `Preferred contact: ${contactMethod === 'whatsapp' ? 'WhatsApp' : 'Email'}`, contactMethod === 'email' ? `Email: ${email}` : `WhatsApp: ${phone}`]),
+            `Timestamp: ${lead.ts}`, '', ...answerSummary(answers),
+          ].join('\n'),
+        })
+        notified = true
+      } finally {
+        client.smtp.close()
+      }
     } catch (err) {
-      console.error('[quiz-plan] Notification failed; lead saved:', err)
+      console.error('[quiz-plan] Notification failed; lead saved:', err instanceof Error ? err.message : 'SMTP error')
     }
   }
   // The retired form promised an emailed copy, which is not implemented.
