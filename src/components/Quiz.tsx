@@ -503,7 +503,18 @@ function PlanView({ answers, headRef, onRestart }: {
                       ))}
                     </div>
                   </fieldset>
-                  {lead.method === 'email' && <p className="mt-3 text-[14px] leading-relaxed text-ink-muted">Email it is! Our robot just hopes we don’t get lost in your inbox.</p>}
+                  {lead.method === 'email' && (
+                    <div className="mt-4 flex items-center gap-4 rounded-2xl border border-brand/40 bg-[#F1E4D1] px-4 py-4 sm:px-5" aria-live="polite">
+                      <img src="/robot-404-confused.webp" alt="" aria-hidden="true" className="h-24 w-14 shrink-0 object-contain sm:h-28 sm:w-16" />
+                      <div className="min-w-0">
+                        <p className="font-display text-[1.15rem] font-semibold leading-snug text-ink">Email? Brave choice.</p>
+                        <p className="mt-1 text-[14px] font-medium leading-relaxed text-ink-soft">Our robot once got lost between a newsletter and 2,473 unread emails. WhatsApp is a little less scary.</p>
+                        <button type="button" onClick={() => setLead((current) => ({ ...current, method: 'whatsapp' }))} className="mt-2 inline-flex min-h-11 items-center text-[14px] font-semibold text-glass-600 underline decoration-glass/40 underline-offset-4 hover:decoration-glass focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glass">
+                          Switch to WhatsApp <span className="ml-1" aria-hidden="true">→</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {lead.method && (
                     <>
                       <div className="mt-5 grid gap-4 sm:grid-cols-2">
