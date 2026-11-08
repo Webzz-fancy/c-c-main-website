@@ -8,7 +8,9 @@ import { site } from '../config/site'
 type NavItem = {
   label: string
   href: string
-  children?: { label: string; href: string; description: string }[]
+  children?: { label: string; href: string }[]
+  /** the menu's answer to its own label: an italic opener, the line itself, and a nudge toward the link below */
+  pitch?: { opener: string; text: string; nudge: string }
   /** a wide menu listing every project; the label itself still opens the page */
   projects?: boolean
 }
@@ -80,23 +82,12 @@ const NAV: NavItem[] = [
   {
     label: 'Ways we help',
     href: '#ways-we-help',
-    children: [
-      {
-        label: 'What we can do for you',
-        href: '#ways-we-help',
-        description: 'AI agents, AI discoverability, systems and websites.',
-      },
-      {
-        label: 'Book a consultation',
-        href: site.links.booking,
-        description: '45 minutes to find what to fix first.',
-      },
-      {
-        label: 'Get your fix plan',
-        href: '#quiz',
-        description: 'Not sure where to start? A few questions, a clear first step.',
-      },
-    ],
+    pitch: {
+      opener: 'Let us count the ways.',
+      text: 'AI agents set up around what you need. Systems, SOPs, automations and websites that make work easier. And getting you found on Google and ChatGPT.',
+      nudge: 'Got one we haven’t counted? Try us.',
+    },
+    children: [{ label: 'Book a consultation', href: site.links.booking }],
   },
 ]
 
@@ -286,29 +277,29 @@ export default function Header() {
                 {item.children && (
                   <div
                     className={[
-                      'absolute left-1/2 top-full w-[290px] -translate-x-1/2 pt-3 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                      'absolute left-1/2 top-full w-[380px] -translate-x-1/2 pt-3 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
                       isOpen
                         ? 'pointer-events-auto translate-y-0 opacity-100'
                         : 'pointer-events-none translate-y-2 opacity-0',
                     ].join(' ')}
                   >
-                    <div className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white p-2 shadow-soft">
+                    <div className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white p-6 shadow-soft">
+                      {item.pitch && (
+                        <>
+                          <p className="font-display text-[26px] italic leading-tight text-brand-600">{item.pitch.opener}</p>
+                          <p className="mt-3 text-[15px] font-light leading-relaxed text-ink-soft">{item.pitch.text}</p>
+                          <p className="mt-3 font-display text-[18px] italic leading-snug text-ink">{item.pitch.nudge}</p>
+                        </>
+                      )}
                       {item.children.map((child) => (
                         <a
                           key={child.label}
                           href={link(child.href)}
                           {...(child.href.startsWith('http') ? { target: '_blank', rel: 'noopener' } : {})}
-                          className="group/item flex flex-col gap-0.5 rounded-xl px-3.5 py-3 transition-colors duration-200 hover:bg-brand-50"
+                          {...moodHandlers('happy')}
+                          className="mt-5 inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-[14px] font-semibold text-ink shadow-brand transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-300"
                         >
-                          <span className="flex items-center justify-between text-[14px] font-semibold text-ink">
-                            {child.label}
-                            <span className="translate-x-0 text-brand opacity-0 transition-all duration-300 group-hover/item:translate-x-1 group-hover/item:opacity-100">
-                              →
-                            </span>
-                          </span>
-                          <span className="text-[12.5px] leading-snug text-ink-muted">
-                            {child.description}
-                          </span>
+                          {child.label} <span aria-hidden="true">↗</span>
                         </a>
                       ))}
                     </div>
@@ -445,16 +436,23 @@ export default function Header() {
                   ].join(' ')}
                 >
                   <div className="overflow-hidden">
-                    <div className="pb-2 pl-5">
+                    <div className="px-3 pb-3 pt-1">
+                      {item.pitch && (
+                        <>
+                          <p className="font-display text-[22px] italic leading-tight text-brand-600">{item.pitch.opener}</p>
+                          <p className="mt-2 text-[14px] font-light leading-relaxed text-ink-soft">{item.pitch.text}</p>
+                          <p className="mt-2 font-display text-[16px] italic leading-snug text-ink">{item.pitch.nudge}</p>
+                        </>
+                      )}
                       {item.children.map((child) => (
                         <a
                           key={child.label}
                           href={link(child.href)}
                           {...(child.href.startsWith('http') ? { target: '_blank', rel: 'noopener' } : {})}
                           onClick={() => setMobileOpen(false)}
-                          className="block py-2 text-[14px] text-ink-muted"
+                          className="mt-3 inline-flex items-center gap-2 text-[14px] font-semibold text-glass"
                         >
-                          {child.label}
+                          {child.label} <span aria-hidden="true">↗</span>
                         </a>
                       ))}
                     </div>
