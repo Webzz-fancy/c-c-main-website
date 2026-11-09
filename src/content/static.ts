@@ -16,6 +16,8 @@ import { CONTACT } from './contact'
 import { QUIZ } from './quiz'
 import { PAGES, ALL_PAGES, ORIGIN, FAQ, PORTFOLIO, ENTITY, absolute, type PageSeo } from '../config/seo'
 import { BLOG, BLOG_LIVE, BLOG_ON_HOME, POSTS, formatDate, postPath, type BlogBlock } from './blog'
+import { SERVICES, type Service } from './services'
+import { workPath } from './work'
 
 export { PAGES, ALL_PAGES, ORIGIN, FAQ, PORTFOLIO, absolute }
 export { jsonLdFor } from '../config/seo'
@@ -55,12 +57,12 @@ const SIMPLE = {
   h1: 'Your website, built to a higher standard.',
   intro: [
     'A website is the front of a business. We build it with the same rigour we bring to the operations behind one.',
-    'Every page has a job. Fast for the people who visit, structured for the AI that recommends, and built to keep working long after launch.',
+    'Every page has a job. Fast for the people who visit, structured for the AI that finds you, and built to keep working long after launch.',
   ],
   second: {
     label: 'What we do',
     h2: 'The website, and what brings people to it.',
-    p: 'We build the website itself, and the system around it that gets it recommended by search and AI and turns interest into enquiries. Same team, same standard as the operations we build.',
+    p: 'We build the website itself, and the system around it that gets it found by search and AI and turns interest into enquiries. Same team, same standard as the operations we build.',
     offers: [
       ['Websites', 'We map who is visiting and what they came to do before a single page is designed. Then we build it fast, structured and easy to keep current.', 'See the projects', '#projects'],
       ['AI discoverability & lead management', 'We put your business where people now look, in ChatGPT, Gemini and Instagram, and connect it all to your booking so every enquiry is answered.', 'Explore AI discoverability', AI_URL],
@@ -96,6 +98,7 @@ const faqHtml = (items: { q: string; a: string }[]) =>
  *  outline stays the page's own headings) */
 const footerHtml = () =>
   `<footer><p>${esc(site.name)} · ${esc(site.tagline)}</p>` +
+  `<nav aria-label="What we build"><p>What we build</p><ul>${SERVICES.filter((s) => s.path !== '/about').map((s) => `<li>${a(s.path, s.name)}</li>`).join('')}</ul></nav>` +
   `<nav aria-label="Ways we help"><p>Ways we help</p><ul><li>${a('/#ways-we-help', 'What we can do for you')}</li><li>${a(site.links.booking, 'Book a consultation')}</li><li>${a('/#quiz', 'Get your fix plan')}</li></ul></nav>` +
   `<nav aria-label="Explore"><p>Explore</p><ul><li>${a('/', 'Home')}</li><li>${a('/projects', 'Our projects')}</li>${BLOG_LIVE ? `<li>${a('/blog', 'Blog')}</li>` : ''}<li>${a('/contact', 'Contact')}</li></ul></nav>` +
   `<address aria-label="Contact"><p>Contact</p><ul><li>${a(`mailto:${site.contact.email}`, site.contact.email)}</li><li>${a(site.contact.whatsapp, 'Message us on WhatsApp')}</li></ul></address>` +
@@ -106,10 +109,50 @@ const footerHtml = () =>
  *  readable content, not an invisible search-only duplicate. */
 const projectName = (id: string) => (id === COMPLEX.discoverability.id ? COMPLEX.discoverability.name : COMPLEX.projects.find((p) => p.id === id)?.card.name ?? id)
 
+const serviceHtml = (s: Service) => {
+  const projects = s.projects
+    .map((id) => COMPLEX.projects.find((p) => p.id === id))
+    .filter((p) => p !== undefined)
+  return (
+    `<header><p>${esc(s.label)}</p><h1>${esc(s.heading)} ${esc(s.emphasis)}</h1>${s.intro.map((t) => `<p>${esc(t)}</p>`).join('')}</header>` +
+    s.sections
+      .map((section) => {
+        const tag = section.style === 'steps' ? 'ol' : 'ul'
+        return `<section><h2>${esc(section.heading)}</h2>${section.intro ? `<p>${esc(section.intro)}</p>` : ''}<${tag}>${section.items
+          .map((item) => `<li>${item.title ? `<h3>${esc(item.title)}</h3>` : ''}<p>${esc(item.body)}</p></li>`)
+          .join('')}</${tag}></section>`
+      })
+      .join('') +
+    (projects.length
+      ? `<section><h2>Systems we have built</h2><ul>${projects
+          .map((p) => `<li><h3>${a(workPath(p), p.card.name)}</h3><p>${esc(p.card.kind)}</p><p>${esc(p.title)}</p></li>`)
+          .join('')}</ul></section>`
+      : '') +
+    (s.portfolio ? `<section><h2>Recent builds</h2><ul>${PORTFOLIO.map((p) => `<li>${a(p.url, p.tag)}</li>`).join('')}</ul></section>` : '') +
+    (s.faq.length
+      ? `<section><h2>Questions people ask</h2><dl>${s.faq.map(({ q, a: answer }) => `<dt>${esc(q)}</dt><dd>${esc(answer)}</dd>`).join('')}</dl></section>`
+      : '') +
+    `<section><h2>${esc(s.close.heading)}</h2><p>${esc(s.close.body)}</p><p>${esc(site.consultation)}</p>${a(site.links.booking, 'Book a consultation')} ${a('/#quiz', 'Get your fix plan')}</section>`
+  )
+}
+
 export function staticHtml(page: PageSeo): string {
   const open = `<div data-prerender><main>`
   const close = `</main>${footerHtml()}</div>`
 
+  if (page.service) return open + serviceHtml(page.service) + close
+  if (page.project) {
+    const project = page.project
+    return (
+      open +
+      `<article><p>${a('/projects', 'All projects')}</p><p>${esc(project.card.kind)} · ${esc(project.card.area)}</p><h1>${esc(project.card.name)}</h1><p>${esc(project.title)}</p><p>${esc(project.lede)}</p><dl><dt>Before</dt><dd>${esc(project.card.before)}</dd><dt>Now</dt><dd>${esc(project.card.after)}</dd></dl><h2>Who does what</h2><ul>${project.roles
+        .map((role) => `<li>${esc(role.name)}: ${esc(role.access)}</li>`)
+        .join('')}</ul><h2>${esc(project.walk)}</h2><ol>${project.stops
+        .map((stop) => `<li><h3>${esc(stop.title)}</h3><p>${esc(stop.body)}</p><p>${esc(stop.guard)}</p></li>`)
+        .join('')}</ol><h2>Also built in</h2><ul>${project.features.map((f) => `<li>${esc(f)}</li>`).join('')}</ul><h2>The result</h2><p>${esc(project.result)}</p>${a(site.links.booking, 'Book a consultation')} ${a('/#quiz', 'Get your fix plan')}</article>` +
+      close
+    )
+  }
   if (page === PAGES.blog) {
     return (
       open +
@@ -177,7 +220,7 @@ export function staticHtml(page: PageSeo): string {
       `<li><h3>${esc(COMPLEX.index.agents.name)}</h3><p>${esc(COMPLEX.index.agents.kind)}</p><p>${esc(COMPLEX.index.agents.change)}</p>${a('#agents', COMPLEX.index.agents.action)}</li>` +
       `<li><h3>${esc(COMPLEX.discoverability.name)}</h3><p>${esc(COMPLEX.discoverability.kind)}</p><p>${esc(COMPLEX.discoverability.after)}</p>${a(COMPLEX.discoverability.url, `${COMPLEX.discoverability.name}: ${COMPLEX.discoverability.action.toLowerCase()}`)}</li>` +
       COMPLEX.projects
-        .map(({ id, card }) => `<li><h3>${esc(card.name)}</h3><p>${esc(card.kind)}</p><p>${esc(card.after)}</p>${a(`#project-${id}`, `${card.name}: see the details`)}</li>`)
+        .map((project) => `<li><h3>${esc(project.card.name)}</h3><p>${esc(project.card.kind)}</p><p>${esc(project.card.after)}</p>${a(workPath(project), `${project.card.name}: see the details`)}</li>`)
         .join('') +
       `</ol></section>` +
       `<section id="agents" aria-labelledby="lab-title"><p>${esc(COMPLEX.agents.label)}</p><h2 id="lab-title">${esc(COMPLEX.agents.heading)} ${esc(COMPLEX.agents.emphasis)}</h2><p>${esc(COMPLEX.agents.intro)}</p><p>${esc(COMPLEX.agents.director.name)}: ${esc(COMPLEX.agents.director.job.replace(/ · /g, ', '))}.</p><ul>${COMPLEX.agents.teams
@@ -187,14 +230,7 @@ export function staticHtml(page: PageSeo): string {
         .join('')}</dl><h3>${esc(COMPLEX.agents.industries.intro)} your business</h3>${COMPLEX.agents.industries.items
         .map((item) => `<h4>${esc(item.label)}</h4><ul>${[...item.clients, ...item.operations].map((line) => `<li>${esc(line)}</li>`).join('')}</ul>`)
         .join('')}</section>` +
-      // each project's details: a dialog on the live page, opened by #project-<id>
-      COMPLEX.projects
-        .map((project) => `<article id="project-${project.id}" aria-labelledby="project-${project.id}-title"><p>${esc(project.card.kind)} · ${esc(project.card.area)}</p><h2 id="project-${project.id}-title">${esc(project.card.name)}</h2><p>${esc(project.title)}</p><p>${esc(project.lede)}</p><dl><dt>Before</dt><dd>${esc(project.card.before)}</dd><dt>Now</dt><dd>${esc(project.card.after)}</dd></dl><h3>Who does what</h3><ul>${project.roles
-          .map((role) => `<li>${esc(role.name)}: ${esc(role.access)}</li>`)
-          .join('')}</ul><h3>${esc(project.walk)}</h3><ol>${project.stops
-          .map((stop) => `<li><h4>${esc(stop.title)}</h4><p>${esc(stop.body)}</p><p>${esc(stop.guard)}</p></li>`)
-          .join('')}</ol><h3>Also built in</h3><ul>${project.features.map((f) => `<li>${esc(f)}</li>`).join('')}</ul><h3>The result</h3><p>${esc(project.result)}</p></article>`)
-        .join('') +
+      // each project's full details live on its own page, at /work/<slug>
       `<section aria-labelledby="complex-close-title"><p>${esc(COMPLEX.close.label)}</p><h2 id="complex-close-title">${esc(COMPLEX.close.heading)}</h2><p>${esc(COMPLEX.close.body)}</p>${a(site.links.booking, COMPLEX.close.action)} <span>${esc(COMPLEX.close.quiz)}</span> ${a('/#quiz', 'Get your fix plan')}</section>` +
       close
     )
@@ -220,7 +256,7 @@ export function staticHtml(page: PageSeo): string {
       .map((item) => `<li><h3>${esc(item.title)}</h3><p>${esc(item.body)}</p>${a(item.href, item.action)}</li>`)
       .join('')}</ul></section>` +
     `<section id="work"><p>${esc(HOME_WORK.label)}</p><h2>${esc(HOME_WORK.heading)} ${esc(HOME_WORK.emphasis)}</h2><p>${esc(HOME_WORK.intro)}</p><ul><li>${a('/projects#agents', COMPLEX.index.agents.name)}: ${esc(COMPLEX.index.agents.change)}</li><li>${a(AI_URL, COMPLEX.discoverability.name)}: ${esc(COMPLEX.discoverability.after)}</li>${COMPLEX.projects
-      .map((p) => `<li>${a(`/projects#project-${p.id}`, p.card.name)}: ${esc(p.card.after)}</li>`)
+      .map((p) => `<li>${a(workPath(p), p.card.name)}: ${esc(p.card.after)}</li>`)
       .join('')}</ul><p>${a(HOME_WORK.href, HOME_WORK.action)}</p></section>` +
     `<section id="approach"><p>${esc(HOME.approach.label)}</p><h2>${esc(HOME.approach.h2)}</h2><p>${esc(HOME.approach.intro)}</p><ol>${HOME.approach.steps
       .map(([t, b]) => `<li><h3>${esc(t)}</h3><p>${esc(b)}</p></li>`)
@@ -274,7 +310,11 @@ export function llmsTxt(full = false): string {
     ``,
     `- [${COMPLEX.index.agents.name}](${ORIGIN}/projects#agents): ${md(COMPLEX.index.agents.change)}`,
     `- [${COMPLEX.discoverability.name}](${COMPLEX.discoverability.url}): ${md(COMPLEX.discoverability.after)}`,
-    ...COMPLEX.projects.map((p) => `- [${p.card.name}](${ORIGIN}/projects#project-${p.id}): ${p.card.kind}. ${md(p.card.after)}`),
+    ...COMPLEX.projects.map((p) => `- [${p.card.name}](${absolute(workPath(p))}): ${p.card.kind}. ${md(p.card.after)}`),
+    ``,
+    `## Services`,
+    ``,
+    ...SERVICES.filter((s) => !s.draft).map((s) => `- [${s.name}](${absolute(s.path)}): ${s.summary}`),
     ``,
   ]
   if (!full) {

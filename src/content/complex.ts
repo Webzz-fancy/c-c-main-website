@@ -1070,7 +1070,7 @@ export const COMPLEX: ComplexContent = {
       roles: [
         { name: 'Visitor', access: 'Follows the story as they scroll, looks at each piece up close, finds the facts they need, and orders, reserves or enquires on the page.' },
         { name: 'Owner', access: 'Has a site built around how the work is actually sold, easy to keep current as new pieces and collections arrive.' },
-        { name: 'Search and AI assistants', access: 'Read fast, structured pages, so the work can be found and recommended when people ask.' },
+        { name: 'Search and AI assistants', access: 'Read fast, structured pages, so the work can be found when people ask.' },
       ],
       stops: [
         {
@@ -1117,7 +1117,7 @@ export const COMPLEX: ComplexContent = {
           node: 'Found',
           detail: 'fast · structured',
           title: 'Fast, and found.',
-          body: 'Every site loads quickly on a phone and is structured so search engines and AI assistants like ChatGPT and Gemini can read what the business does and recommend it.',
+          body: 'Every site loads quickly on a phone and is structured so search engines and AI assistants like ChatGPT and Gemini can find it and read what the business does.',
           guard: 'Readable: by people and by the machines that point people to it.',
           side: 'far',
         },
@@ -1138,10 +1138,10 @@ export const COMPLEX: ComplexContent = {
   discoverability: {
     id: 'ai-client-engine',
     name: 'AI discoverability',
-    kind: 'Get recommended by AI',
+    kind: 'Get found by AI',
     sector: 'Coaches, clinics and professional practices',
     before: 'People now ask ChatGPT and Gemini who to call. These businesses were not the answer, and enquiries in DMs went unanswered.',
-    after: 'Your business found and recommended when people ask ChatGPT, Gemini or Google, with your own assistant on Instagram and WhatsApp booking the calls.',
+    after: 'Your business found when people ask ChatGPT, Gemini or Google, with your own assistant on Instagram and WhatsApp booking the calls.',
     users: 'Practice owners · their clients',
     sources: ['ChatGPT', 'Gemini', 'WhatsApp · Instagram'],
     hub: 'Landing page',

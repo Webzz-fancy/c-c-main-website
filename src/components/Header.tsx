@@ -32,7 +32,7 @@ const PROJECT_MENU: { label: string; items: ProjectLink[] }[] = PROJECT_GROUPS.m
           id: COMPLEX.discoverability.id,
           label: COMPLEX.discoverability.name,
           href: COMPLEX.discoverability.url,
-          description: 'Found and recommended when people ask AI',
+          description: 'Found when people ask AI',
           external: true,
         }]
       : COMPLEX.projects

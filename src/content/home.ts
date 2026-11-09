@@ -51,7 +51,7 @@ export const HOME_DAY = {
     {
       time: '16:00',
       today: 'Someone asks ChatGPT who to call for what you do. Your name doesn’t come up.',
-      after: 'ChatGPT and Gemini can find you and recommend you, and your assistant books the call.',
+      after: 'ChatGPT and Gemini can find you, and your assistant books the call.',
       who: 'AI discoverability',
       glyph: 'eyes',
     },
@@ -108,7 +108,7 @@ export const HOME_ABILITIES = {
     },
     {
       tab: 'AI discoverability',
-      title: 'AI discoverability: get recommended',
+      title: 'AI discoverability: get found',
       body: 'When people ask ChatGPT, Gemini or Google who to call, your business is there, and your own assistant books them in.',
       action: 'See AI discoverability',
       href: 'https://ai.clauseandcode.com/',

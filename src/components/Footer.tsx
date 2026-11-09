@@ -1,5 +1,6 @@
 import { site } from '../config/site'
 import { BLOG_LIVE } from '../content/blog'
+import { SERVICES } from '../content/services'
 import { useHomeLinks } from '../hooks/useHomeLinks'
 
 type LinkGroup = {
@@ -8,6 +9,10 @@ type LinkGroup = {
 }
 
 const GROUPS: LinkGroup[] = [
+  {
+    title: 'What we build',
+    links: SERVICES.filter((service) => service.path !== '/about').map((service) => ({ label: service.name, href: service.path })),
+  },
   {
     title: 'Ways we help',
     links: [
@@ -139,7 +144,7 @@ export default function Footer() {
           </div>
 
           {/* Links + contact */}
-          <div className="grid grid-cols-2 gap-x-8 gap-y-10 lg:grid-cols-[1fr_1fr_minmax(15rem,1.4fr)]">
+          <div className="grid grid-cols-2 gap-x-8 gap-y-10 lg:grid-cols-[1.2fr_1fr_0.8fr_minmax(13rem,1.2fr)]">
             {GROUPS.map((group) => (
               <nav key={group.title} aria-label={group.title}>
                 <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-glass-300">

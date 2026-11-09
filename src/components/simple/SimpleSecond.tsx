@@ -119,7 +119,7 @@ export default function SimpleSecond({ progress, reveal, onProjects }: Props) {
               </h2>
             </div>
             <p className="max-w-md text-[clamp(0.98rem,1.15vw,1.08rem)] font-light leading-relaxed text-ink-soft lg:pb-2">
-              We build the website itself, and the system around it that gets it recommended by search and AI and turns interest into enquiries. Same team, same standard as the operations we build.
+              We build the website itself, and the system around it that gets it found by search and AI and turns interest into enquiries. Same team, same standard as the operations we build.
             </p>
           </div>
 
