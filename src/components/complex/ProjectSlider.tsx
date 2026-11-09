@@ -3,6 +3,7 @@ import { AgentsVisual } from './AgentLab'
 import { ProjectVisual, ChannelsMiniMap } from './MiniMap'
 import type { FinderMatch } from './ProjectFinder'
 import { COMPLEX } from '../../content/complex'
+import { workPath } from '../../content/work'
 
 type Props = {
   /** where the project pages live: '' on /projects itself, '/projects' elsewhere */
@@ -134,7 +135,7 @@ export default function ProjectSlider({ base = '', found = null, onOpen, onAgent
       card: (
         <a
           className="complex-card"
-          href={`${base}#project-${project.id}`}
+          href={onOpen ? workPath(project) : `${base}#project-${project.id}`}
           onClick={onOpen?.(project.id)}
           aria-haspopup={onOpen ? 'dialog' : undefined}
         >

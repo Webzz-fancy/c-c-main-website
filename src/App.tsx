@@ -16,7 +16,11 @@ import LegalPage from './pages/LegalPage'
 import PrivacyPage from './pages/PrivacyPage'
 import BlogPage from './pages/BlogPage'
 import PostPage from './pages/PostPage'
+import ServicePage from './pages/ServicePage'
+import WorkPage from './pages/WorkPage'
 import { BLOG_ON_HOME, postBySlug } from './content/blog'
+import { SERVICES, serviceByPath } from './content/services'
+import { projectBySlug } from './content/work'
 import BlogStrip from './components/BlogStrip'
 import { TERMS } from './content/legal'
 import { pageForPath } from './config/seo'
@@ -25,8 +29,13 @@ import { applyHead } from './lib/head'
 // the websites page carries the 3D robot (three.js); only that page loads it
 const SimplePage = lazy(() => import('./pages/SimplePage'))
 
-type Page = 'home' | 'simple' | 'complex' | 'contact' | 'privacy' | 'terms' | 'blog' | 'post'
+type Page = 'home' | 'simple' | 'complex' | 'contact' | 'privacy' | 'terms' | 'blog' | 'post' | 'service' | 'work'
+const isService = (path: string) => SERVICES.some((service) => service.path === path || `${service.path}/` === path)
+const isWork = (path: string) => /^\/work\/[a-z0-9-]+\/?$/.test(path)
+
 function getPage(path: string): Page {
+  if (isService(path)) return 'service'
+  if (isWork(path)) return 'work'
   if (path === '/blog' || path === '/blog/') return 'blog'
   if (/^\/blog\/[a-z0-9-]+\/?$/.test(path)) return 'post'
   if (path === '/simple' || path === '/simple/') return 'simple'
@@ -50,6 +59,9 @@ export default function App() {
   const [page, setPage] = useState<Page>(() =>
     typeof window !== 'undefined' ? getPage(window.location.pathname) : 'home',
   )
+  // moving between two pages of the same kind (one service to another) still
+  // has to change what is shown and the document head
+  const [path, setPath] = useState(() => (typeof window !== 'undefined' ? window.location.pathname : '/'))
 
   // An old permanent redirect to /simple/ may still be cached in a browser.
   // The server keeps that address working, and this cleans up the displayed
@@ -67,12 +79,13 @@ export default function App() {
   // social card and JSON-LD (the build pre-renders the same for each URL)
   useEffect(() => {
     applyHead(pageForPath(window.location.pathname))
-  }, [page])
+  }, [page, path])
 
   useEffect(() => {
     const onPop = () => {
       removeLegacySlash()
       setPage(getPage(window.location.pathname))
+      setPath(window.location.pathname)
     }
     window.addEventListener('popstate', onPop)
     // Keep in-app navigation on the canonical page URLs. Unknown/old paths
@@ -85,13 +98,14 @@ export default function App() {
       if (!href || !href.startsWith('/')) return
       const target = new URL(href, window.location.href)
       if (target.origin !== window.location.origin) return
-      const isProjectRoute = ['/simple', '/projects', '/contact', '/privacy', '/terms', '/blog'].includes(target.pathname) || /^\/blog\/[a-z0-9-]+$/.test(target.pathname)
+      const isProjectRoute = ['/simple', '/projects', '/contact', '/privacy', '/terms', '/blog'].includes(target.pathname) || /^\/blog\/[a-z0-9-]+$/.test(target.pathname) || isService(target.pathname) || (isWork(target.pathname) && projectBySlug(target.pathname.split('/')[2]) !== undefined)
       if (!isProjectRoute && target.pathname !== '/') return
       if (page === 'home' && !isProjectRoute) return
       if (target.pathname === window.location.pathname) return
       e.preventDefault()
       window.history.pushState(null, '', target.pathname + target.search + target.hash)
       setPage(getPage(target.pathname))
+      setPath(target.pathname)
       window.scrollTo(0, 0)
     }
     document.addEventListener('click', onClick)
@@ -114,6 +128,22 @@ export default function App() {
     return () => window.clearTimeout(id)
   }, [page, loaderGone])
 
+  if (page === 'service') {
+    const service = serviceByPath(path.replace(/\/$/, ''))
+    return (
+      <RobotMoodProvider>
+        {service ? <ServicePage key={service.path} service={service} /> : <ComplexPage />}
+      </RobotMoodProvider>
+    )
+  }
+  if (page === 'work') {
+    const project = projectBySlug(path.split('/')[2]?.toLowerCase() ?? '')
+    return (
+      <RobotMoodProvider>
+        {project ? <WorkPage key={project.id} project={project} /> : <ComplexPage />}
+      </RobotMoodProvider>
+    )
+  }
   if (page === 'simple') {
     return (
       <RobotMoodProvider>

@@ -274,6 +274,24 @@ app.get(/^\/blog(?:\/([a-z0-9-]+))?\/?$/i, (req, res, next) => {
   res.set('Cache-Control', 'no-cache')
   return res.sendFile(file)
 })
+// Service pages and each project's own page. Like the blog, a page exists only
+// if the build wrote it, so a draft or an unknown address is a real 404.
+app.get(/^\/(ai-agents|custom-business-systems|workflow-automation|sop-process-mapping|websites|about)\/?$/i, (req, res, next) => {
+  const page = req.params[0].toLowerCase()
+  if (req.path !== `/${page}`) return redirectToPage(req, res, `/${page}`)
+  const file = path.join(distDir, page, 'index.html')
+  if (!fs.existsSync(file)) return next()
+  res.set('Cache-Control', 'no-cache')
+  return res.sendFile(file)
+})
+app.get(/^\/work\/([a-z0-9-]+)\/?$/i, (req, res, next) => {
+  const slug = req.params[0].toLowerCase()
+  if (req.path !== `/work/${slug}`) return redirectToPage(req, res, `/work/${slug}`)
+  const file = path.join(distDir, 'work', slug, 'index.html')
+  if (!fs.existsSync(file)) return next()
+  res.set('Cache-Control', 'no-cache')
+  return res.sendFile(file)
+})
 app.get(['/index.html', '/simple/index.html', '/projects/index.html', '/contact/index.html', '/privacy/index.html', '/terms/index.html'], (req, res) => {
   const page = req.path.split('/')[1].toLowerCase()
   redirectToPage(req, res, page === 'index.html' ? '/' : `/${page}`)

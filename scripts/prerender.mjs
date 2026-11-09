@@ -156,8 +156,10 @@ const SOURCES = {
   '/terms': ['src/content/legal.ts', ...COPY],
   '/blog': ['src/content/blog.ts', 'src/pages/BlogPage.tsx', ...COPY],
 }
-function lastmod(path) {
-  const files = SOURCES[path]
+const WORK_SOURCES = ['src/content/complex.ts', 'src/content/work.ts', 'src/pages/WorkPage.tsx', 'src/components/complex/ProjectContent.tsx', ...COPY]
+const SERVICE_SOURCES = ['src/content/services.ts', 'src/pages/ServicePage.tsx', ...COPY]
+function lastmod(page) {
+  const files = page.project ? WORK_SOURCES : page.service ? SERVICE_SOURCES : SOURCES[page.path]
   if (!files) return today
   try {
     const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
@@ -175,7 +177,7 @@ const sitemap =
   indexable
     .map(
       (p) =>
-        `  <url>\n    <loc>${absolute(p.path)}</loc>\n    <lastmod>${p.post ? p.post.updated ?? p.post.date : lastmod(p.path)}</lastmod>\n    <image:image>\n      <image:loc>${absolute(p.image)}</image:loc>\n    </image:image>\n  </url>`,
+        `  <url>\n    <loc>${absolute(p.path)}</loc>\n    <lastmod>${p.post ? p.post.updated ?? p.post.date : lastmod(p)}</lastmod>\n    <image:image>\n      <image:loc>${absolute(p.image)}</image:loc>\n    </image:image>\n  </url>`,
     )
     .join('\n') +
   `\n</urlset>\n`

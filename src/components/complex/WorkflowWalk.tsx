@@ -67,7 +67,8 @@ const SHAPES = { columns: COLUMNS, rows: ROWS }
  */
 export default function WorkflowWalk({ project, scrollRoot }: {
   project: ComplexProject
-  scrollRoot: RefObject<HTMLElement | null>
+  /** the popup's scrolling area; left out on a full page, which scrolls the window */
+  scrollRoot?: RefObject<HTMLElement | null>
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const layout = SHAPES[project.map.shape]
@@ -78,7 +79,8 @@ export default function WorkflowWalk({ project, scrollRoot }: {
   // The scroll container is a parent ref; it is guaranteed to be attached by
   // the time passive effects run, including in production's single mount.
   useEffect(() => {
-    const root = scrollRoot.current
+    const inWindow = !scrollRoot
+    const root = inWindow ? document.documentElement : scrollRoot.current
     const walk = ref.current
     if (!root || !walk) return
 
@@ -94,6 +96,11 @@ export default function WorkflowWalk({ project, scrollRoot }: {
     const narrow = window.matchMedia('(max-width: 760px)')
     if (!map || !canvas || !steps.length) return
 
+    // On a full page the map pins below the site header, and positions are
+    // measured from the top of the window rather than the popup.
+    const pinnedTop = inWindow ? parseFloat(getComputedStyle(map).top) || 0 : 0
+    const scroller: HTMLElement | Window = inWindow ? window : root
+
     const fraction = (x: number, y: number) => [(x - ORIGIN_X) / WIDTH, (y - ORIGIN_Y) / HEIGHT]
     const centres = layout.nodes.map((n) => [n.x + n.w / 2, n.y + n.h / 2] as const)
     const wide = fraction(...CENTRE)
@@ -108,7 +115,7 @@ export default function WorkflowWalk({ project, scrollRoot }: {
     // below it rather than in the middle of the sheet. Measured from the top
     // of the sheet's scroll area while the map is pinned.
     const lineOffset = () => {
-      const pinnedMapBottom = map.offsetHeight + (narrow.matches ? 0 : 4)
+      const pinnedMapBottom = pinnedTop + map.offsetHeight + (narrow.matches ? 0 : 4)
       const top = narrow.matches ? pinnedMapBottom : 0
       return top + (root.clientHeight - top) * (narrow.matches ? 0.3 : 0.42)
     }
@@ -118,15 +125,15 @@ export default function WorkflowWalk({ project, scrollRoot }: {
     const PULL_BACK = 180
     const fit = () => {
       const lastCard = steps[last].offsetHeight
-      const pinnedMapBottom = map.offsetHeight + (narrow.matches ? 0 : 4)
+      const pinnedMapBottom = pinnedTop + map.offsetHeight + (narrow.matches ? 0 : 4)
       const tail = PULL_BACK + 40 + pinnedMapBottom - lineOffset() - lastCard / 2
       walk.style.setProperty('--walk-tail', `${Math.max(32, Math.ceil(tail))}px`)
     }
 
     const read = () => {
-      const box = root.getBoundingClientRect()
+      const boxTop = inWindow ? 0 : root.getBoundingClientRect().top
       const mapBox = map.getBoundingClientRect()
-      const line = box.top + lineOffset()
+      const line = boxTop + lineOffset()
       const rects = steps.map((s) => s.getBoundingClientRect())
       const mids = rects.map((r) => r.top + r.height / 2)
 
@@ -243,7 +250,7 @@ export default function WorkflowWalk({ project, scrollRoot }: {
     shownBack = start.back
     draw(shownIndex, shownBack)
 
-    root.addEventListener('scroll', schedule, { passive: true })
+    scroller.addEventListener('scroll', schedule, { passive: true })
     window.addEventListener('resize', refit)
     motion.addEventListener('change', schedule)
     narrow.addEventListener('change', refit)
@@ -251,7 +258,7 @@ export default function WorkflowWalk({ project, scrollRoot }: {
     return () => {
       alive = false
       cancelAnimationFrame(frame)
-      root.removeEventListener('scroll', schedule)
+      scroller.removeEventListener('scroll', schedule)
       window.removeEventListener('resize', refit)
       motion.removeEventListener('change', schedule)
       narrow.removeEventListener('change', refit)
