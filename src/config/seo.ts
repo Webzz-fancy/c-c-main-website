@@ -55,20 +55,19 @@ export const LOGO_URL = `${ORIGIN}/logo.png`
  * engine and AI assistant reads one consistent description of the business.
  */
 export const ENTITY = {
-  short: 'Clause & Code is a business systems and AI company based in the UAE.',
+  short: 'Clause & Code is a business systems and AI company.',
   long:
-    'Clause & Code is a business systems and AI company based in the UAE. We map how a business actually runs, then build the SOPs, custom business systems, workflow automation and AI agents that let it scale without backend chaos. We also make businesses discoverable to search engines and AI assistants, and design websites around what visitors come to do. We work in English and Arabic, with businesses in the UAE and worldwide.',
+    'Clause & Code is a business systems and AI company. We map how a business actually runs, then build the SOPs, custom business systems, workflow automation and AI agents that let it scale without backend chaos. We also make businesses discoverable to search engines and AI assistants, and design websites around what visitors come to do. We work in English and Arabic, with businesses worldwide.',
   languages: ['English', 'Arabic'],
-  country: 'United Arab Emirates',
 }
 
 export const PAGES: Record<'home' | 'simple' | 'complex' | 'contact' | 'privacy' | 'terms' | 'blog', PageSeo> = {
   home: {
     path: '/',
     name: 'Home',
-    title: 'AI Agents and Business Systems in the UAE | Clause & Code',
+    title: 'AI Agents, Automation and Custom Systems | Clause & Code',
     description:
-      'AI agents that answer, follow up and report, systems that run the routine, and websites built around you. Mapped first, for UAE businesses and worldwide.',
+      'AI agents that answer, follow up and report, automation that moves the work along, and custom systems built around how your business actually runs.',
     type: 'website',
     image: DEFAULT_IMAGE,
     imageAlt: 'Clause & Code: you run the business, we handle the mess',
@@ -141,7 +140,7 @@ export const PAGES: Record<'home' | 'simple' | 'complex' | 'contact' | 'privacy'
     noindex: !BLOG_LIVE,
     title: 'Blog: AI Agents, Systems and Getting Found | Clause & Code',
     description:
-      'Notes from the work: what we learn building AI agents, custom systems and AI discoverability for real businesses, and the small fixes that come first.',
+      'What we learn building AI agents, automation and custom systems for real businesses, and the small fixes that should come before any of them.',
     type: 'website',
     image: DEFAULT_IMAGE,
     imageAlt: 'The Clause & Code blog',
@@ -251,7 +250,7 @@ export const PORTFOLIO = [
 export const FAQ: { q: string; a: string }[] = [
   {
     q: 'What does Clause & Code do?',
-    a: 'Clause & Code is a business systems and AI company based in the UAE. We map how a business actually runs, then build the SOPs, custom systems, workflow automation and AI agents that let it scale without backend chaos. We also make businesses easy to find for search engines and AI assistants, and design websites around what visitors come to do.',
+    a: 'Clause & Code is a business systems and AI company. We map how a business actually runs, then build the SOPs, custom systems, workflow automation and AI agents that let it scale without backend chaos. We also make businesses easy to find for search engines and AI assistants, and design websites around what visitors come to do.',
   },
   {
     q: 'How does the process work?',
@@ -282,8 +281,8 @@ export const FAQ: { q: string; a: string }[] = [
     a: 'Yes. We design the whole online experience around what a visitor came to do, whether that is to look closely, walk through, order, buy or commission: the story told as they scroll, the facts beside the work, and pages that are fast and structured for search and AI. It suits makers, artisans, artists and brands whose work needs to be seen before someone buys.',
   },
   {
-    q: 'Where are you based, and do you work in Arabic?',
-    a: 'We are based in the UAE and work with businesses in the UAE and worldwide. We work in English and Arabic, and we have built systems that run in both.',
+    q: 'Do you work with businesses worldwide, and in Arabic?',
+    a: 'Yes. We work with businesses worldwide, in English and Arabic, and we have built systems that run in both.',
   },
   {
     q: 'How do I start?',
@@ -293,7 +292,7 @@ export const FAQ: { q: string; a: string }[] = [
 
 type JsonLd = Record<string, unknown>
 
-const AREA_SERVED = [{ '@type': 'Country', name: ENTITY.country }, 'Worldwide']
+const AREA_SERVED = 'Worldwide'
 
 /** what the business knows, in the words people search with */
 const KNOWS_ABOUT = [
@@ -322,7 +321,6 @@ function organization(): JsonLd {
     slogan: site.tagline,
     description: ENTITY.long,
     email: site.contact.email,
-    address: { '@type': 'PostalAddress', addressCountry: 'AE' },
     areaServed: AREA_SERVED,
     knowsLanguage: ['en', 'ar'],
     contactPoint: [

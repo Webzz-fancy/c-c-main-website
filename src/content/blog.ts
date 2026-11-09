@@ -51,6 +51,33 @@ export type BlogPost = {
 
 const ALL: BlogPost[] = [
   {
+    slug: 'what-to-ask-an-ai-automation-agency',
+    title: 'What to ask an AI automation agency in Dubai before hiring',
+    description:
+      'Six questions to ask an AI automation agency in Dubai before you hire one, from how it will learn your work to what it would tell you not to automate.',
+    excerpt: 'Six questions that separate an agency that maps your work from one selling a bot.',
+    date: '2026-11-09',
+    minutes: 2,
+    topic: 'AI agents',
+    draft: true,
+    body: [
+      { type: 'p', text: 'Ask to see how it will learn your business before it talks about tools. These six questions separate an agency that maps your work from one selling a bot.' },
+      {
+        type: 'list',
+        items: [
+          'How will you learn how our work actually runs? Look for sitting with your team and tracing the real steps before anything is built.',
+          'What will the AI do by itself, and what waits for a person? You want a clear line. Anything sent to a client, or involving money, should wait for a yes.',
+          'Where is every action written down? You should be able to see who approved what.',
+          'Can we see real work? Client names can stay private. What should be visible is how the process ran before, and what runs now.',
+          'What happens after launch? Someone has to test it beside your team, train them and keep it running.',
+          'What would you tell us not to automate? An agency with no answer has not thought about your business.',
+        ],
+      },
+      { type: 'p', text: 'One more check if you are hiring in Dubai: ask about language. If your clients write in Arabic and English, the agents and messages have to work in both, so test both before launch.' },
+      { type: 'p', text: 'This is how we work at Clause & Code: map first, then build. Book a call and ask us the same six questions.' },
+    ],
+  },
+  {
     slug: 'what-an-ai-agent-does-in-a-small-business',
     title: 'What an AI agent actually does in a small business, and what it shouldn’t',
     description:
@@ -172,8 +199,9 @@ export function formatDate(date: string): string {
 
 export const BLOG = {
   label: 'Blog',
-  heading: 'Notes from',
-  emphasis: 'the work.',
+  heading: 'The',
+  emphasis: 'blog.',
+  subheading: 'Notes from the work.',
   intro: 'What we learn mapping and building for real businesses: AI agents, systems, getting found by AI, and the small fixes that come before any of it.',
   empty: 'The first posts are on their way.',
   read: 'Read it',
@@ -184,8 +212,8 @@ export const BLOG = {
   },
   strip: {
     label: 'From the blog',
-    heading: 'Notes from',
-    emphasis: 'the work.',
+    heading: 'The',
+    emphasis: 'blog.',
     action: 'See all posts',
   },
 }

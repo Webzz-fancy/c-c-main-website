@@ -33,6 +33,7 @@
   letter-spacing: -.03em;
 }
 .blog-hero h1 em { color: var(--gold-text); }
+.blog-hero__sub { margin: 14px 0 0; font-family: 'Source Serif 4', Georgia, serif; font-size: clamp(1.3rem, 2vw, 1.75rem); font-weight: 400; line-height: 1.2; letter-spacing: -.015em; color: var(--ink); }
 .blog-hero__intro { max-width: 46ch; margin: 18px 0 0; color: var(--ink-2); font-size: clamp(1rem, 1.15vw, 1.08rem); font-weight: 300; line-height: 1.65; }
 
 .blog-topics { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 30px; }
