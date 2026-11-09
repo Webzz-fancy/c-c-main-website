@@ -220,7 +220,16 @@ app.post('/api/quiz-plan', async (req, res) => {
         client.smtp.close()
       }
     } catch (err) {
-      console.error('[quiz-plan] Notification failed; lead saved:', err instanceof Error ? err.message : 'SMTP error')
+      // emailjs error messages can contain SMTP commands, including encoded
+      // credentials during AUTH LOGIN. Never log error text or the error object.
+      const reasons = {
+        1: 'could not connect', 2: 'SMTP server rejected a command',
+        3: 'authentication failed', 4: 'SMTP timeout', 5: 'SMTP error',
+        6: 'no connection', 7: 'authentication method unsupported',
+        8: 'connection closed', 9: 'connection ended', 10: 'TLS connection failed',
+      }
+      const reason = err && typeof err.code === 'number' ? reasons[err.code] : null
+      console.error('[quiz-plan] Notification failed; lead saved:', reason || 'configuration, TLS, or network error')
     }
   }
   // The retired form promised an emailed copy, which is not implemented.
