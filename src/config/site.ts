@@ -34,6 +34,10 @@ export const site = {
    */
   links: {
     booking: env.VITE_BOOKING_URL || 'https://calendar.app.google/3xg59Dqk3t21M8B87',
+    /** the same calendar in the form Google allows inside a popup */
+    bookingEmbed:
+      env.VITE_BOOKING_EMBED_URL ||
+      'https://calendar.google.com/calendar/appointments/schedules/AcZssZ0McWvhfTmmKBDTgcy3XR5QAfy2hb1BfLTRtmoJ-vyEa-_sXedMT_TJx9zS68ja-epSjJadMkvG?gv=true',
     quiz: env.VITE_QUIZ_URL || '#quiz',
     projects: '/projects',
     contact: '/contact',
