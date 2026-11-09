@@ -336,11 +336,8 @@ function organization(): JsonLd {
       },
     ],
     knowsAbout: KNOWS_ABOUT,
-    // sameAs: add the real LinkedIn / Instagram / Google Business Profile
-    // URLs here once they exist (site.social still holds '#' placeholders).
-    ...(Object.values(site.social).some((u) => u.startsWith('http'))
-      ? { sameAs: Object.values(site.social).filter((u) => u.startsWith('http')) }
-      : {}),
+    // add a Google Business Profile or directory listing here once it exists
+    sameAs: [...Object.values(site.social).filter((u) => u.startsWith('http')), AI_URL],
   }
 }
 
