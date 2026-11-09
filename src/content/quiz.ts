@@ -83,14 +83,14 @@ export const AREAS: Area[] = [
     ],
     verify: (n) => `Of your last five new ${n.people}, how many could you say exactly how they found you?`,
     headline: (n) => `Find out where your ${n.people} really come from.`,
-    why: (n) => `If you can’t say where new ${n.people} come from, you can’t do more of what works. Busy months and quiet months feel random, and money spent on marketing is a guess.`,
+    why: (n) => `If you don’t know where new ${n.people} come from, it’s hard to do more of what works. Busy and quiet months feel random, and marketing spend becomes a guess.`,
     check: (n) => [
       `List your last ten new ${n.people}.`,
-      'Next to each one, write how they first heard of you. Ask them if you don’t know.',
-      'Count how many came from each place. The biggest number is what to protect, and any place with none is worth asking about.',
+      'Write how each first heard of you. Ask if you don’t know.',
+      'Count how many came from each source. Protect the biggest, and ask why any brought none.',
     ],
-    simple: (n) => `Add one question to your first conversation with every new ${n.person}: “How did you hear about us?” Write the answer down in the same place every time.`,
-    bigger: () => 'Once you know where people come from, a proper look at how you show up on Google, Maps and AI assistants like ChatGPT is worth it. That is a separate check from this one.',
+    simple: (n) => `In your first conversation, ask every new ${n.person}, “How did you hear about us?” Record each answer in the same place.`,
+    bigger: () => 'Once you know where people come from, check how you show up on Google, Maps and AI assistants like ChatGPT. That’s a separate check.',
     see: { label: 'See AI discoverability', href: 'https://ai.clauseandcode.com/' },
   },
   {
@@ -105,14 +105,14 @@ export const AREAS: Area[] = [
     ],
     verify: () => 'Of your last five enquiries, how many heard back the same day?',
     headline: () => 'Answer every enquiry before they ask someone else.',
-    why: (n) => `People who ask about a service usually ask more than one business. The first clear reply often wins, so a slow answer loses ${n.people} you never knew you had.`,
+    why: (n) => `People often ask more than one business. The first clear reply can win, so slow answers may lose ${n.people} you never knew you had.`,
     check: () => [
-      'Open every channel enquiries reach you on: WhatsApp, email, Instagram, the website form, missed calls.',
-      'Find the last five enquiries and note when each came in and when it was answered.',
+      'Check every enquiry channel: WhatsApp, email, Instagram, your website form and missed calls.',
+      'For the last five enquiries, note when each arrived and was answered.',
       'Mark any that waited overnight, and any that never got a reply.',
     ],
-    simple: (_n, solo) => `Decide who answers each channel${solo ? ' and when you check it' : ''}, set an instant reply that says when they’ll hear back, and write your answers to the five questions you get most.`,
-    bigger: () => 'If enquiries come in out of hours, or faster than anyone can answer, an AI agent customised to how you work can reply straight away, ask your questions and book the call, with anything important waiting for your yes.',
+    simple: (_n, solo) => `Decide who answers each channel${solo ? ' and when you check it' : ''}. Set an instant reply saying when they’ll hear back, and prepare answers to your five most common questions.`,
+    bigger: () => 'If enquiries arrive out of hours or too quickly to answer, a customised AI agent can reply straight away, ask your questions and book the call. Anything important still waits for your yes.',
     see: { label: 'See the AI agents at work', href: '/projects#agents' },
   },
   {
@@ -127,14 +127,14 @@ export const AREAS: Area[] = [
     ],
     verify: (n) => `Of the last five enquiries that didn’t become ${n.people}, how many got a follow-up?`,
     headline: () => 'Make sure every enquiry has a next step.',
-    why: () => 'Most people who go quiet haven’t said no. They got busy. Without a follow-up, the time you spent on the first conversation is lost, and it looks like nobody is interested.',
+    why: () => 'People who go quiet may just be busy, not uninterested. Without a follow-up, your first conversation can go to waste.',
     check: (n) => [
       `List everyone who asked about prices in the last month and didn’t become a ${n.person}.`,
-      'Next to each name, write the date of the last message you sent them.',
+      'Write the date of your last message next to each name.',
       'Count how many never heard from you after the first reply. That number is your follow-up gap.',
     ],
-    simple: () => 'Pick a rule, for example a message on day 2, day 7 and day 14, and keep the list of open enquiries in one place you check every morning.',
-    bigger: () => 'When there are more open enquiries than anyone can track by hand, follow-ups can go out on their own and stop the moment someone replies. An AI agent can write each one for that person, waiting for your yes before it is sent.',
+    simple: () => 'Set a schedule, for example days 2, 7 and 14. Keep open enquiries in one list and check it each morning.',
+    bigger: () => 'When open enquiries are too many to track by hand, follow-ups can be scheduled to stop when someone replies. An AI agent can personalise each message and wait for your approval before sending.',
     see: { label: 'See a funnel that follows up by itself', href: '/projects#project-quiz-funnel' },
   },
   {
@@ -149,13 +149,13 @@ export const AREAS: Area[] = [
     ],
     verify: (n) => `Of your last five new ${n.works}, how many started without anyone chasing missing details?`,
     headline: (n) => `Start every ${n.work} the same way.`,
-    why: (n) => `When every ${n.work} starts differently, details get chased later, mistakes show up at the end, and the ${n.person}’s first experience of working with you is a list of questions.`,
+    why: (n) => `When each ${n.work} starts differently, you chase details later and mistakes can surface at the end. Your ${n.person}’s first experience becomes a list of questions.`,
     check: (n) => [
-      `Take your last five ${n.works} and write down what you needed before each one could start.`,
+      `For your last five ${n.works}, list what each needed before starting.`,
       'Mark what was missing at the start and had to be chased.',
       'Anything missing more than once belongs on a start checklist.',
     ],
-    simple: (n) => `Write one start checklist and one form that collects everything you need from the ${n.person} at once. Use them for every new ${n.work}.`,
+    simple: (n) => `Create a start checklist and one form to collect everything from the ${n.person}. Use both for every new ${n.work}.`,
     bigger: (n) => `If ${n.works} start often and the same details are typed again and again, the form can create the ${n.work}, send the welcome message and set the first tasks by itself.`,
     see: { label: 'See work that moves itself to the next person', href: '/projects#project-orders' },
   },
@@ -171,14 +171,14 @@ export const AREAS: Area[] = [
     ],
     verify: (n, solo) => `Of the last five questions ${n.people} asked about their ${n.work}, how many could ${solo ? 'you' : 'anyone on the team'} answer in under five minutes?`,
     headline: (n) => `Keep everything about each ${n.person} in one place.`,
-    why: (n) => `When the details of a ${n.work} are spread across chats, inboxes and folders, every question turns into a search. Handovers slow down, mistakes creep in, and the answers end up living in people’s heads.`,
+    why: (n) => `When ${n.work} details are scattered across chats, inboxes and folders, every question becomes a search. Handovers slow down, mistakes creep in and answers live in people’s heads.`,
     check: (n) => [
       `Pick three ${n.works} from this month.`,
-      `For each, try to find the latest message, the agreed price and the next step, and time how long it takes.`,
-      'Write down every place you had to look. That list is where your information lives today.',
+      `For each, find the latest message, agreed price and next step. Time how long it takes.`,
+      'List every place you looked. That’s where your information lives today.',
     ],
     simple: (n) => `One folder per ${n.person}, named the same way, with every file saved there from today. One shared list of every open ${n.work} with its next step.`,
-    bigger: (n) => `When the list outgrows a spreadsheet, one system built around how you work keeps ${n.people}, ${n.works} and messages together, and the tools you already use feed it by themselves.`,
+    bigger: (n) => `When a spreadsheet isn’t enough, a system built around your work can keep ${n.people}, ${n.works} and messages together, fed by the tools you already use.`,
     see: { label: 'See one office with one record per student', href: '/projects#project-academy' },
   },
   {
@@ -193,11 +193,11 @@ export const AREAS: Area[] = [
     ],
     verify: (n) => `Of your last five ${n.works}, how many finished when you said they would?`,
     headline: (n) => `See where every ${n.work} stands without asking.`,
-    why: (n) => `If you only find out a ${n.work} is late when the ${n.person} chases you, it’s already too late to fix it quietly. Everyone spends time asking for updates instead of moving the work on.`,
+    why: (n) => `If you only learn a ${n.work} is late when the ${n.person} chases you, it’s too late to fix it quietly. Time goes on asking for updates instead of moving work forward.`,
     check: (n) => [
       `Write down every ${n.work} running right now.`,
       'Next to each, write its next step, who owns it and when it is due, without asking anyone.',
-      'Every blank you couldn’t fill is a place work can stall without anyone noticing.',
+      'Each blank is a place work could stall unnoticed.',
     ],
     simple: (n) => `One list of every open ${n.work} with three columns: next step, owner, due date. Review it for ten minutes at the start of each week.`,
     bigger: (n) => `When there are too many ${n.works} to review by hand, a system that moves each one to the next person and flags anything overdue keeps them on track by itself.`,
@@ -216,10 +216,10 @@ export const AREAS: Area[] = [
     ],
     verify: () => 'Of your last five invoices, how many were paid on time without a reminder?',
     headline: () => 'Send every invoice the day the work is done.',
-    why: () => 'Every day an invoice waits is a day later you get paid, and work that is never billed is work done for free. Chasing payment by memory also means the awkward ones slip.',
+    why: () => 'Late invoices mean later payment; unbilled work means working for free. Relying on memory to chase payment also lets awkward ones slip.',
     check: () => [
       'List the work finished in the last month.',
-      'Next to each, write the date it finished, the date it was invoiced and the date it was paid.',
+      'For each, note when it finished, was invoiced and was paid.',
       'Look for gaps between finishing and invoicing, and for anything with no invoice at all.',
     ],
     simple: (n) => `Invoice on the day each ${n.work} is finished, and set one day a week to send reminders for anything overdue.`,
@@ -238,14 +238,14 @@ export const AREAS: Area[] = [
     ],
     verify: (n) => `Of your last five finished ${n.works}, how many ${n.people} did you ask for a review or a referral?`,
     headline: (n) => `Ask every happy ${n.person} for what comes next.`,
-    why: (n) => `A ${n.person} who just had a good experience is the easiest person to ask for a review, a referral or the next ${n.work}. Weeks later, the moment has passed.`,
+    why: (n) => `A ${n.person} who just had a good experience is easiest to ask for a review, referral or next ${n.work}. Weeks later, the moment may have passed.`,
     check: (n) => [
       `List your last ten finished ${n.works}.`,
       `Mark which ${n.people} you asked for a review or referral, and which came back for more.`,
       'Count the ones you never contacted again.',
     ],
     simple: (n) => `Send one message the day each ${n.work} is finished: thank them, ask for a review, and say what to do if they know someone who needs you.`,
-    bigger: () => 'When there are too many to remember, review requests and check-ins can go out on their own at the right moment, so nobody has to remember.',
+    bigger: () => 'When there are too many to remember, review requests and check-ins can go out automatically at the right time.',
     see: { label: 'See a complete membership system', href: '/projects#project-membership' },
   },
   {
@@ -271,7 +271,7 @@ export const AREAS: Area[] = [
         ? 'Of the five tasks you do most often, how many have a written checklist or template?'
         : 'Think of the last five questions your team brought to you. How many already had a written answer somewhere?',
     headline: () => 'Write down what only you know.',
-    why: () => 'When the way things are done lives in your head, every question and decision comes back to you. The business can only move as fast as you can answer.',
+    why: () => 'When how you work lives in your head, questions and decisions come back to you. The business moves only as fast as you can answer.',
     check: (_n, solo) =>
       solo
         ? ['For one week, note every task you do more than once.', 'Mark the ones you could hand to someone else if the steps were written down.', 'Those are the first to write up.']
@@ -280,7 +280,7 @@ export const AREAS: Area[] = [
       solo
         ? 'Write a one-page checklist for the task you do most, and a template for the message you send most. Add one a week.'
         : 'Answer each repeat question once, in writing, somewhere the team can find it. Then walk one person through a task only you do.',
-    bigger: () => 'Once the steps are written, a system can move each piece of work on to the next person by itself, and AI agents customised to your business can take the routine parts, with anything that matters waiting for your yes.',
+    bigger: () => 'Once the steps are written, a system can move work to the next person, and customised AI agents can handle routine tasks. Anything important still waits for your yes.',
     see: { label: 'See the AI agents at work', href: '/projects#agents' },
   },
 ]
@@ -471,15 +471,15 @@ export function buildPlan(a: QuizAnswers): Plan {
 
   const unclear: string[] = []
   if (unknown.length) {
-    unclear.push(`You weren’t sure about ${list(unknown.map((x) => x.stage.toLowerCase()))}, so we left ${unknown.length > 1 ? 'them' : 'it'} out. Not knowing is worth a look on its own.`)
+    unclear.push(`You weren’t sure about ${list(unknown.map((x) => x.stage.toLowerCase()))}, so we left ${unknown.length > 1 ? 'them' : 'it'} out. That’s worth a look too.`)
   }
   if (belief.id === 'clients' && top !== 'found') {
-    unclear.push(`Whether you need more enquiries, or need to win more of the ones you already get. These answers show what happens to enquiries, not how many arrive.`)
+    unclear.push(`Whether you need more enquiries or need to win more of those you get. Your answers show what happens to enquiries, not how many arrive.`)
   }
   if (belief.id === 'clients' || top === 'found') {
-    unclear.push('How visible you are on Google, Maps and AI assistants. That needs a separate look at your listings, not a quiz.')
+    unclear.push('How visible you are on Google, Maps and AI assistants. That needs a separate look at your listings.')
   }
-  if (checked?.score === null) unclear.push('How the check on your own records would come out. Running it is the best next step.')
+  if (checked?.score === null) unclear.push('What your own records would show. Running the check is the best next step.')
 
   if (!area) {
     return {
@@ -494,10 +494,10 @@ export function buildPlan(a: QuizAnswers): Plan {
       tentative,
       evidence: [],
       connection: null,
-      why: 'When the basics hold, the next gains come from doing more of what works: more of the right enquiries, and more from the clients you already have.',
+      why: 'When the basics hold, growth comes from more of what works: more of the right enquiries and more from existing clients.',
       check: AREAS.find((x) => x.id === belief.areas[0])!.check(n, solo),
-      simple: 'Run the check above on your own records. If it confirms things are working, write down why, so it keeps working as you grow.',
-      bigger: 'If you want to grow without adding work, that is where a system or AI agents customised to your business can help. Book a consultation and we’ll look at it together.',
+      simple: 'Run the check above on your own records. If things are working, write down why, so they keep working as you grow.',
+      bigger: 'To grow without adding work, a system or customised AI agents can help. Book a consultation and we’ll look at it together.',
       see: { label: 'See what we’ve built', href: '/projects' },
       map,
       unclear,
@@ -516,7 +516,7 @@ export function buildPlan(a: QuizAnswers): Plan {
   const agrees = belief.areas.includes(area.id)
   const said = `You came in thinking ${belief.said(n)}.`
   const compare = movedFrom
-    ? `${said} Your own records say ${movedFrom.stage.toLowerCase()} is holding up better than it felt, so the next thing worth checking is ${area.stage.toLowerCase()}.`
+    ? `${said} Your records suggest ${movedFrom.stage.toLowerCase()} is holding up better than it felt. Check ${area.stage.toLowerCase()} next.`
     : agrees
       ? `${said} Your answers agree, and point to where it starts: ${area.stage.toLowerCase()}.`
       : `${said} Your answers point to something worth checking first: ${area.stage.toLowerCase()}.`

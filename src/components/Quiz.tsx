@@ -16,6 +16,7 @@ import {
   nounsFor,
   verifyTarget,
   whatsappLink,
+  type AreaId,
   type QuizAnswers,
   type Status,
 } from '../content/quiz'
@@ -257,6 +258,20 @@ function StageMark({ status }: { status: Status }) {
  * first. The answers behind it and what we couldn't tell come after, then
  * the call and an optional request for the team to reach out.
  */
+// Each result has its own illustration; the no-priority result uses the
+// discovery robot while visitors explore what is already working.
+const RESULT_ROBOTS: Record<AreaId, string> = {
+  found: '/quiz-result-found.webp',
+  reply: '/quiz-result-reply.webp',
+  followup: '/quiz-result-followup.webp',
+  start: '/quiz-result-start.webp',
+  info: '/quiz-result-info.webp',
+  track: '/quiz-result-track.webp',
+  paid: '/quiz-result-paid.webp',
+  after: '/quiz-result-after.webp',
+  owner: '/quiz-result-owner.webp',
+}
+
 function PlanView({ answers, headRef, onRestart }: {
   answers: QuizAnswers
   headRef: React.RefObject<HTMLHeadingElement>
@@ -352,7 +367,7 @@ function PlanView({ answers, headRef, onRestart }: {
               {p.headline}
             </h3>
           </div>
-          <img src="/quiz-robot-discovery.webp" alt="" aria-hidden="true" className="h-[134px] w-full object-contain object-bottom sm:h-[200px]" />
+          <img src={p.area ? RESULT_ROBOTS[p.area.id] : '/quiz-robot-discovery.webp'} alt="" aria-hidden="true" className="h-[134px] w-full object-contain object-bottom sm:h-[200px]" />
         </div>
         {p.tentative && (
           <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-ink-muted">
@@ -404,9 +419,8 @@ function PlanView({ answers, headRef, onRestart }: {
       </PlanSection>
 
       <section className="mt-10 border-t border-black/[0.08] pt-6">
-        <div className="flex items-center justify-between gap-4 rounded-2xl bg-glass/[0.06] px-4 py-2 sm:px-5">
+        <div className="rounded-2xl bg-glass/[0.06] px-4 py-5 sm:px-5">
           <h4 className="font-display text-[1.35rem] leading-snug text-ink">What to do next</h4>
-          <img src="/quiz-robot-action.webp" alt="" aria-hidden="true" className="h-24 w-14 shrink-0 object-contain" />
         </div>
         <div className="mt-6 grid grid-cols-[3rem_1fr] gap-x-3">
           <span className={step}>1</span>
