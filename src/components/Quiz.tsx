@@ -203,6 +203,19 @@ function PlanSection({ title, className = '', children }: { title: string; class
   )
 }
 
+/** Secondary detail stays available without making the first view text-heavy. */
+function PlanDetails({ title, children, preview }: { title: string; children: ReactNode; preview?: ReactNode }) {
+  return (
+    <details className="group mt-4 rounded-2xl border border-black/[0.08] bg-white/60 px-4 sm:px-5">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 py-4 font-display text-[1.12rem] leading-snug text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glass [&::-webkit-details-marker]:hidden">
+        <span className="min-w-0 flex-1">{title}{preview}</span>
+        <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0 text-glass transition-transform group-open:rotate-180 motion-reduce:transition-none" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="m5 7.5 5 5 5-5" /></svg>
+      </summary>
+      <div className="border-t border-black/[0.07] pb-5 pt-1">{children}</div>
+    </details>
+  )
+}
+
 const STATUS_TONE: Record<Status, string> = {
   first: 'font-semibold text-brand-600',
   risk: 'font-medium text-brand-600',
@@ -242,7 +255,7 @@ function StageMark({ status }: { status: Status }) {
  * drawn as a journey with each stage marked, how one weak point feeds
  * another, why it matters, then two steps: check it, then fix it, simplest
  * first. The answers behind it and what we couldn't tell come after, then
- * the call, and a copy by email for those who want one.
+ * the call and an optional request for the team to reach out.
  */
 function PlanView({ answers, headRef, onRestart }: {
   answers: QuizAnswers
@@ -290,6 +303,8 @@ function PlanView({ answers, headRef, onRestart }: {
     printRoot.setAttribute('aria-hidden', 'true')
     const copy = planRef.current.cloneNode(true) as HTMLElement
     copy.querySelectorAll('.quiz-plan__actions').forEach((section) => section.remove())
+    // Include the full report even when detail sections were closed on screen.
+    copy.querySelectorAll('details').forEach((detail) => { detail.open = true })
     printRoot.appendChild(copy)
     document.body.appendChild(printRoot)
     document.body.classList.add('printing-quiz-plan')
@@ -325,36 +340,48 @@ function PlanView({ answers, headRef, onRestart }: {
 
   return (
     <div ref={planRef} className="quiz-plan w-full text-left">
-      <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-glass">Your business fix plan</p>
-      {answers.model === 'other' && answers.otherBusiness && (
-        <p className="mt-4 text-[14px] font-light leading-relaxed text-ink-soft">Business: {answers.otherBusiness}</p>
-      )}
-      {p.area && <p className="mt-4 text-[14px] font-semibold text-brand-600">Fix first: {p.area.stage.toLowerCase()}</p>}
-      <h3 ref={headRef} tabIndex={-1} className="mt-2 font-display text-[clamp(1.9rem,3.4vw,2.6rem)] leading-[1.08] tracking-[-0.02em] text-ink outline-none">
-        {p.headline}
-      </h3>
-      <p className="mt-4 max-w-xl font-display text-[1.15rem] italic leading-snug text-glass-600">{p.compare}</p>
-      {p.tentative && (
-        <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-ink-muted">
-          You weren’t sure about several answers, so treat this as a first read.
-        </p>
-      )}
+      <div className="overflow-hidden rounded-[24px] border border-brand/25 bg-gradient-to-br from-[#F1E4D1] via-[#F8F1E6] to-white px-5 py-6 sm:px-7 sm:py-7">
+        <div className="grid grid-cols-[minmax(0,1fr)_68px] items-center gap-3 min-[380px]:grid-cols-[minmax(0,1fr)_86px] sm:grid-cols-[minmax(0,1fr)_116px] sm:gap-5">
+          <div className="min-w-0">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-glass">Your business fix plan</p>
+            {answers.model === 'other' && answers.otherBusiness && (
+              <p className="mt-3 break-words text-[14px] font-light leading-relaxed text-ink-soft">Business: {answers.otherBusiness}</p>
+            )}
+            {p.area && <p className="mt-4 text-[14px] font-semibold text-brand-600">Fix first: {p.area.stage.toLowerCase()}</p>}
+            <h3 ref={headRef} tabIndex={-1} className="mt-2 font-display text-[clamp(1.6rem,3.4vw,2.4rem)] leading-[1.12] tracking-[-0.02em] text-ink outline-none">
+              {p.headline}
+            </h3>
+          </div>
+          <img src="/quiz-robot-discovery.webp" alt="" aria-hidden="true" className="h-[134px] w-full object-contain object-bottom sm:h-[200px]" />
+        </div>
+        {p.tentative && (
+          <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-ink-muted">
+            You weren’t sure about several answers, so treat this as a first read.
+          </p>
+        )}
+      </div>
 
-      {/* ---------- At a glance ---------- */}
-      <dl className="mt-8 grid border-t border-black/[0.08] pt-5" style={{ gridTemplateColumns: `repeat(${glance.length}, minmax(0, 1fr))` }}>
-        {glance.map((g, i) => (
-          <div key={g.label} className={i > 0 ? 'border-l border-black/[0.08] pl-3 sm:pl-6' : ''}>
+      {/* These are counts of the actual stage statuses, not a made-up score. */}
+      <dl className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {glance.map((g) => (
+          <div key={g.label} className="flex min-w-0 items-center gap-3 rounded-2xl border border-black/[0.06] bg-white/60 px-3 py-3">
             <dt className="sr-only">{g.label}</dt>
-            <dd>
-              <span className={`block font-display text-[2.4rem] leading-none ${g.tone}`}>{g.n}</span>
-              <span className="mt-1.5 block text-[13px] text-ink-muted">{g.label}</span>
+            <dd className="flex min-w-0 items-center gap-3">
+              <span className={`font-display text-[1.65rem] leading-none ${g.tone}`}>{g.n}</span>
+              <span className="text-[12.5px] leading-snug text-ink-muted">{g.label}</span>
             </dd>
           </div>
         ))}
       </dl>
 
-      {/* ---------- The business as a journey ---------- */}
-      <PlanSection title="Where things stand">
+
+      <PlanDetails title="Where things stand" preview={(
+        <span className="mt-3 flex gap-1.5" aria-hidden="true">
+          {p.map.map((row) => (
+            <span key={row.stage} className={`h-2 min-w-0 flex-1 rounded-full ${row.status === 'first' ? 'bg-brand' : row.status === 'risk' || row.status === 'some' ? 'bg-brand/40' : row.status === 'working' ? 'bg-glass' : row.status === 'unclear' ? 'border border-dashed border-ink-muted/60' : 'bg-ink/10'}`} />
+          ))}
+        </span>
+      )}>
         <p className="mt-1.5 text-[14px] text-ink-muted">Your business from the first enquiry to the work running without you.</p>
         <ol className="relative mt-6">
           <span className="absolute bottom-3.5 left-[13px] top-3.5 w-[2px] rounded-full bg-gradient-to-b from-brand/60 via-glass/40 to-glass/60" aria-hidden="true" />
@@ -369,31 +396,18 @@ function PlanView({ answers, headRef, onRestart }: {
             )
           })}
         </ol>
-      </PlanSection>
+      </PlanDetails>
 
-      {/* ---------- How one weak point feeds another ---------- */}
-      {p.connection && (
-        <PlanSection title="How one problem feeds another">
-          <div className="mt-5 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
-            <span className="font-display text-[1.2rem] text-ink">{p.connection.from}</span>
-            <svg viewBox="0 0 90 14" className="hidden h-3.5 w-[90px] shrink-0 sm:block" fill="none" aria-hidden="true">
-              <path d="M1 7h84M78 1.5 86.5 7 78 12.5" stroke="#E1AD34" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <svg viewBox="0 0 14 40" className="ml-3 h-10 w-3.5 sm:hidden" fill="none" aria-hidden="true">
-              <path d="M7 1v34M1.5 28.5 7 37l5.5-8.5" stroke="#E1AD34" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="font-display text-[1.2rem] text-ink">{p.connection.to}</span>
-          </div>
-          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-soft">{p.connection.line}</p>
-        </PlanSection>
-      )}
-
+      {/* Lead with the explanation and the practical steps; extra detail remains available below. */}
       <PlanSection title="Why it matters">
         <p className="mt-3 max-w-xl text-[15.5px] leading-relaxed text-ink">{p.why}</p>
       </PlanSection>
 
-      {/* ---------- What to do: two steps ---------- */}
-      <PlanSection title="What to do next">
+      <section className="mt-10 border-t border-black/[0.08] pt-6">
+        <div className="flex items-center justify-between gap-4 rounded-2xl bg-glass/[0.06] px-4 py-2 sm:px-5">
+          <h4 className="font-display text-[1.35rem] leading-snug text-ink">What to do next</h4>
+          <img src="/quiz-robot-action.webp" alt="" aria-hidden="true" className="h-24 w-14 shrink-0 object-contain" />
+        </div>
         <div className="mt-6 grid grid-cols-[3rem_1fr] gap-x-3">
           <span className={step}>1</span>
           <div>
@@ -416,30 +430,18 @@ function PlanView({ answers, headRef, onRestart }: {
                 <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-glass">Start here</p>
                 <p className="mt-2 text-[15px] leading-relaxed text-ink">{p.simple}</p>
               </div>
-              <div className="border-t border-black/[0.08] pt-5 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
-                <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-ink-muted">If that isn’t enough</p>
-                <p className="mt-2 text-[14.5px] leading-relaxed text-ink-soft">{p.bigger}</p>
-                <a href={p.see.href} className="mt-3 inline-block text-[13.5px] font-semibold text-glass-600 underline decoration-glass/30 underline-offset-4 hover:decoration-glass">
-                  {p.see.label} →
-                </a>
+              <div className="sm:pl-6">
+                <PlanDetails title="If that isn’t enough">
+                  <p className="mt-3 text-[14.5px] leading-relaxed text-ink-soft">{p.bigger}</p>
+                  <a href={p.see.href} className="mt-3 inline-block text-[13.5px] font-semibold text-glass-600 underline decoration-glass/30 underline-offset-4 hover:decoration-glass">
+                    {p.see.label} →
+                  </a>
+                </PlanDetails>
               </div>
             </div>
           </div>
         </div>
-      </PlanSection>
-
-      {p.evidence.length > 0 && (
-        <PlanSection title="Based on what you told us">
-          <ul className="mt-4 grid gap-4">
-            {p.evidence.map((e) => (
-              <li key={e.question} className="text-[14.5px] leading-relaxed">
-                <span className="block text-ink-muted">{e.question}</span>
-                <span className="mt-0.5 block font-display text-[1.05rem] text-ink">“{e.answer}”</span>
-              </li>
-            ))}
-          </ul>
-        </PlanSection>
-      )}
+      </section>
 
       {p.unclear.length > 0 && (
         <PlanSection title="What we couldn’t tell">
@@ -450,6 +452,36 @@ function PlanView({ answers, headRef, onRestart }: {
           </ul>
         </PlanSection>
       )}
+
+      {p.connection && (
+        <PlanDetails title="How one problem feeds another">
+          <div className="mt-5 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
+            <span className="font-display text-[1.2rem] text-ink">{p.connection.from}</span>
+            <svg viewBox="0 0 90 14" className="hidden h-3.5 w-[90px] shrink-0 sm:block" fill="none" aria-hidden="true">
+              <path d="M1 7h84M78 1.5 86.5 7 78 12.5" stroke="#E1AD34" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <svg viewBox="0 0 14 40" className="ml-3 h-10 w-3.5 sm:hidden" fill="none" aria-hidden="true">
+              <path d="M7 1v34M1.5 28.5 7 37l5.5-8.5" stroke="#E1AD34" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="font-display text-[1.2rem] text-ink">{p.connection.to}</span>
+          </div>
+          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-soft">{p.connection.line}</p>
+        </PlanDetails>
+      )}
+
+      <PlanDetails title="Based on what you told us">
+        <p className="mt-4 max-w-xl font-display text-[1.1rem] italic leading-snug text-glass-600">{p.compare}</p>
+        {p.evidence.length > 0 && (
+          <ul className="mt-4 grid gap-4">
+            {p.evidence.map((e) => (
+              <li key={e.question} className="text-[14.5px] leading-relaxed">
+                <span className="block text-ink-muted">{e.question}</span>
+                <span className="mt-0.5 block font-display text-[1.05rem] text-ink">“{e.answer}”</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </PlanDetails>
 
       <PlanSection title={QUIZ.close.heading} className="quiz-plan__actions">
         <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-ink-soft">{QUIZ.close.body}</p>
