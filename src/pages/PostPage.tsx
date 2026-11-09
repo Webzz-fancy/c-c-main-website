@@ -22,6 +22,15 @@ function Block({ block }: { block: BlogBlock }) {
       )
     case 'quote':
       return <blockquote>{block.text}</blockquote>
+    case 'link':
+      return (
+        <p className="post-next">
+          {block.text}{' '}
+          <a href={block.href}>
+            {block.label} <span aria-hidden="true">→</span>
+          </a>
+        </p>
+      )
     default:
       return <p>{block.text}</p>
   }

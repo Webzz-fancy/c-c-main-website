@@ -166,7 +166,7 @@ export function staticHtml(page: PageSeo): string {
   if (page.post) {
     const p = page.post
     const block = (b: BlogBlock) =>
-      b.type === 'h2' ? `<h2>${esc(b.text)}</h2>` : b.type === 'list' ? `<ul>${b.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>` : b.type === 'quote' ? `<blockquote>${esc(b.text)}</blockquote>` : `<p>${esc(b.text)}</p>`
+      b.type === 'h2' ? `<h2>${esc(b.text)}</h2>` : b.type === 'list' ? `<ul>${b.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>` : b.type === 'quote' ? `<blockquote>${esc(b.text)}</blockquote>` : b.type === 'link' ? `<p>${esc(b.text)} ${a(b.href, b.label)}</p>` : `<p>${esc(b.text)}</p>`
     return (
       open +
       `<article><p>${a('/blog', BLOG.back)}</p><p>${esc(p.topic)} · <time datetime="${p.date}">${esc(formatDate(p.date))}</time> · ${p.minutes} min read</p><h1>${esc(p.title)}</h1><p>${esc(p.excerpt)}</p>${p.body.map(block).join('')}` +
