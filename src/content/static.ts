@@ -57,12 +57,12 @@ const SIMPLE = {
   h1: 'Your website, built to a higher standard.',
   intro: [
     'A website is the front of a business. We build it with the same rigour we bring to the operations behind one.',
-    'Every page has a job. Fast for the people who visit, structured for the AI that recommends, and built to keep working long after launch.',
+    'Every page has a job. Fast for the people who visit, structured for the AI that finds you, and built to keep working long after launch.',
   ],
   second: {
     label: 'What we do',
     h2: 'The website, and what brings people to it.',
-    p: 'We build the website itself, and the system around it that gets it recommended by search and AI and turns interest into enquiries. Same team, same standard as the operations we build.',
+    p: 'We build the website itself, and the system around it that gets it found by search and AI and turns interest into enquiries. Same team, same standard as the operations we build.',
     offers: [
       ['Websites', 'We map who is visiting and what they came to do before a single page is designed. Then we build it fast, structured and easy to keep current.', 'See the projects', '#projects'],
       ['AI discoverability & lead management', 'We put your business where people now look, in ChatGPT, Gemini and Instagram, and connect it all to your booking so every enquiry is answered.', 'Explore AI discoverability', AI_URL],

@@ -72,7 +72,7 @@ export default function SimpleHero({ revealed }: Props) {
             A website is the front of a business. We build it with the same rigour we bring to the <em className="font-normal not-italic text-ink">operations behind one</em>.
           </p>
           <p className="mt-3 text-[14px] font-light leading-relaxed text-ink/60 sm:text-[15px]">
-            Every page has a job. Fast for the people who visit, structured for the AI that recommends, and built to keep working long after launch.
+            Every page has a job. Fast for the people who visit, structured for the AI that finds you, and built to keep working long after launch.
           </p>
         </div>
       </div>

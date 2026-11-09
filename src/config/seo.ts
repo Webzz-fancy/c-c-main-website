@@ -73,7 +73,7 @@ export const PAGES: Record<'home' | 'simple' | 'complex' | 'contact' | 'privacy'
     image: DEFAULT_IMAGE,
     imageAlt: 'Clause & Code: you run the business, we handle the mess',
     summary:
-      'Company home page: one ordinary business day shown twice, before and after (a reply agent, a follow-up agent, one shared system, AI discoverability and a report agent), the four ways we put AI to work (an AI team, being recommended by ChatGPT and Gemini, systems that run the routine, a website that feels like meeting you), the work we have built, how we work (map how it really runs, build it around you, hand it over properly, add AI where it pays), and, for anyone not sure where to start, the business fix plan: short questions about what actually happens from the first enquiry to getting paid, and a plan that names the first thing worth fixing, shows the answers behind it, gives a check to run on your own records and the simplest fix before any system.',
+      'Company home page: one ordinary business day shown twice, before and after (a reply agent, a follow-up agent, one shared system, AI discoverability and a report agent), the four ways we put AI to work (an AI team, being found on ChatGPT and Gemini, systems that run the routine, a website that feels like meeting you), the work we have built, how we work (map how it really runs, build it around you, hand it over properly, add AI where it pays), and, for anyone not sure where to start, the business fix plan: short questions about what actually happens from the first enquiry to getting paid, and a plan that names the first thing worth fixing, shows the answers behind it, gives a check to run on your own records and the simplest fix before any system.',
   },
   simple: {
     path: '/simple',
@@ -98,7 +98,7 @@ export const PAGES: Record<'home' | 'simple' | 'complex' | 'contact' | 'privacy'
     image: DEFAULT_IMAGE,
     imageAlt: 'Clause & Code: AI agents and custom systems we have built',
     summary:
-      'Our projects, searchable by the task you want handled. First, AI agents customised to each business’s requirements and built for whatever work it needs. The example team shows a director agent that plans the day and checks every report, and agents for the front desk, sales, operations, reports and content, with anything sent to a client or involving money waiting for the owner’s yes. Then AI discoverability (being found and recommended when people ask ChatGPT, Gemini or Google), and the custom systems we have built, each shown as how the work ran before and what runs now: an expert matching and bidding platform, a seven-stage teacher vetting and matching system, an academy management platform in English and Arabic, a client journey platform, a mapped and automated B2B order pipeline, a quiz funnel with automated program delivery, a complete membership system, and client experience for makers, artisans, artists and brands, so the website feels like meeting the work in person: sites built around what visitors come to do (look closely, walk through, order, buy or commission), the story told as they scroll, the facts beside the work, fast and structured for search and AI.',
+      'Our projects, searchable by the task you want handled. First, AI agents customised to each business’s requirements and built for whatever work it needs. The example team shows a director agent that plans the day and checks every report, and agents for the front desk, sales, operations, reports and content, with anything sent to a client or involving money waiting for the owner’s yes. Then AI discoverability (being found when people ask ChatGPT, Gemini or Google), and the custom systems we have built, each shown as how the work ran before and what runs now: an expert matching and bidding platform, a seven-stage teacher vetting and matching system, an academy management platform in English and Arabic, a client journey platform, a mapped and automated B2B order pipeline, a quiz funnel with automated program delivery, a complete membership system, and client experience for makers, artisans, artists and brands, so the website feels like meeting the work in person: sites built around what visitors come to do (look closely, walk through, order, buy or commission), the story told as they scroll, the facts beside the work, fast and structured for search and AI.',
   },
   contact: {
     path: '/contact',
@@ -271,7 +271,7 @@ export const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'What is AI discoverability?',
-    a: 'Being found and recommended when people ask ChatGPT, Gemini or Google for a business like yours. We structure your site so AI systems can read and recommend it, and connect your assistant on Instagram and WhatsApp to your booking so every enquiry is answered.',
+    a: 'Being found when people ask ChatGPT, Gemini or Google for a business like yours. We structure your site so AI systems can read and understand it, and connect your assistant on Instagram and WhatsApp to your booking so every enquiry is answered.',
   },
   {
     q: 'What custom business systems have you built?',

@@ -89,8 +89,8 @@ const ALL: BlogPost[] = [
     body: [{ type: 'p', text: 'Placeholder. This post has not been written yet.' }],
   },
   {
-    slug: 'get-recommended-by-chatgpt',
-    title: 'How to get your business recommended by ChatGPT',
+    slug: 'get-found-by-chatgpt',
+    title: 'How to get your business found by ChatGPT',
     description: 'People now ask AI who to call. What it reads, what it trusts, and what you can change this week.',
     excerpt: 'People now ask AI who to call. What it reads, what it trusts, and what you can change this week.',
     date: '2026-10-21',
