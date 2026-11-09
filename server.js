@@ -276,7 +276,7 @@ app.get(/^\/blog(?:\/([a-z0-9-]+))?\/?$/i, (req, res, next) => {
 })
 // Service pages and each project's own page. Like the blog, a page exists only
 // if the build wrote it, so a draft or an unknown address is a real 404.
-app.get(/^\/(ai-agents|custom-business-systems|workflow-automation|sop-process-mapping|websites|about)\/?$/i, (req, res, next) => {
+app.get(/^\/(ai-agents|ai-booking-assistant|custom-business-systems|workflow-automation|sop-process-mapping|websites|about)\/?$/i, (req, res, next) => {
   const page = req.params[0].toLowerCase()
   if (req.path !== `/${page}`) return redirectToPage(req, res, `/${page}`)
   const file = path.join(distDir, page, 'index.html')

@@ -156,7 +156,7 @@ export function staticHtml(page: PageSeo): string {
   if (page === PAGES.blog) {
     return (
       open +
-      `<header><p>${esc(BLOG.label)}</p><h1>${esc(BLOG.heading)} ${esc(BLOG.emphasis)}</h1><p>${esc(BLOG.intro)}</p></header>` +
+      `<header><p>${esc(BLOG.label)}</p><h1>${esc(BLOG.heading)} ${esc(BLOG.emphasis)}</h1><p>${esc(BLOG.subheading)}</p><p>${esc(BLOG.intro)}</p></header>` +
       (POSTS.length
         ? `<ol>${POSTS.map((p) => `<li><p>${esc(p.topic)} · <time datetime="${p.date}">${esc(formatDate(p.date))}</time> · ${p.minutes} min read</p><h2>${a(postPath(p), p.title)}</h2><p>${esc(p.excerpt)}</p></li>`).join('')}</ol>`
         : `<p>${esc(BLOG.empty)}</p>`) +
@@ -295,7 +295,7 @@ export function llmsTxt(full = false): string {
     ``,
     `- Name: ${site.name} (also written Clause and Code)`,
     `- What we do: business process mapping, SOPs, custom business systems, workflow automation, AI agents for small and growing businesses, AI discoverability, and websites designed around what visitors come to do`,
-    `- Based in: the UAE (${ENTITY.country}); we work with businesses in the UAE and worldwide`,
+    `- Works with: businesses worldwide`,
     `- Languages: ${ENTITY.languages.join(' and ')}`,
     `- How we work: ${HOME.approach.steps.map(([t]) => t).join(', then ')}`,
     `- Contact: email ${site.contact.email}, [WhatsApp](${site.contact.whatsapp}), book a consultation ${site.links.booking}, or ${ORIGIN}/contact`,

@@ -8,7 +8,7 @@ import { useState } from 'react'
  */
 export function useHomeLinks() {
   const [onHome] = useState(
-    () => typeof window === 'undefined' || !/^\/(simple|projects|contact|privacy|terms|blog|work|ai-agents|custom-business-systems|workflow-automation|sop-process-mapping|websites|about)(\/|$)/.test(window.location.pathname),
+    () => typeof window === 'undefined' || !/^\/(simple|projects|contact|privacy|terms|blog|work|ai-agents|ai-booking-assistant|custom-business-systems|workflow-automation|sop-process-mapping|websites|about)(\/|$)/.test(window.location.pathname),
   )
   return (href: string) => {
     if (onHome || !href.startsWith('#')) return href

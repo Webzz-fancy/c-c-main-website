@@ -31,6 +31,7 @@ export default function BlogPage() {
             <h1>
               {BLOG.heading} <em>{BLOG.emphasis}</em>
             </h1>
+            <p className="blog-hero__sub">{BLOG.subheading}</p>
             <p className="blog-hero__intro">{BLOG.intro}</p>
 
             <div className="blog-topics" role="group" aria-label="Filter by topic">

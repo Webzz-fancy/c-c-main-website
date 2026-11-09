@@ -75,6 +75,12 @@ const ALL: Service[] = [
     ],
     sections: [
       {
+        heading: 'AI agents for small business: the work they take off you',
+        intro: 'Start with the job that keeps waiting. Each of these can be one agent.',
+        style: 'cards',
+        items: [need('enquiries'), need('leads'), need('reports'), need('proposals'), need('content')],
+      },
+      {
         heading: 'What the agents take on',
         style: 'cards',
         items: [
@@ -91,6 +97,16 @@ const ALL: Service[] = [
         heading: agents.setup.label,
         style: 'steps',
         items: agents.setup.steps.map((step) => ({ title: step.step, body: `${step.what}.` })),
+      },
+      {
+        heading: 'What you end up with',
+        style: 'cards',
+        items: [
+          { title: 'A team built for your work', body: 'Agents built around your tools and rules, each with one job, and a director agent checking their work.' },
+          { title: 'One queue for your yes', body: 'Everything that needs you waits in one place, so you approve, edit or reject it in one batch.' },
+          { title: 'A record of every step', body: 'Every job, report and decision is written down, with who approved it.' },
+          { title: 'Someone keeping it running', body: 'We test the agents beside your team until they are right, keep them running, and add to them as you grow.' },
+        ],
       },
       {
         heading: 'What agents could do for your kind of business',
@@ -113,8 +129,16 @@ const ALL: Service[] = [
         a: 'Yes. We map how your work moves, build the agents around your tools and rules, test them beside your team, and keep them running.',
       },
       {
-        q: 'Do you work in Arabic?',
-        a: 'Yes. We work in English and Arabic, with businesses in the UAE and worldwide.',
+        q: 'What is the difference between an AI agent and a chatbot?',
+        a: 'A chatbot answers the message in front of it. An agent takes on a job: it researches, drafts, checks its work, records what it did and hands you whatever needs a decision.',
+      },
+      {
+        q: 'Will AI agents replace my team?',
+        a: 'They take on the routine work, so your team has time for the decisions and the people. Anything that matters still waits for a person.',
+      },
+      {
+        q: 'Do you work with businesses worldwide?',
+        a: 'Yes. We work with businesses worldwide, in English and Arabic.',
       },
     ],
     close: {
@@ -125,12 +149,12 @@ const ALL: Service[] = [
   {
     path: '/custom-business-systems',
     name: 'Custom business systems',
-    title: 'Custom Business Systems in the UAE | Clause & Code',
+    title: 'Custom Business Systems and Software | Clause & Code',
     description:
       'One system for the work spreadsheets and inboxes can no longer hold. We map how your business runs, then build around it, in English, Arabic or both.',
     summary:
       'Custom business systems built from a map of how the work actually moves: what they replace, how we build them, and the platforms we have delivered.',
-    serviceType: 'Business process mapping, custom business systems and workflow design',
+    serviceType: 'Custom business systems, custom business software and workflow design',
     label: 'Custom business systems',
     heading: 'One system for the work.',
     emphasis: 'Built around how it really runs.',
@@ -139,6 +163,16 @@ const ALL: Service[] = [
       'We map how your business actually runs, then build one place for it, where every handoff moves along by itself and each person sees only their part.',
     ],
     sections: [
+      {
+        heading: 'Signs you have outgrown your spreadsheets',
+        style: 'cards',
+        items: [
+          { title: 'The numbers get rebuilt by hand', body: 'Reports only exist once someone has copied them together, so they arrive late and nobody fully trusts them.' },
+          { title: 'Handoffs live in chat and email', body: 'The next step depends on someone noticing a message and remembering whose turn it is.' },
+          { title: 'It stalls when one person is away', body: 'Too much of how the business runs is held in one person’s head.' },
+          { title: 'Everyone sees everything, or nothing', body: 'People either have access to far more than they need, or have to ask someone for their part.' },
+        ],
+      },
       {
         heading: 'What a custom system can take over',
         style: 'cards',
@@ -149,6 +183,17 @@ const ALL: Service[] = [
           need('bookings'),
           need('payments'),
           need('reports', 'Reports'),
+        ],
+      },
+      {
+        heading: 'Custom software we have delivered',
+        intro: 'Each one started with a map of how the work actually moved.',
+        style: 'cards',
+        items: [
+          { title: 'Expert matching and bidding', body: 'The system suggests the experts who fit each project, the team invites them from one screen, and every bid arrives in one place.' },
+          { title: 'Teacher vetting and matching', body: 'Every teacher clears seven stages before going live, and students see only approved teachers who fit their goal and level.' },
+          { title: 'Academy management', body: 'Registration, classes, attendance, progress, fees and reports in one system, in English and Arabic, with each person seeing only their part.' },
+          { title: 'Client journey platform', body: 'A client app, an admin system and a live owner dashboard built as one platform, from booking through to review and referral.' },
         ],
       },
       APPROACH,
@@ -164,6 +209,14 @@ const ALL: Service[] = [
         a: 'Yes. We work in English and Arabic and have built systems that run in both.',
       },
       {
+        q: 'Should I buy off the shelf software or build a custom system?',
+        a: 'Use off the shelf software when it fits how you work. A custom system makes sense when your process is what sets you apart, or when you are stitching several tools together and still copying details between them. We will tell you which we would do.',
+      },
+      {
+        q: 'Can you build a custom CRM?',
+        a: 'Yes, when your client process does not fit a standard CRM. We have built one pipeline that takes B2B accounts from enquiry to dispatch, and a platform that runs the whole client journey from booking to referral, with a live dashboard for owners.',
+      },
+      {
         q: 'Who is a custom system for?',
         a: 'Founders and growing businesses whose operations have outgrown the way they run: too much held in people’s heads, tools that do not talk to each other, and work that stalls when one person is away.',
       },
@@ -176,12 +229,12 @@ const ALL: Service[] = [
   {
     path: '/workflow-automation',
     name: 'Workflow automation',
-    title: 'Workflow Automation for Growing Teams | Clause & Code',
+    title: 'AI Workflow Automation for Growing Teams | Clause & Code',
     description:
       'We map how your work moves, find where it stalls, then automate the handoffs, reminders and emails. Enquiries, orders, sign ups and payments, end to end.',
     summary:
       'Workflow automation mapped before it is built: order pipelines, funnels, onboarding, payments and reminders, with examples of what we have automated.',
-    serviceType: 'Workflow automation',
+    serviceType: 'AI workflow automation and business process automation',
     label: 'Workflow automation',
     heading: 'Map the work first.',
     emphasis: 'Then automate what should move by itself.',
@@ -190,6 +243,27 @@ const ALL: Service[] = [
       'Then we automate the handoffs, reminders and emails, so each step moves on to the next person by itself.',
     ],
     sections: [
+      {
+        heading: 'Workflows we have automated',
+        intro: 'Real processes, each mapped with the team before anything was built.',
+        style: 'cards',
+        items: [
+          { title: 'Enquiry to dispatch', body: 'Every B2B enquiry becomes a record. Approval assigns the next two people, reminders catch anything left waiting, and first orders are only released once paid.' },
+          { title: 'Quiz to program delivery', body: 'A landing page with a scored quiz, a personal result for every visitor, and an email sequence that runs the program from payment to final feedback.' },
+          { title: 'Application to welcome', body: 'People join a waitlist and apply, the team approves them in one workspace, and payment links, welcome emails and contracts follow.' },
+          { title: 'Booking to referral', body: 'Reminders, preparation steps, follow up check ins, review requests and referrals all follow the booking, with nobody sending them by hand.' },
+        ],
+      },
+      {
+        heading: 'Where AI fits in workflow automation',
+        intro: 'The map shows where automation and AI would create real efficiency, and where they would not.',
+        style: 'cards',
+        items: [
+          { title: 'Rules do the routine', body: 'When a step is the same every time, like assigning work or sending a reminder, a plain automation does it.' },
+          { title: 'AI takes the messy parts', body: 'Reading an enquiry, researching a lead or drafting a reply, where what comes in is different each time.' },
+          { title: 'People keep the decisions', body: 'Approvals, money and anything sent to a client wait for a person.' },
+        ],
+      },
       {
         heading: 'What we automate',
         style: 'cards',
@@ -204,6 +278,14 @@ const ALL: Service[] = [
         a: 'The decisions that matter. In the B2B order pipeline we built, the founder still reviews each new enquiry and approves or rejects it, and the automation takes care of assigning the work and sending the reminders.',
       },
       {
+        q: 'What is business process automation?',
+        a: 'Taking the steps people repeat by hand, like assigning work, sending reminders and copying details between tools, and making them happen by themselves. We map the process first, so the steps being automated are the right ones.',
+      },
+      {
+        q: 'Do I need AI to automate my workflows?',
+        a: 'Not always. Many steps only need a plain rule. AI earns its place where the work is different each time, like reading an enquiry or drafting a reply.',
+      },
+      {
         q: 'Do you document the process too?',
         a: 'Yes. We set it up with your team, train them and write it all down. The B2B order pipeline, for example, came with a written SOP and video walkthroughs.',
       },
@@ -216,9 +298,9 @@ const ALL: Service[] = [
   {
     path: '/sop-process-mapping',
     name: 'SOPs and process mapping',
-    title: 'SOPs and Process Mapping in the UAE | Clause & Code',
+    title: 'SOP Development and Process Mapping | Clause & Code',
     description:
-      'We sit with your team, map how the work really moves, and write SOPs people will actually use. For UAE businesses and worldwide, in English and Arabic.',
+      'We sit with your team, map how the work really moves, and write standard operating procedures people will actually use, in English, Arabic or both.',
     summary:
       'Business process mapping and standard operating procedures: what gets mapped, what you receive, and how the map becomes documentation, systems and automation.',
     serviceType: 'Business process mapping and standard operating procedures (SOPs)',
@@ -255,13 +337,84 @@ const ALL: Service[] = [
         a: 'Map first. Everything we build comes from the map, so you automate a process that works rather than one that only looks right on paper.',
       },
       {
-        q: 'Do you work with businesses in the UAE?',
-        a: 'Yes. We are based in the UAE and work with businesses in the UAE and worldwide, in English and Arabic.',
+        q: 'Do you work with businesses worldwide?',
+        a: 'Yes. We work with businesses worldwide, in English and Arabic.',
       },
     ],
     close: {
       heading: 'Start with one process.',
       body: 'Pick the one that causes the most chasing. In a 45 minute call, tell us how it runs today and you will leave knowing what we would fix first.',
+    },
+  },
+  {
+    path: '/ai-booking-assistant',
+    name: 'AI booking assistant',
+    title: 'AI Booking Assistant for Clinics and Salons | Clause & Code',
+    description:
+      'An AI assistant that answers Instagram and WhatsApp, books and moves appointments and sends reminders, built around your clinic or salon and your rules.',
+    summary:
+      'An AI booking assistant for clinics and salons on Instagram and WhatsApp: what it handles, what stays with your staff, and how it is set up.',
+    serviceType: 'AI booking assistant for Instagram and WhatsApp',
+    label: 'AI booking assistant',
+    heading: 'Every message answered.',
+    emphasis: 'And the appointment booked.',
+    intro: [
+      'Clinics and salons lose bookings in the messages nobody got to. A question on Instagram at 10pm is still waiting the next morning.',
+      'Your assistant answers on Instagram and WhatsApp, books, confirms and moves appointments, and sends the reminders, built around your services, your hours and your rules.',
+    ],
+    sections: [
+      {
+        heading: 'What it handles',
+        style: 'cards',
+        items: [
+          { title: 'Instagram and WhatsApp messages', body: 'Answers questions about your services day and night, from what you have told it.' },
+          { title: 'Booking and rebooking', body: 'Offers open slots, then books, confirms and moves appointments.' },
+          { title: 'Reminders and confirmations', body: 'Sent by themselves, so nobody is phoning through the day’s list.' },
+          { title: 'Recalls', body: 'Finds clients due a visit and drafts a message for your team to approve.' },
+          { title: 'Aftercare and reviews', body: 'Care messages checked by your staff, and a review request after each visit.' },
+        ],
+      },
+      {
+        heading: 'Built for clinics and salons',
+        style: 'cards',
+        items: [
+          { title: 'Clinics', body: 'Nothing medical is written by an agent. Every message is checked against your clinic’s rules, and preparation and aftercare messages are checked by staff.' },
+          { title: 'Salons and appointment businesses', body: 'Reminders, preparation steps, follow ups and review requests all follow the booking, with nobody sending them by hand.' },
+        ],
+      },
+      {
+        heading: agents.control.label,
+        style: 'cards',
+        items: agents.control.steps.map((step) => ({ title: step.level, body: step.what })),
+      },
+      {
+        heading: agents.setup.label,
+        style: 'steps',
+        items: agents.setup.steps.map((step) => ({ title: step.step, body: `${step.what}.` })),
+      },
+    ],
+    projects: ['client-app'],
+    faq: [
+      {
+        q: 'Does it answer phone calls?',
+        a: 'This service works in messages on Instagram and WhatsApp. If most of your bookings come by phone, tell us on the call and we will be honest about whether it fits.',
+      },
+      {
+        q: 'Can it give medical advice?',
+        a: 'No. It answers from the information you give it, nothing medical is written by an agent, and anything clinical goes to your staff.',
+      },
+      {
+        q: 'What do you need from us?',
+        a: 'Your services, hours, booking rules and the questions you are asked most. We map how enquiries reach you today and build around that.',
+      },
+      {
+        q: 'Do you work with businesses worldwide?',
+        a: 'Yes. We work with businesses worldwide, in English and Arabic.',
+      },
+    ],
+    close: {
+      heading: 'How many messages wait until morning?',
+      body: 'Tell us how bookings reach you today, and we will show you what the assistant would take on first.',
     },
   },
   {
@@ -317,16 +470,16 @@ const ALL: Service[] = [
     path: '/about',
     draft: true,
     name: 'About',
-    title: 'About Clause & Code | Business Systems and AI, UAE',
+    title: 'About Clause & Code | Business Systems and AI',
     description:
-      'Clause & Code is a business systems and AI company based in the UAE. We map how a business actually runs, then build the systems and agents around it.',
-    summary: 'Who runs Clause & Code, where we are based, and how we work.',
+      'Clause & Code is a business systems and AI company. We map how a business actually runs, then build the systems and agents around it, for teams anywhere.',
+    summary: 'Who runs Clause & Code, and how we work.',
     serviceType: 'Business process mapping, custom business systems and AI agents',
     label: 'About us',
     heading: 'From messy',
     emphasis: 'to efficient.',
     intro: [
-      'Clause & Code is a business systems and AI company based in [TO CONFIRM: Sharjah, UAE (SRTIP)]. We map how a business actually runs, then build the SOPs, custom systems, workflow automation and AI agents that let it scale without backend chaos.',
+      'Clause & Code is a business systems and AI company. We map how a business actually runs, then build the SOPs, custom systems, workflow automation and AI agents that let it scale without backend chaos.',
       '[TO CONFIRM: why the company was started, in the founder’s own words.]',
     ],
     sections: [
