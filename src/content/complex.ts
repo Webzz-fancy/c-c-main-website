@@ -1152,7 +1152,7 @@ export const COMPLEX: ComplexContent = {
   close: {
     label: 'Your turn',
     heading: 'Let’s find what to build first.',
-    body: 'A team of agents, AI discoverability, or a system your business has outgrown: we map how the work moves first, then build it. It starts with a 45-minute call: tell us how things run today, and you’ll leave knowing what we’d fix first.',
+    body: 'A team of agents, AI discoverability, or a system your business has outgrown: we map how the work moves first, then build it. It starts with a free 20-minute call: tell us how things run today, and you’ll leave knowing what we’d fix first.',
     action: 'Book a consultation',
     quiz: 'Not sure where to start?',
   },
