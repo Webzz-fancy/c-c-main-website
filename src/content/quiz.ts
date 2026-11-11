@@ -323,7 +323,7 @@ export const QUIZ = {
   action: 'Get my plan',
   close: {
     heading: 'Let’s look at what’s actually causing this.',
-    body: 'On a 45-minute call we go through your answers, look at how this part of your business really runs, and tell you whether it needs a checklist, a better process or a system. If a checklist is enough, we’ll say so.',
+    body: 'On a free 20-minute call we go through your answers, look at how this part of your business really runs, and tell you whether it needs a checklist, a better process or a system. If a checklist is enough, we’ll say so.',
   },
 }
 
