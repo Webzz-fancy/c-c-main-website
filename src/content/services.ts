@@ -343,7 +343,7 @@ const ALL: Service[] = [
     ],
     close: {
       heading: 'Start with one process.',
-      body: 'Pick the one that causes the most chasing. In a 45 minute call, tell us how it runs today and you will leave knowing what we would fix first.',
+      body: 'Pick the one that causes the most chasing. In a free 20 minute call, tell us how it runs today and you will leave knowing what we would fix first.',
     },
   },
   {

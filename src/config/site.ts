@@ -12,7 +12,7 @@ export const site = {
   name: 'Clause & Code',
   tagline: 'From messy to efficient.',
   /** what a consultation is, said once and shown beside the booking buttons */
-  consultation: 'A 45-minute call. Tell us how things run today, and you’ll leave knowing what we’d fix first.',
+  consultation: 'Start with a free 20-minute call, or go straight to a 90-minute strategy session.',
   description:
     'We map your processes and build the SOPs, systems and automations that let your business scale without the backend chaos.',
   url: env.VITE_SITE_URL ?? 'https://clauseandcode.com',
@@ -34,10 +34,6 @@ export const site = {
    */
   links: {
     booking: env.VITE_BOOKING_URL || 'https://calendar.app.google/3xg59Dqk3t21M8B87',
-    /** the same calendar in the form Google allows inside a popup */
-    bookingEmbed:
-      env.VITE_BOOKING_EMBED_URL ||
-      'https://calendar.google.com/calendar/appointments/schedules/AcZssZ0McWvhfTmmKBDTgcy3XR5QAfy2hb1BfLTRtmoJ-vyEa-_sXedMT_TJx9zS68ja-epSjJadMkvG?gv=true',
     quiz: env.VITE_QUIZ_URL || '#quiz',
     projects: '/projects',
     contact: '/contact',
