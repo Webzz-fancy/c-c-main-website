@@ -149,12 +149,6 @@ export default function BookingPopup() {
               <button type="button" onClick={() => pick(null)} className="font-medium text-glass underline underline-offset-4">
                 ← {BOOKING.back}
               </button>
-              <span>
-                Calendar not showing?{' '}
-                <a href={picked.embed} target="_blank" rel="noopener" className="font-medium text-glass underline underline-offset-4">
-                  Open it in a new tab
-                </a>
-              </span>
             </div>
           </>
         ) : (
