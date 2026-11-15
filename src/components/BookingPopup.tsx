@@ -153,7 +153,7 @@ export default function BookingPopup() {
                   </button>
                 </div>
                 <div className="order-1 flex justify-center md:order-2">
-                  <img src="/strategy-untangling-client.webp" alt="" aria-hidden="true" className="h-[180px] w-full object-contain sm:h-[260px] md:h-[390px]" />
+                  <img src="/strategy-untangling-client-light.webp" alt="" aria-hidden="true" className="h-[180px] w-full object-contain sm:h-[260px] md:h-[390px]" />
                 </div>
               </div>
             </div>
