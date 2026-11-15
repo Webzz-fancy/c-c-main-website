@@ -46,7 +46,7 @@ export const BOOKING = {
       notes: [
         'Credited in full if you go ahead with a project.',
         'Cancel anytime for a full refund.',
-        'Booking is planned to open on 16 November 2026.',
+        'Booking opens on 16 November 2026.',
       ],
       action: 'See Strategic Consultation',
     },

@@ -139,7 +139,7 @@ export default function BookingPopup() {
                     Let’s untangle <span className="italic text-brand-600">the big stuff.</span>
                   </h3>
                   <p className="mt-4 max-w-md text-[15px] leading-relaxed text-ink-soft sm:text-[16px]">
-                    We’re getting payments ready. Booking for your detailed strategy call with Clause &amp; Code is planned to open on 16 November 2026.
+                    We’re getting payments ready. Booking for your detailed strategy call with Clause &amp; Code opens on 16 November 2026.
                   </p>
                   <p className="mt-4 max-w-md text-[14px] leading-relaxed text-ink-muted">
                     Can’t wait to get started? The free 20-minute call is ready whenever you are.
