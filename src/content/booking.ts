@@ -46,9 +46,9 @@ export const BOOKING = {
       notes: [
         'Credited in full if you go ahead with a project.',
         'Cancel anytime for a full refund.',
-        'Booking opens on 16 November 2026.',
+        'Once you book, we’ll send a secure payment link to confirm your session.',
       ],
-      action: 'See Strategic Consultation',
+      action: 'Book Strategic Consultation',
     },
   ] satisfies Consultation[],
 }
