@@ -3,11 +3,9 @@ import { site } from '../config/site'
 import { BOOKING, type Consultation } from '../content/booking'
 
 /**
- * Booking in a sheet over the page: first the choice between the free call
- * and the paid strategy session, then that one's calendar. Any plain click on
- * a booking link anywhere on the site opens it; a click that asks for a new
- * tab, and visitors without JavaScript, still get the ordinary link. A
- * calendar is only requested from Google once someone picks one.
+ * Booking in a sheet over the page: the free call opens its calendar, while
+ * strategy booking shows a coming-soon message until payments are ready.
+ * Plain booking links still go to the free call without JavaScript.
  */
 export default function BookingPopup() {
   const [wanted, setWanted] = useState(false)
@@ -129,7 +127,43 @@ export default function BookingPopup() {
           </button>
         </div>
 
-        {picked ? (
+        {picked?.id === 'strategy' ? (
+          <>
+            <div className="mx-2 flex-1 overflow-y-auto rounded-[20px] border border-black/[0.06] bg-white sm:mx-5">
+              <div className="mx-auto grid min-h-full max-w-4xl items-center gap-3 px-6 py-7 sm:px-10 sm:py-10 md:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] md:gap-10">
+                <div className="order-2 pb-2 md:order-1">
+                  <p className="inline-flex rounded-full bg-brand-50 px-3 py-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-brand-600">
+                    Coming 16 November 2026
+                  </p>
+                  <h3 className="mt-5 font-display text-[clamp(2rem,4vw,3.5rem)] leading-[1.08] tracking-[-0.025em] text-ink">
+                    Let’s untangle <span className="italic text-brand-600">the big stuff.</span>
+                  </h3>
+                  <p className="mt-4 max-w-md text-[15px] leading-relaxed text-ink-soft sm:text-[16px]">
+                    We’re getting payments ready. Booking for your detailed strategy call with Clause &amp; Code is planned to open on 16 November 2026.
+                  </p>
+                  <p className="mt-4 max-w-md text-[14px] leading-relaxed text-ink-muted">
+                    Can’t wait to get started? The free 20-minute call is ready whenever you are.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => pick(BOOKING.consultations[0])}
+                    className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand px-5 py-3 text-[14px] font-semibold text-ink shadow-brand transition-colors hover:bg-brand-300"
+                  >
+                    Book the free call <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+                <div className="order-1 flex justify-center md:order-2">
+                  <img src="/strategy-untangling.webp" alt="" aria-hidden="true" className="h-[180px] w-full object-contain sm:h-[260px] md:h-[390px]" />
+                </div>
+              </div>
+            </div>
+            <div className="px-5 py-3 text-[13px] text-ink-muted sm:px-7">
+              <button type="button" onClick={() => pick(null)} className="font-medium text-glass underline underline-offset-4">
+                ← {BOOKING.back}
+              </button>
+            </div>
+          </>
+        ) : picked ? (
           <>
             <div className="relative mx-2 flex-1 overflow-hidden rounded-[20px] border border-black/[0.06] bg-white sm:mx-5">
               {!loaded && (

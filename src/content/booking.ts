@@ -1,7 +1,6 @@
 const env = import.meta.env
 
 export type Consultation = {
-  id: 'initial' | 'strategy'
   name: string
   price: string
   length: string
@@ -9,9 +8,10 @@ export type Consultation = {
   body: string
   notes: string[]
   action: string
-  /** the Google appointment page in the form Google allows inside a popup */
-  embed: string
-}
+} & (
+  | { id: 'initial'; embed: string }
+  | { id: 'strategy' }
+)
 
 /**
  * The two ways to book, shown in the booking popup before its calendar. Any
@@ -46,14 +46,9 @@ export const BOOKING = {
       notes: [
         'Credited in full if you go ahead with a project.',
         'Cancel anytime for a full refund.',
-        'Once you book, we’ll send a secure payment link to confirm your session.',
+        'Booking is planned to open on 16 November 2026.',
       ],
-      action: 'Book Strategic Consultation',
-      // until payment runs on the server (docs/booking-payments.md), the
-      // paid calendar is linked here and paid by link after booking
-      embed:
-        env.VITE_BOOKING_STRATEGY_EMBED ||
-        'https://calendar.google.com/calendar/appointments/schedules/AcZssZ2M52C0Z0PaHMptSB2fIZXR19ja_afWdPJbAGAiver0H2LRRvXiNvaYUeyroxhHwU-_B6wZFnEZ?gv=true',
+      action: 'See Strategic Consultation',
     },
   ] satisfies Consultation[],
 }
