@@ -40,6 +40,9 @@ const HOST = process.env.HOST || '0.0.0.0'
 
 app.disable('x-powered-by')
 app.use(compression())
+// Verify Ziina's signature against the exact request bytes. This route must be
+// parsed before the general JSON middleware; compressed bodies are rejected.
+app.use('/api/ziina/webhook', express.raw({ type: 'application/json', limit: '16kb', inflate: false }))
 // These endpoints take a form, not a document. Capping the body keeps an
 // oversized or malformed payload from ever being parsed.
 app.use(express.json({ limit: '16kb' }))
@@ -83,6 +86,13 @@ app.use('/api', (_req, res, next) => {
   res.set('X-Robots-Tag', 'noindex')
   next()
 })
+
+// Disabled unless explicit test-only configuration is present. Never accepts
+// live payments; the public booking UI is not connected to this prototype.
+const { createProductionStrategy } = require('./server/strategy-booking.cjs')
+const strategy = createProductionStrategy(process.env, rateLimited)
+app.use('/api/strategy', strategy.router)
+app.post('/api/ziina/webhook', strategy.webhook)
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'clause-and-code', time: new Date().toISOString() })

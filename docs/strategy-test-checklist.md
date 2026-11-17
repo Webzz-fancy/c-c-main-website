@@ -1,0 +1,17 @@
+# Strategy booking: private test checklist
+
+This is an unfinished, test-only integration, not approval for live payments. The public website must keep its coming-soon screen. Never set `VITE_STRATEGY_TEST_UI=true` in a public production build or enable experimental routes for public visitors. Never paste keys, tokens, customer records or raw provider responses into chat or logs.
+
+Before any real-account test, use a private staging deployment with access restricted to the team. Verify that the initial table and grant already created manually match the migrations. Review and apply the separate customer-name migration; do not re-run an initial migration blindly or delete existing records. Review the database's access, backups and retention. Do not create a webhook on the existing Ziina account until its current configuration is checked and the owner approves: Ziina documents that registering a new URL overwrites the previous one.
+
+The test build flag `VITE_STRATEGY_TEST_UI=true` only shows the private test checkout UI. The server independently requires its explicit test configuration, and always sends Ziina `test: true`; it rejects live mode. Do not assume test/live isolation based on that alone: confirm actual Ziina account behavior, response fields and redirect host with Ziina in staging. Real provider requests, interrupted checkout, timeouts, duplicate payments, refunds, recovery and webhook edge/IP handling have not been verified.
+
+For the calendar investigation, make a single consented test appointment in the actual intended test schedule. If the booking form supports a required custom reference, enter a unique lowercase 32-character hexadecimal test reference. From a private trusted process with the four Google environment settings already available, an operator can run:
+
+```text
+node scripts/check-strategy-calendar.cjs START_ISO END_ISO TEST_REFERENCE
+```
+
+Replace all three arguments locally with a time window of at most 31 days around the test event and the test reference. The diagnostic does not change the database or show event details: it reports the number of events containing the exact reference in description or extended properties, and whether a matching event has an attendee email/start time. A count of zero, multiple matches, an empty email, inaccessible fields or any error must be reviewed, not interpreted as a customer not booking. An attendee email is not automatically proven to be the customer's. The script is not a public endpoint, scheduler, reconciliation worker, or proof that the booking form's custom answers are supported long-term. Do not log raw events or real client details during testing.
+
+Before launch, implement and review reliable matching, cancellation/rescheduling, duplicate and unmatched reference handling, and manual team review; never equate a missing match with proof of no booking. Build session recovery and reliable payment reconciliation and refund handling; handle webhook allowlisting safely at the hosting edge. The payment link and calendar URL can be shared; a booking reference is for matching, not a security barrier. Obtain owner approval and complete real-provider staging and operational tests before any controlled live transaction.

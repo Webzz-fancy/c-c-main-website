@@ -1,45 +1,40 @@
-# Ziina strategy booking — preparation (not live)
+# Ziina strategy booking — test backend in progress
 
-**Status: foundation only. Do not accept payments or deploy this as a completed integration.** The current checkout lacks the newer Webz booking popup. The actual checkout endpoints, payment recovery, Google Calendar authorization and matching, operations interface, and frontend are not implemented yet. The helper and SQL migration in this branch do not register routes or make network requests. Do not apply the SQL to a real project until the full flow and access controls are reviewed.
+The checkout is **not live**. The backend accepts only explicitly enabled test-mode requests; live payments are blocked in code. The public booking popup keeps the coming-soon message and free calendar. An optional, clearly labelled checkout UI exists for a separately configured private test build only; never enable it for public visitors. Do not enable the backend on the live site or apply the migrations until the remaining work below is reviewed and tested.
 
-## Agreed visitor journey
+## Work completed
 
-- The free 20-minute consultation remains unchanged.
-- Before payment for the 90-minute AED 1,200 session, ask only for a WhatsApp number in international format. Explain why it is collected and link to privacy information.
-- Record an attempt before redirecting to Ziina. Mark it paid only after the server verifies Ziina's actual payment intent: expected account, recorded ID, `completed`, 120000 base units, AED, and the expected test/live environment. Never trust a browser URL or a webhook by itself.
-- After payment, show a reference and the paid calendar. The customer enters the reference in a required question on Google's appointment form. Google separately requests their name and email.
-- With the calendar owner's permission, the server will read bookings and attempt to match the reference. Unmatched or duplicate records require manual review; a reference does not stop the calendar link or reference from being shared. Do not automatically cancel events.
-- Give the team a private way to see completed-but-not-booked payments and assist through WhatsApp. Provide a recovery path for someone who closes the payment page. Never ask the visitor to pay again just because return or calendar matching failed.
+- `POST /api/strategy/checkout`: validates the customer's name and international WhatsApp number, records a test attempt in Supabase and creates a Ziina **test** payment intent. The name-column migration must be reviewed and applied before using this updated prototype. The session token is stored in a Secure, HttpOnly, SameSite cookie; only its hash is stored in the database.
+- `GET /api/strategy/status`: looks up that session and checks the intent directly with Ziina. It returns the reference and calendar only after the stored intent ID, Ziina account, completed status, AED 1,200 amount and currency match. A return URL alone is not proof of payment.
+- `POST /api/ziina/webhook`: verifies the HMAC against the raw request bytes and looks up the payment independently. Repeated completed events do not create additional records. Unknown or refund events return an error for review; refunds are **not automated**.
+- A read-only Google Calendar adapter and a private operator diagnostic (`scripts/check-strategy-calendar.cjs`) are prepared, but there is no automatic scheduler or public endpoint. The diagnostic reports only counts and field presence, never event details, and does not update the database. Event/reference matching remains unimplemented until the real booking form and API representation can be tested.
+- Private table migrations and mock-based tests are included. The team reported creating the initial table and service-role grant manually in the chosen Supabase project; this has not been verified here or recorded as a migration. The newer name-column migration has not been applied, and no real provider connection has been tested.
 
-## What is prepared in this branch
+Run `node --test tests/strategy-*.test.cjs` to exercise the mock backend and safety tests. These tests use fake credentials and providers; they do not prove the real services work.
 
-- `server/strategy-safety.cjs`: isolated helpers for strict international phone format, random references, recovery-token hashes, raw-body HMAC verification, and matching a verified payment intent. They are **not** connected to any route.
-- `supabase/migrations/20261106000000_strategy_bookings.sql`: proposed private data table with RLS and no public client access; not applied anywhere. Requires migration and security review, retention rules, backups, and tests on the actual project.
-- `tests/strategy-safety.test.cjs`: local tests for those helpers only (`node --test tests/strategy-safety.test.cjs`). Passing these tests does not mean the integration works or is ready for money.
+## Test-only environment settings
 
-## Information and private setup needed later
+The settings are listed with blank values in `.env.example`. Do not enter `...` as a value. Never put secrets in a `VITE_` variable, browser code, Git, screenshots or chat.
 
-1. **Ziina:** account/API access with the permissions needed for creating and reading payment intents and, if enabled, webhooks. The user or account owner must add the key privately in Hostinger, never in chat or Git. Ziina documents `test: true` for test payments; confirm account capabilities and test credentials before use. Never enter a live charge until test cases and sign-off are complete.
-2. **Supabase:** a project and approved contributor access. We need its project URL and a server-only credential with access to the private table, installed privately in Hostinger. Never place a secret/service-role key in a `VITE_` variable or browser. Verify grants, policies, backups, retention and who can see personal data with the owner.
-3. **Google Calendar:** the actual paid appointment schedule and owner's authorization with minimum necessary read access. Configure a required booking-reference question, then make a test booking and verify that the authorized Calendar API exposes the answer and booking email in a reliable format. It may not; until verified, matching is manual. The paid Google booking URL is already present in public historical site code: removing it from the bundle does not revoke the old link. Ask the owner how to retire/recreate that schedule if appropriate.
-4. **Hosting:** a stable HTTPS public URL and a reviewed secret for webhook verification. Ziina documents one account webhook URL: setting another can replace an existing integration, so check with the owner before registration. Verify Ziina's signature against the exact raw request body and arrange reliable delivery/reconciliation; do not rely solely on browser return. Do not put phone numbers, API keys, or webhook secrets into logs.
+- `STRATEGY_EXPERIMENTAL`: must be `true` to enable this prototype. Default is `false`.
+- `STRATEGY_MODE`: must be `test`. Any other value, including `live`, disables checkout.
+- `STRATEGY_ORIGIN`: exact HTTPS site origin, without a trailing slash (for example `https://example.com`). Used for redirects and origin checks.
+- `ZIINA_API_KEY`: server-only API key with the required payment intent permissions.
+- `ZIINA_ACCOUNT_ID`: Ziina account expected to receive the payment.
+- `ZIINA_WEBHOOK_SECRET`: privately generated signing secret, at least 32 characters. It must also be registered with Ziina when the webhook is deliberately configured.
+- `SUPABASE_URL`: HTTPS project URL.
+- `SUPABASE_SERVICE_ROLE_KEY`: private server-only key with access to the table. It bypasses row-level security and must never reach the browser.
+- `BOOKING_STRATEGY_EMBED`: private Google Calendar appointment-schedule embed URL. Once shown to a paid visitor, the URL can still be shared; it is not a secure lock.
 
-## Before any launch
+These settings must not be enabled until access, migrations, webhook configuration and real test-mode behavior have been reviewed. The calendar reader can use `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET`, `GOOGLE_CALENDAR_REFRESH_TOKEN` and `GOOGLE_CALENDAR_ID`, but nothing starts a calendar sync or matches bookings yet. See `docs/calendar-authorization.md` for private test setup. These Google settings do not enable payments.
 
-- Build and locally test the complete flow against mock Ziina, Supabase and Google Calendar services without real credentials. Add explicit server-side off/test/live safeguards; empty or placeholder configuration must never activate checkout.
-- Confirm visitor return, paid-but-no-booking recovery, pending/failure/cancel/refund, invalid amount/account/currency/intent, forged signatures, replay/duplicate events, and outages. Validate webhook authentication, deduplication, persistent records and safe access under Node 18.
-- Confirm the actual Google booking form and real Calendar API representation, required reference field, phone privacy notice, and manual handling for mismatches, duplicate bookings and refunds.
-- Run real Ziina test-mode checkout and test booking after authorization. Confirm support access, backup/recovery and existing webhook use. Only then obtain owner approval for live mode and perform a controlled live test/refund if the owner agrees.
+## Remaining before launch
 
-Reference: Ziina's current [payment-intent documentation](https://docs.ziina.com/api-reference/payment-intent/create) and [webhook documentation](https://docs.ziina.com/api-reference/webhook).
+1. Review the test-only name/WhatsApp and payment-return UI in a private test build (`VITE_STRATEGY_TEST_UI=true`); it is not suitable for production. The backend only restores the session in the same browser; if a visitor loses it, the team must help manually. Duplicate checkout attempts and payment-provider timeouts need further work to avoid accidental repeat payments.
+2. With the calendar owner's authorization, test a real Google appointment form with a required booking reference. Verify what the Calendar API actually returns, then implement and test matching, cancellation/rescheduling, duplicate references and a private review workflow. Do not automatically cancel unmatched bookings.
+3. Add reliable operations for paid-but-unbooked customers, refunds, failed webhooks and reconciliation, plus private team access. Review retention, backups, access controls and consent. A database record alone is not an operational recovery system.
+4. Review webhook network security at the hosting edge, including Ziina's documented sender IPs and the actual proxy configuration. Do not trust an unverified forwarded IP header. Ziina documents one webhook URL per account; check for an existing integration before registering another. Registration is not automatic.
+5. Verify Ziina test intent behavior and test/live isolation with the real account. The documented payment-intent response does not provide a clearly documented test flag to independently confirm mode; this implementation sends `test: true` and stores the attempt as test, but real behavior still needs verification. Keep live payments blocked until that is resolved.
+6. Review migrations, row-level security, service-role access and secrets; run test payments, failures, browser interruption, timeouts, refunds, duplicate and out-of-order events, and a real test booking. Obtain approval before any controlled live test.
 
-## Environment-variable planning (not wired yet)
-
-Do not add dummy values to Hostinger. No integration reads these names yet; the exact list will be finalized once the implementation and Google authorization method are confirmed. Expected server-side settings include:
-
-- Ziina API key, account ID, and a mode that explicitly defaults to disabled and must distinguish test from live.
-- Supabase project URL and a private server-only key with the necessary access.
-- A webhook signing secret (generated privately and also registered with Ziina, after checking existing webhook use).
-- The paid calendar link, calendar ID, and Google Calendar authorization details. The exact Google credentials depend on the approved authorization method.
-
-Any secret belongs only in server-side Hostinger environment variables, never `VITE_`, Git, chat, browser code, or screenshots. We will provide exact variable names and verified instructions after the runtime integration exists and has been tested.
+References: [Ziina payment intents](https://docs.ziina.com/api-reference/payment-intent/create) and [Ziina webhooks](https://docs.ziina.com/api-reference/webhook).

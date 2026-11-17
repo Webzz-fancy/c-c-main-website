@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { site } from '../config/site'
 import { BOOKING, type Consultation } from '../content/booking'
+import StrategyTestCheckout from './StrategyTestCheckout'
+
+// Only a deliberately configured private test build may show checkout.
+const STRATEGY_TEST_UI = import.meta.env.VITE_STRATEGY_TEST_UI === 'true'
 
 /**
  * Booking in a sheet over the page: the free call opens its calendar, while
@@ -13,8 +17,20 @@ export default function BookingPopup() {
   const [open, setOpen] = useState(false)
   const [picked, setPicked] = useState<Consultation | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const [testReturn, setTestReturn] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
   const lastFocus = useRef<Element | null>(null)
+
+  useEffect(() => {
+    if (!STRATEGY_TEST_UI) return
+    const url = new URL(window.location.href)
+    if (!['paid', 'cancelled'].includes(url.searchParams.get('booking') || '')) return
+    url.searchParams.delete('booking')
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
+    setTestReturn(true)
+    setPicked(BOOKING.consultations[1])
+    setWanted(true)
+  }, [])
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -44,6 +60,7 @@ export default function BookingPopup() {
       setMounted(false)
       setPicked(null)
       setLoaded(false)
+      setTestReturn(false)
       ;(lastFocus.current as HTMLElement | null)?.focus?.({ preventScroll: true })
     }, 300)
     return () => window.clearTimeout(t)
@@ -127,7 +144,14 @@ export default function BookingPopup() {
           </button>
         </div>
 
-        {picked?.id === 'strategy' ? (
+        {picked?.id === 'strategy' && STRATEGY_TEST_UI ? (
+          <>
+            <StrategyTestCheckout returned={testReturn} />
+            <div className="px-5 py-3 text-[13px] text-ink-muted sm:px-7">
+              <button type="button" onClick={() => pick(null)} className="font-medium text-glass underline underline-offset-4">← {BOOKING.back}</button>
+            </div>
+          </>
+        ) : picked?.id === 'strategy' ? (
           <>
             <div className="mx-2 flex-1 overflow-y-auto rounded-[20px] border border-black/[0.06] bg-white sm:mx-5">
               <div className="mx-auto grid min-h-full max-w-4xl items-center gap-3 px-6 py-7 sm:px-10 sm:py-10 md:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] md:gap-10">
