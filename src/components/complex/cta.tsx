@@ -1,4 +1,5 @@
 import { site } from '../../config/site'
+import { bookLabel, topicProps, type TopicId } from '../../content/booking'
 
 // The consultation and the quiz live on the home page (or a booking tool, once
 // its URL is set); from a project page a bare anchor has to point back there.
@@ -10,10 +11,11 @@ export const QUIZ = fromHome(site.links.quiz)
 /** A booking tool on another site opens in a new tab; home anchors do not. */
 export const external = (href: string) => (/^https?:/.test(href) ? { target: '_blank', rel: 'noopener' } : {})
 
-export function BookButton({ label = 'Book a consultation' }: { label?: string }) {
+/** With a topic, the label says it and the booking popup opens already knowing it. */
+export function BookButton({ label, topic }: { label?: string; topic?: TopicId }) {
   return (
-    <a className="complex-link complex-link--brand" href={BOOKING} {...external(BOOKING)}>
-      {label} <span aria-hidden="true">↗</span>
+    <a className="complex-link complex-link--brand" href={BOOKING} {...external(BOOKING)} {...topicProps(topic)}>
+      {label ?? bookLabel(topic)} <span aria-hidden="true">↗</span>
     </a>
   )
 }

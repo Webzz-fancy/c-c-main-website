@@ -582,7 +582,7 @@ export default function AgentLab({ industry, onIndustry }: { industry: string; o
               ))}
             </ol>
           </div>
-          <BookButton label={agents.action} />
+          <BookButton label={agents.action} topic="agents" />
         </footer>
       </div>
     </section>

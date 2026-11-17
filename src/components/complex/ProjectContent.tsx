@@ -3,6 +3,10 @@ import type { ComplexProject } from '../../content/complex'
 import { StopsMiniMap } from './MiniMap'
 import WorkflowWalk from './WorkflowWalk'
 import { BookButton, QuizLink } from './cta'
+import type { TopicId } from '../../content/booking'
+
+// what a project page's booking buttons are about, from the kind of work it shows
+const TOPIC: Record<ComplexProject['group'], TopicId> = { systems: 'systems', automation: 'automation', websites: 'websites' }
 
 /**
  * A project's details: the drawing, before and now, who uses it, how the work
@@ -27,7 +31,7 @@ export default function ProjectContent({ project: p, page = false, scrollRoot }:
       <header className="complex-detail__head">
         <Title id="complex-detail-title">{p.card.name}</Title>
         <p className="complex-detail__lede">{p.lede}</p>
-        <div className="complex-detail__actions"><BookButton /></div>
+        <div className="complex-detail__actions"><BookButton topic={p.card.kind === 'Process mapping and automation' ? 'process' : TOPIC[p.group]} /></div>
       </header>
 
       <div className="complex-detail__overview">
@@ -66,7 +70,7 @@ export default function ProjectContent({ project: p, page = false, scrollRoot }:
         <Heading>The result</Heading>
         <p>{p.result}</p>
         <div className="complex-detail__actions">
-          <BookButton />
+          <BookButton topic={p.card.kind === 'Process mapping and automation' ? 'process' : TOPIC[p.group]} />
           <QuizLink />
         </div>
       </section>
