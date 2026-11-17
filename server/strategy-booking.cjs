@@ -18,7 +18,11 @@ function safeUrl(value, hostPattern, pathPattern = /^\//) {
 // Live payments are intentionally unavailable until a real integration review.
 function readConfig(env) {
   if (env.STRATEGY_EXPERIMENTAL !== 'true' || env.STRATEGY_MODE !== 'test') return null
-  const keys = ['ZIINA_API_KEY', 'ZIINA_ACCOUNT_ID', 'ZIINA_WEBHOOK_SECRET', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'STRATEGY_ORIGIN', 'BOOKING_STRATEGY_EMBED']
+  // Accept the existing Hostinger name or the original documented name. If
+  // both are set differently, fail closed rather than choosing an account.
+  const ziinaKeys = [env.ZI_API, env.ZIINA_API_KEY].filter((value) => typeof value === 'string' && value.trim() !== '')
+  if (!ziinaKeys.length || !ziinaKeys.every(present) || new Set(ziinaKeys).size !== 1) return null
+  const keys = ['ZIINA_ACCOUNT_ID', 'ZIINA_WEBHOOK_SECRET', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'STRATEGY_ORIGIN', 'BOOKING_STRATEGY_EMBED']
   if (!keys.every((key) => present(env[key]))) return null
   if (env.ZIINA_WEBHOOK_SECRET.length < 32 || !ID.test(env.ZIINA_ACCOUNT_ID)) return null
   if (!safeUrl(env.SUPABASE_URL, /^[a-z0-9-]+\.supabase\.co$/)) return null
@@ -29,7 +33,7 @@ function readConfig(env) {
     const url = new URL(env.STRATEGY_ORIGIN)
     if (url.protocol !== 'https:' || url.origin !== env.STRATEGY_ORIGIN || url.username || url.password) return null
   } catch { return null }
-  return { ziinaKey: env.ZIINA_API_KEY, account: env.ZIINA_ACCOUNT_ID, webhookSecret: env.ZIINA_WEBHOOK_SECRET, supabaseUrl: env.SUPABASE_URL.replace(/\/$/, ''), supabaseKey: env.SUPABASE_SERVICE_ROLE_KEY, origin: env.STRATEGY_ORIGIN, calendar: env.BOOKING_STRATEGY_EMBED }
+  return { ziinaKey: ziinaKeys[0], account: env.ZIINA_ACCOUNT_ID, webhookSecret: env.ZIINA_WEBHOOK_SECRET, supabaseUrl: env.SUPABASE_URL.replace(/\/$/, ''), supabaseKey: env.SUPABASE_SERVICE_ROLE_KEY, origin: env.STRATEGY_ORIGIN, calendar: env.BOOKING_STRATEGY_EMBED }
 }
 
 function sessionFrom(req) {

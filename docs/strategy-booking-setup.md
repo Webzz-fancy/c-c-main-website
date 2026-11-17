@@ -7,7 +7,7 @@ The checkout is **not live**. The backend accepts only explicitly enabled test-m
 - `POST /api/strategy/checkout`: validates the customer's name and international WhatsApp number, records a test attempt in Supabase and creates a Ziina **test** payment intent. The name-column migration must be reviewed and applied before using this updated prototype. The session token is stored in a Secure, HttpOnly, SameSite cookie; only its hash is stored in the database.
 - `GET /api/strategy/status`: looks up that session and checks the intent directly with Ziina. It returns the reference and calendar only after the stored intent ID, Ziina account, completed status, AED 1,200 amount and currency match. A return URL alone is not proof of payment.
 - `POST /api/ziina/webhook`: verifies the HMAC against the raw request bytes and looks up the payment independently. Repeated completed events do not create additional records. Unknown or refund events return an error for review; refunds are **not automated**.
-- A read-only Google Calendar adapter and a private operator diagnostic (`scripts/check-strategy-calendar.cjs`) are prepared, but there is no automatic scheduler or public endpoint. The diagnostic reports only counts and field presence, never event details, and does not update the database. Event/reference matching remains unimplemented until the real booking form and API representation can be tested.
+- A read-only Google Calendar adapter and a private operator diagnostic (`scripts/check-strategy-calendar.cjs`) are prepared, but there is no automatic scheduler or public endpoint. The diagnostic reports only counts and field presence, never event details, and does not update the database. A test-only matching module can update an existing completed test-payment row for an unambiguous labelled reference, but it is not wired to a scheduler or route, and its assumed Google event format has not been verified with a real booking. No live matching is enabled.
 - Private table migrations and mock-based tests are included. The team reported creating the initial table and service-role grant manually in the chosen Supabase project; this has not been verified here or recorded as a migration. The newer name-column migration has not been applied, and no real provider connection has been tested.
 
 Run `node --test tests/strategy-*.test.cjs` to exercise the mock backend and safety tests. These tests use fake credentials and providers; they do not prove the real services work.
@@ -19,7 +19,7 @@ The settings are listed with blank values in `.env.example`. Do not enter `...` 
 - `STRATEGY_EXPERIMENTAL`: must be `true` to enable this prototype. Default is `false`.
 - `STRATEGY_MODE`: must be `test`. Any other value, including `live`, disables checkout.
 - `STRATEGY_ORIGIN`: exact HTTPS site origin, without a trailing slash (for example `https://example.com`). Used for redirects and origin checks.
-- `ZIINA_API_KEY`: server-only API key with the required payment intent permissions.
+- `ZI_API`: server-only Ziina API key with the required payment intent permissions. The original name `ZIINA_API_KEY` is also accepted; if both are present they must contain the same key or the prototype stays disabled. Use the existing private setting, not a placeholder.
 - `ZIINA_ACCOUNT_ID`: Ziina account expected to receive the payment.
 - `ZIINA_WEBHOOK_SECRET`: privately generated signing secret, at least 32 characters. It must also be registered with Ziina when the webhook is deliberately configured.
 - `SUPABASE_URL`: HTTPS project URL.

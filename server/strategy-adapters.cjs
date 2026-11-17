@@ -33,6 +33,14 @@ function createStore({ url, key, fetchImpl = fetch }) {
     },
     byHash: (hash) => one(`recovery_token_hash=eq.${encodeURIComponent(hash)}&payment_environment=eq.test`),
     byIntent: (id) => one(`ziina_intent_id=eq.${encodeURIComponent(id)}&payment_environment=eq.test`),
+    byPaidTestReference: (reference) => one(`booking_reference=eq.${encodeURIComponent(reference)}&payment_environment=eq.test&payment_status=eq.completed`),
+    // Compare-and-set protects existing matches, refunds and non-test records.
+    matchPaidTestBooking: async ({ id, reference, eventId, startsAt }) => {
+      const query = new URLSearchParams({ id: `eq.${id}`, booking_reference: `eq.${reference}`, payment_environment: 'eq.test', payment_status: 'eq.completed', booking_status: 'eq.not_booked', google_event_id: 'is.null' })
+      const rows = await requestJson(fetchImpl, `${base}?${query}`, { method: 'PATCH', headers, body: JSON.stringify({ booking_status: 'matched', google_event_id: eventId, booking_starts_at: startsAt, updated_at: new Date().toISOString() }) })
+      if (!Array.isArray(rows) || rows.length > 1) throw new Error('booking match could not be saved')
+      return rows.length === 1
+    },
     bindIntent: async (id, intentId) => {
       const rows = await requestJson(fetchImpl, `${base}?id=eq.${encodeURIComponent(id)}&ziina_intent_id=is.null&payment_status=eq.pending`, { method: 'PATCH', headers, body: JSON.stringify({ ziina_intent_id: intentId, updated_at: new Date().toISOString() }) })
       if (!Array.isArray(rows) || rows.length !== 1) throw new Error('could not persist payment intent')
