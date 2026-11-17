@@ -7,6 +7,17 @@ import { workPath } from '../content/work'
 import type { Service, ServiceSection } from '../content/services'
 import { PORTFOLIO } from '../config/seo'
 import { site } from '../config/site'
+import type { TopicId } from '../content/booking'
+
+// what each service page's booking buttons are about
+const TOPIC: Record<string, TopicId> = {
+  '/ai-agents': 'agents',
+  '/custom-business-systems': 'systems',
+  '/workflow-automation': 'automation',
+  '/sop-process-mapping': 'process',
+  '/ai-booking-assistant': 'agents',
+  '/websites': 'websites',
+}
 import './complex.css'
 import './service.css'
 
@@ -48,7 +59,7 @@ export default function ServicePage({ service }: { service: Service }) {
             {service.intro.map((text) => <p key={text}>{text}</p>)}
           </div>
           <div className="complex-detail__actions">
-            <BookButton />
+            <BookButton topic={TOPIC[service.path]} />
             <QuizLink />
           </div>
         </header>
@@ -112,7 +123,7 @@ export default function ServicePage({ service }: { service: Service }) {
             <p>{service.close.body}</p>
             <p className="service-close__note">{site.consultation}</p>
           </div>
-          <div className="service-close__actions"><BookButton /></div>
+          <div className="service-close__actions"><BookButton topic={TOPIC[service.path]} /></div>
         </section>
       </main>
       <Footer />

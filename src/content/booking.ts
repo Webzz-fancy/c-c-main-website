@@ -52,3 +52,38 @@ export const BOOKING = {
     },
   ] satisfies Consultation[],
 }
+
+/**
+ * What a visitor wants to talk about. A booking link carries one as
+ * `data-topic` (see `topicProps`), the popup shows it and lets them change
+ * it, and the button label says it where the page already knows.
+ */
+export const TOPICS = [
+  { id: 'advice', label: 'Advice on where to start', about: 'where to start' },
+  { id: 'agents', label: 'AI agents', about: 'AI agents' },
+  { id: 'process', label: 'Process mapping and SOPs', about: 'process mapping' },
+  { id: 'systems', label: 'A custom system', about: 'a custom system' },
+  { id: 'automation', label: 'Automations', about: 'automation' },
+  { id: 'websites', label: 'A website', about: 'a website' },
+  { id: 'found', label: 'Getting found on Google and ChatGPT', about: 'getting found' },
+  { id: 'training', label: 'Training your team', about: 'training' },
+  { id: 'other', label: 'Something else', about: 'something else' },
+] as const
+
+export type TopicId = (typeof TOPICS)[number]['id']
+
+export const topicById = (id?: string | null) => TOPICS.find((t) => t.id === id)
+
+/** Put on any booking link so the popup opens already knowing the topic. */
+export const topicProps = (id?: TopicId) => (id ? { 'data-topic': id } : {})
+
+/** "Book a consultation about AI agents", or the plain label without a topic. */
+export const bookLabel = (id?: TopicId) => {
+  const t = topicById(id)
+  return t ? `Book a consultation about ${t.about}` : 'Book a consultation'
+}
+
+export const TOPIC_COPY = {
+  ask: 'What’s it about?',
+  calendarNote: (label: string) => `About: ${label}. Mention it when you book, so we come prepared.`,
+}

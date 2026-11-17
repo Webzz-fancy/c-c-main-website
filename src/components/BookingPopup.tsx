@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { site } from '../config/site'
-import { BOOKING, type Consultation } from '../content/booking'
+import { BOOKING, TOPICS, TOPIC_COPY, topicById, type Consultation, type TopicId } from '../content/booking'
 import StrategyTestCheckout from './StrategyTestCheckout'
 
 // Only a deliberately configured private test build may show checkout.
@@ -18,6 +18,7 @@ export default function BookingPopup() {
   const [picked, setPicked] = useState<Consultation | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [testReturn, setTestReturn] = useState(false)
+  const [topic, setTopic] = useState<TopicId | null>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const lastFocus = useRef<Element | null>(null)
 
@@ -39,6 +40,7 @@ export default function BookingPopup() {
       if (link?.href !== site.links.booking) return
       e.preventDefault()
       lastFocus.current = link
+      setTopic(topicById(link.getAttribute('data-topic'))?.id ?? null)
       setWanted(true)
     }
     document.addEventListener('click', onClick, true)
@@ -61,6 +63,7 @@ export default function BookingPopup() {
       setPicked(null)
       setLoaded(false)
       setTestReturn(false)
+      setTopic(null)
       ;(lastFocus.current as HTMLElement | null)?.focus?.({ preventScroll: true })
     }, 300)
     return () => window.clearTimeout(t)
@@ -84,10 +87,12 @@ export default function BookingPopup() {
   const pick = (c: Consultation | null) => {
     setLoaded(false)
     setPicked(c)
-    if (c) window.plausible?.('Choose consultation', { props: { type: c.id, page: window.location.pathname } })
+    if (c) window.plausible?.('Choose consultation', { props: { type: c.id, topic: topic ?? 'none', page: window.location.pathname } })
   }
 
   if (!mounted) return null
+
+  const about = topicById(topic)
 
   return (
     <div
@@ -128,7 +133,7 @@ export default function BookingPopup() {
               )}
             </h2>
             <p className="mt-0.5 text-[14px] font-light leading-snug text-ink-soft">
-              {picked ? `${picked.price} · ${picked.length}` : BOOKING.intro}
+              {picked ? `${picked.price} · ${picked.length}${about ? ` · About ${about.about}` : ''}` : BOOKING.intro}
             </p>
           </div>
           <button
@@ -189,6 +194,11 @@ export default function BookingPopup() {
           </>
         ) : picked ? (
           <>
+            {about && (
+              <p className="mx-2 mb-3 rounded-2xl bg-brand-50 px-4 py-2.5 text-[14px] leading-snug text-ink sm:mx-5">
+                {TOPIC_COPY.calendarNote(about.label)}
+              </p>
+            )}
             <div className="relative mx-2 flex-1 overflow-hidden rounded-[20px] border border-black/[0.06] bg-white sm:mx-5">
               {!loaded && (
                 <p className="absolute inset-0 grid place-items-center font-display text-[20px] italic text-brand-600">
@@ -211,6 +221,25 @@ export default function BookingPopup() {
           </>
         ) : (
           <div className="grid flex-1 content-start gap-4 overflow-y-auto px-2 pb-5 sm:grid-cols-2 sm:px-5">
+            <div role="group" aria-labelledby="booking-topic" style={{ gridColumn: "1 / -1" }}>
+              <p id="booking-topic" className="mb-2 px-1 font-display text-[18px] italic text-ink">{TOPIC_COPY.ask}</p>
+              <div className="flex flex-wrap gap-2">
+                {TOPICS.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    aria-pressed={topic === t.id}
+                    onClick={() => setTopic(topic === t.id ? null : t.id)}
+                    className={[
+                      'rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-200',
+                      topic === t.id ? 'border-ink bg-ink text-white' : 'border-black/[0.1] bg-white text-ink-soft hover:border-brand hover:text-ink',
+                    ].join(' ')}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             {BOOKING.consultations.map((c) => (
               <section key={c.id} className="flex flex-col rounded-[20px] border border-black/[0.06] bg-white p-6 shadow-soft sm:p-7" aria-labelledby={`booking-${c.id}`}>
                 <div className="flex flex-wrap gap-2">

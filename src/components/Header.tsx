@@ -4,13 +4,14 @@ import { useHomeLinks } from '../hooks/useHomeLinks'
 import { useRobotMood } from '../context/RobotMood'
 import { COMPLEX, PROJECT_GROUPS } from '../content/complex'
 import { site } from '../config/site'
+import { TOPICS, topicProps, type TopicId } from '../content/booking'
 
 type NavItem = {
   label: string
   href: string
   children?: { label: string; href: string }[]
-  /** the menu's answer to its own label: an italic opener, the line itself, and a nudge toward the link below */
-  pitch?: { opener: string; text: string; nudge: string }
+  /** the menu's answer to its own label: an italic opener, each way we help, and a nudge toward the links below */
+  pitch?: { opener: string; ways: { lead: string; text: string }[]; nudge: string; topics: TopicId[] }
   /** a wide menu listing every project; the label itself still opens the page */
   projects?: boolean
 }
@@ -76,6 +77,25 @@ function ProjectMenuLink({ item, onPick }: { item: ProjectLink; onPick: () => vo
   )
 }
 
+/** Small links that open the booking popup already knowing what it's about. */
+function TopicLinks({ topics, href, onPick }: { topics: TopicId[]; href: string; onPick?: () => void }) {
+  return (
+    <div className="mt-3 flex flex-wrap gap-1.5">
+      {TOPICS.filter((t) => topics.includes(t.id)).map((t) => (
+        <a
+          key={t.id}
+          href={href}
+          onClick={onPick}
+          {...topicProps(t.id)}
+          className="rounded-full border border-black/[0.1] px-3 py-1 text-[12.5px] font-medium text-ink-soft transition-colors duration-200 hover:border-brand hover:bg-brand-50 hover:text-ink"
+        >
+          {t.label}
+        </a>
+      ))}
+    </div>
+  )
+}
+
 const NAV: NavItem[] = [
   { label: 'Home', href: '#home' },
   { label: 'Our projects', href: '/projects', projects: true },
@@ -84,8 +104,13 @@ const NAV: NavItem[] = [
     href: '#ways-we-help',
     pitch: {
       opener: 'Let us count the ways.',
-      text: 'AI agents set up around what you need. Systems, SOPs, automations and websites that make work easier. And getting you found on Google and ChatGPT.',
-      nudge: 'Got one we haven’t counted? Try us.',
+      ways: [
+        { lead: 'We advise.', text: 'A consultation to map how your work runs and what will actually help.' },
+        { lead: 'We build.', text: 'AI agents set up around what you need. Systems, automations and websites that make work easier. And getting you found on Google and ChatGPT.' },
+        { lead: 'We train.', text: 'Your team, so they know how to use what we set up.' },
+      ],
+      nudge: 'Whatever it is, book a consultation about it.',
+      topics: ['agents', 'process', 'automation', 'systems', 'websites', 'training'],
     },
     children: [{ label: 'Book a consultation', href: site.links.booking }],
   },
@@ -277,7 +302,7 @@ export default function Header() {
                 {item.children && (
                   <div
                     className={[
-                      'absolute left-1/2 top-full w-[380px] -translate-x-1/2 pt-3 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                      'absolute left-1/2 top-full w-[420px] -translate-x-1/2 pt-3 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
                       isOpen
                         ? 'pointer-events-auto translate-y-0 opacity-100'
                         : 'pointer-events-none translate-y-2 opacity-0',
@@ -287,8 +312,13 @@ export default function Header() {
                       {item.pitch && (
                         <>
                           <p className="font-display text-[26px] italic leading-tight text-brand-600">{item.pitch.opener}</p>
-                          <p className="mt-3 text-[15px] font-light leading-relaxed text-ink-soft">{item.pitch.text}</p>
-                          <p className="mt-3 font-display text-[18px] italic leading-snug text-ink">{item.pitch.nudge}</p>
+                          {item.pitch.ways.map((way) => (
+                            <p key={way.lead} className="mt-3 text-[15px] font-light leading-relaxed text-ink-soft">
+                              <span className="font-display text-[17px] italic text-ink">{way.lead}</span> {way.text}
+                            </p>
+                          ))}
+                          <p className="mt-4 font-display text-[18px] italic leading-snug text-ink">{item.pitch.nudge}</p>
+                          <TopicLinks topics={item.pitch.topics} href={link(site.links.booking)} />
                         </>
                       )}
                       {item.children.map((child) => (
@@ -440,8 +470,13 @@ export default function Header() {
                       {item.pitch && (
                         <>
                           <p className="font-display text-[22px] italic leading-tight text-brand-600">{item.pitch.opener}</p>
-                          <p className="mt-2 text-[14px] font-light leading-relaxed text-ink-soft">{item.pitch.text}</p>
-                          <p className="mt-2 font-display text-[16px] italic leading-snug text-ink">{item.pitch.nudge}</p>
+                          {item.pitch.ways.map((way) => (
+                            <p key={way.lead} className="mt-2 text-[14px] font-light leading-relaxed text-ink-soft">
+                              <span className="font-display text-[16px] italic text-ink">{way.lead}</span> {way.text}
+                            </p>
+                          ))}
+                          <p className="mt-3 font-display text-[16px] italic leading-snug text-ink">{item.pitch.nudge}</p>
+                          <TopicLinks topics={item.pitch.topics} href={link(site.links.booking)} onPick={() => setMobileOpen(false)} />
                         </>
                       )}
                       {item.children.map((child) => (
