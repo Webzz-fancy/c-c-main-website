@@ -18,9 +18,9 @@ function safeUrl(value, hostPattern, pathPattern = /^\//) {
 // Live payments are intentionally unavailable until a real integration review.
 function readConfig(env) {
   if (env.STRATEGY_EXPERIMENTAL !== 'true' || env.STRATEGY_MODE !== 'test') return null
-  // Accept the existing Hostinger name or the original documented name. If
-  // both are set differently, fail closed rather than choosing an account.
-  const ziinaKeys = [env.ZI_API, env.ZIINA_API_KEY].filter((value) => typeof value === 'string' && value.trim() !== '')
+  // Accept the existing Hostinger names and the documented name. If more
+  // than one is set differently, fail closed rather than choosing an account.
+  const ziinaKeys = [env.Z_A_KEY, env.ZI_API, env.ZIINA_API_KEY].filter((value) => typeof value === 'string' && value.trim() !== '')
   if (!ziinaKeys.length || !ziinaKeys.every(present) || new Set(ziinaKeys).size !== 1) return null
   const keys = ['ZIINA_WEBHOOK_SECRET', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'STRATEGY_ORIGIN', 'BOOKING_STRATEGY_EMBED']
   if (!keys.every((key) => present(env[key]))) return null

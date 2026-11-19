@@ -42,11 +42,15 @@ test('explicit safe test config required; placeholders, invalid URLs and live mo
   assert.ok(readConfig(env))
   for (const change of [{ STRATEGY_EXPERIMENTAL: '' }, { STRATEGY_MODE: 'live' }, { STRATEGY_MODE: '...' }, { ZIINA_API_KEY: '...' }, { ZIINA_API_KEY: '..' }, { ZIINA_WEBHOOK_SECRET: 'short' }, { SUPABASE_URL: 'https://evil.example/' }, { STRATEGY_ORIGIN: 'http://example.test' }, { BOOKING_STRATEGY_EMBED: 'https://evil.example/' }]) assert.equal(readConfig({ ...env, ...change }), null)
 })
-test('Ziina key supports either private variable name and rejects conflicting keys', () => {
+test('Ziina key supports all private variable names and rejects conflicting keys', () => {
   const byNewName = { ...env, ZIINA_API_KEY: '', ZI_API: 'private-key' }
+  const byBossName = { ...env, ZIINA_API_KEY: '', Z_A_KEY: 'private-key' }
   assert.equal(readConfig(byNewName).ziinaKey, 'private-key')
-  assert.equal(readConfig({ ...env, ZI_API: env.ZIINA_API_KEY }).ziinaKey, env.ZIINA_API_KEY)
+  assert.equal(readConfig(byBossName).ziinaKey, 'private-key')
+  assert.equal(readConfig({ ...env, ZI_API: env.ZIINA_API_KEY, Z_A_KEY: env.ZIINA_API_KEY }).ziinaKey, env.ZIINA_API_KEY)
   assert.equal(readConfig({ ...env, ZI_API: 'different-key' }), null)
+  assert.equal(readConfig({ ...env, Z_A_KEY: 'different-key' }), null)
+  assert.equal(readConfig({ ...env, Z_A_KEY: '..' }), null)
   assert.equal(readConfig({ ...env, ZI_API: '..' }), null)
   assert.equal(readConfig({ ...byNewName, ZI_API: '..' }), null)
 })

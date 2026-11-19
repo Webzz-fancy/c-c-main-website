@@ -20,7 +20,7 @@ The settings are listed with blank values in `.env.example`. Do not enter `...` 
 - `STRATEGY_MODE`: must be `test`. Any other value, including `live`, disables checkout.
 - `STRATEGY_TEST_PASSWORD`: server-only random team password, at least 32 characters, for the temporary test access gate.
 - `STRATEGY_ORIGIN`: exact HTTPS site origin, without a trailing slash (for example `https://example.com`). Used for redirects and origin checks.
-- `ZI_API`: server-only Ziina API key with the required payment intent permissions. The original name `ZIINA_API_KEY` is also accepted; if both are present they must contain the same key or the prototype stays disabled. Use the existing private setting, not a placeholder.
+- `Z_A_KEY`: server-only Ziina API key with the required payment intent permissions. The alternative names `ZI_API` and `ZIINA_API_KEY` are also accepted; if multiple names are present they must contain the same key or the prototype stays disabled. Use the existing private setting, not a placeholder.
 - `ZIINA_ACCOUNT_ID`: optional independent expected-account check. For test mode only, if omitted, checkout stores the account returned by Ziina at intent creation and later requires the same account. This consistency check cannot establish that the key belongs to the intended business; the account owner must verify that independently before any real use. Apply `20261106000003_strategy_ziina_account.sql` before creating new test attempts. Older rows without a stored account require manual review; do not backfill by guessing.
 - `ZIINA_WEBHOOK_SECRET`: privately generated signing secret, at least 32 characters. It must also be registered with Ziina when the webhook is deliberately configured.
 - `SUPABASE_URL`: HTTPS project URL.
