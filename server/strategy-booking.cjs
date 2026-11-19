@@ -22,9 +22,10 @@ function readConfig(env) {
   // both are set differently, fail closed rather than choosing an account.
   const ziinaKeys = [env.ZI_API, env.ZIINA_API_KEY].filter((value) => typeof value === 'string' && value.trim() !== '')
   if (!ziinaKeys.length || !ziinaKeys.every(present) || new Set(ziinaKeys).size !== 1) return null
-  const keys = ['ZIINA_ACCOUNT_ID', 'ZIINA_WEBHOOK_SECRET', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'STRATEGY_ORIGIN', 'BOOKING_STRATEGY_EMBED']
+  const keys = ['ZIINA_WEBHOOK_SECRET', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'STRATEGY_ORIGIN', 'BOOKING_STRATEGY_EMBED']
   if (!keys.every((key) => present(env[key]))) return null
-  if (env.ZIINA_WEBHOOK_SECRET.length < 32 || !ID.test(env.ZIINA_ACCOUNT_ID)) return null
+  const account = env.ZIINA_ACCOUNT_ID || null
+  if (env.ZIINA_WEBHOOK_SECRET.length < 32 || (account !== null && (!present(account) || !ID.test(account)))) return null
   if (!safeUrl(env.SUPABASE_URL, /^[a-z0-9-]+\.supabase\.co$/)) return null
   const supabaseUrl = new URL(env.SUPABASE_URL)
   if (supabaseUrl.pathname !== '/' || supabaseUrl.search || supabaseUrl.hash) return null
@@ -33,7 +34,7 @@ function readConfig(env) {
     const url = new URL(env.STRATEGY_ORIGIN)
     if (url.protocol !== 'https:' || url.origin !== env.STRATEGY_ORIGIN || url.username || url.password) return null
   } catch { return null }
-  return { ziinaKey: ziinaKeys[0], account: env.ZIINA_ACCOUNT_ID, webhookSecret: env.ZIINA_WEBHOOK_SECRET, supabaseUrl: env.SUPABASE_URL.replace(/\/$/, ''), supabaseKey: env.SUPABASE_SERVICE_ROLE_KEY, origin: env.STRATEGY_ORIGIN, calendar: env.BOOKING_STRATEGY_EMBED }
+  return { ziinaKey: ziinaKeys[0], account, webhookSecret: env.ZIINA_WEBHOOK_SECRET, supabaseUrl: env.SUPABASE_URL.replace(/\/$/, ''), supabaseKey: env.SUPABASE_SERVICE_ROLE_KEY, origin: env.STRATEGY_ORIGIN, calendar: env.BOOKING_STRATEGY_EMBED }
 }
 
 function sessionFrom(req) {
@@ -44,14 +45,17 @@ function sessionFrom(req) {
   return TOKEN.test(token) ? token : null
 }
 function validIntentCreation(intent, cfg) {
-  if (!intent || typeof intent.id !== 'string' || !ID.test(intent.id) || intent.account_id !== cfg.account || intent.amount !== AMOUNT || intent.currency_code !== CURRENCY) return false
+  if (!intent || typeof intent.id !== 'string' || !ID.test(intent.id) || typeof intent.account_id !== 'string' || !ID.test(intent.account_id) || (cfg.account && intent.account_id !== cfg.account) || intent.amount !== AMOUNT || intent.currency_code !== CURRENCY) return false
   try {
     const url = new URL(intent.redirect_url)
     return url.protocol === 'https:' && !url.username && !url.password && !url.port && (url.hostname === 'ziina.com' || url.hostname.endsWith('.ziina.com'))
   } catch { return false }
 }
 function matchesStoredIntent(intent, record, cfg) {
-  return !!intent && intent.id === record.ziina_intent_id && intent.account_id === cfg.account && intent.amount === AMOUNT && intent.currency_code === CURRENCY
+  // The account from the authenticated creation response is bound to this
+  // attempt. An independently configured account, when present, is an
+  // additional check that the key belongs to the intended business.
+  return !!intent && typeof record.ziina_account_id === 'string' && ID.test(record.ziina_account_id) && intent.id === record.ziina_intent_id && intent.account_id === record.ziina_account_id && (!cfg.account || record.ziina_account_id === cfg.account) && intent.amount === AMOUNT && intent.currency_code === CURRENCY
 }
 
 // Dependency injection lets tests exercise the real HTTP routes without keys.
@@ -77,7 +81,7 @@ function strategyRouter({ config, store, ziina, rateLimited = () => false }) {
       res.cookie(COOKIE, token, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 7 * 24 * 60 * 60 * 1000 })
       const intent = await ziina.create({ amount: AMOUNT, currency_code: CURRENCY, message: 'Strategic Consultation', success_url: `${config.origin}/?booking=paid`, cancel_url: `${config.origin}/?booking=cancelled`, failure_url: `${config.origin}/?booking=cancelled`, test: true, allow_tips: false })
       if (!validIntentCreation(intent, config)) throw new Error('invalid payment intent')
-      await store.bindIntent(record.id, intent.id)
+      await store.bindIntent(record.id, intent.id, intent.account_id)
       return res.json({ ok: true, redirectUrl: intent.redirect_url })
     } catch {
       // Never log provider error bodies, tokens or customer details.
@@ -96,7 +100,7 @@ function strategyRouter({ config, store, ziina, rateLimited = () => false }) {
       if (!record.ziina_intent_id) return res.json({ ok: true, status: 'needs_review' })
       const intent = await ziina.get(record.ziina_intent_id)
       if (!matchesStoredIntent(intent, record, config)) throw new Error('payment needs review')
-      if (!completedPayment(intent, record, config.account)) return res.json({ ok: true, status: 'pending' })
+      if (!completedPayment(intent, record, record.ziina_account_id)) return res.json({ ok: true, status: 'pending' })
       await store.markCompleted(record.id)
       return res.json({ ok: true, status: 'paid', reference: record.booking_reference, calendar: config.calendar })
     } catch {
@@ -123,7 +127,7 @@ function webhookHandler({ config, store, ziina }) {
       if (!record) return res.status(503).end() // Could arrive before intent binding.
       const intent = await ziina.get(id)
       if (!matchesStoredIntent(intent, record, config)) throw new Error('payment needs review')
-      if (completedPayment(intent, record, config.account)) await store.markCompleted(record.id)
+      if (completedPayment(intent, record, record.ziina_account_id)) await store.markCompleted(record.id)
       return res.status(200).end()
     } catch {
       console.error('[strategy] Webhook could not be reconciled')

@@ -41,8 +41,8 @@ function createStore({ url, key, fetchImpl = fetch }) {
       if (!Array.isArray(rows) || rows.length > 1) throw new Error('booking match could not be saved')
       return rows.length === 1
     },
-    bindIntent: async (id, intentId) => {
-      const rows = await requestJson(fetchImpl, `${base}?id=eq.${encodeURIComponent(id)}&ziina_intent_id=is.null&payment_status=eq.pending`, { method: 'PATCH', headers, body: JSON.stringify({ ziina_intent_id: intentId, updated_at: new Date().toISOString() }) })
+    bindIntent: async (id, intentId, accountId) => {
+      const rows = await requestJson(fetchImpl, `${base}?id=eq.${encodeURIComponent(id)}&ziina_intent_id=is.null&payment_status=eq.pending`, { method: 'PATCH', headers, body: JSON.stringify({ ziina_intent_id: intentId, ziina_account_id: accountId, updated_at: new Date().toISOString() }) })
       if (!Array.isArray(rows) || rows.length !== 1) throw new Error('could not persist payment intent')
       return rows[0]
     },

@@ -15,7 +15,7 @@ function fixtures() {
     insert: async (data) => { if (failStore) throw Error('private') ; const r = { id: 'record-1', payment_status: 'pending', ...data }; records.push(r); return r },
     byHash: async (hash) => records.find((r) => r.recovery_token_hash === hash) || null,
     byIntent: async (id) => records.find((r) => r.ziina_intent_id === id) || null,
-    bindIntent: async (id, pi) => { const r = records.find((r) => r.id === id); r.ziina_intent_id = pi; return r },
+    bindIntent: async (id, pi, account) => { const r = records.find((r) => r.id === id); r.ziina_intent_id = pi; r.ziina_account_id = account; return r },
     markCompleted: async (id) => { const r = records.find((r) => r.id === id); if (!['pending', 'completed'].includes(r.payment_status)) throw Error('needs review'); r.payment_status = 'completed'; return r },
   }
   const ziina = {
@@ -50,6 +50,34 @@ test('Ziina key supports either private variable name and rejects conflicting ke
   assert.equal(readConfig({ ...env, ZI_API: '..' }), null)
   assert.equal(readConfig({ ...byNewName, ZI_API: '..' }), null)
 })
+test('account setting is optional for test, but invalid configured values fail closed', () => {
+  assert.equal(readConfig({ ...env, ZIINA_ACCOUNT_ID: '' }).account, null)
+  assert.equal(readConfig({ ...env, ZIINA_ACCOUNT_ID: undefined }).account, null)
+  assert.equal(readConfig({ ...env, ZIINA_ACCOUNT_ID: '..' }), null)
+  assert.equal(readConfig({ ...env, ZIINA_ACCOUNT_ID: 'other' }).account, 'other')
+})
+test('account returned on creation is bound and checked even without a configured account', async () => {
+  const f = fixtures()
+  await withServer(f, async (base) => {
+    const response = await checkout(base)
+    assert.equal(response.status, 200)
+    const cookie = response.headers.get('set-cookie').split(';')[0]
+    assert.equal(f.records[0].ziina_account_id, config.account)
+    f.intent.status = 'completed'; f.intent.account_id = 'other'
+    assert.equal((await status(base, cookie)).status, 503)
+    f.intent.account_id = config.account
+    assert.equal((await (await status(base, cookie)).json()).status, 'paid')
+    f.records[0].ziina_account_id = null
+    assert.equal((await status(base, cookie)).status, 503)
+  }, { ...config, account: null })
+})
+test('configured account rejects checkout for another account', async () => {
+  const f = fixtures()
+  await withServer(f, async (base) => {
+    assert.equal((await checkout(base)).status, 503)
+    assert.equal(f.records[0].ziina_intent_id, undefined)
+  }, { ...config, account: 'different-account' })
+})
 test('disabled configuration rejects checkout and webhook before external calls', async () => {
   const f = fixtures()
   await withServer(f, async (base) => {
@@ -75,6 +103,7 @@ test('test checkout records name and phone and redirects, with a private secure 
     assert.equal(f.records[0].whatsapp_e164, '+971501234567')
     assert.equal(f.records[0].payment_environment, 'test')
     assert.equal(f.records[0].ziina_intent_id, 'intent-1')
+    assert.equal(f.records[0].ziina_account_id, config.account)
     assert.equal(f.payload.test, true); assert.equal(f.payload.amount, 120000); assert.equal(f.payload.currency_code, 'AED')
     assert.equal(JSON.stringify(f.payload).includes('+971501234567'), false)
     assert.equal((await checkout(base, undefined, config.origin, setCookie.split(';')[0])).status, 409)
@@ -90,6 +119,14 @@ test('checkout rejects a provider redirect outside Ziina and does not expose it'
     assert.equal((await response.json()).redirectUrl, undefined)
     assert.equal(f.records[0].ziina_intent_id, undefined)
   })
+})
+test('checkout rejects an intent without a valid account before exposing redirect', async () => {
+  const f = fixtures(); const original = f.ziina.create
+  f.ziina.create = async (body) => ({ ...await original(body), account_id: '' })
+  await withServer(f, async (base) => {
+    assert.equal((await checkout(base)).status, 503)
+    assert.equal(f.records[0].ziina_intent_id, undefined)
+  }, { ...config, account: null })
 })
 test('database failure stops checkout before any payment intent is created', async () => {
   const f = fixtures(); f.failStore()
@@ -147,4 +184,6 @@ test('provider adapters use fixed URLs and server credentials, without exposing 
   const ziina = createZiina({ key: 'test-key', fetchImpl: mock }), store = createStore({ url: 'https://myproject.supabase.co', key: 'service-key', fetchImpl: mock })
   await ziina.create({ test: true }); await ziina.get('intent-1'); await store.insert({ payment_environment: 'test' }); await store.byIntent('intent-1')
   assert.equal(calls.length, 4); assert.ok(calls[0].url.startsWith('https://api-v2.ziina.com/api/')); assert.equal(calls[0].options.headers.Authorization, 'Bearer test-key'); assert.ok(calls[2].url.startsWith('https://myproject.supabase.co/rest/v1/')); assert.equal(calls[2].options.headers.Authorization, 'Bearer service-key')
+  await store.bindIntent('db-1', 'intent-1', 'account-123')
+  assert.equal(JSON.parse(calls[4].options.body).ziina_account_id, 'account-123')
 })
