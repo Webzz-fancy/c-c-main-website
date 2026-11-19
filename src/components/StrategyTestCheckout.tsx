@@ -12,6 +12,7 @@ export default function StrategyTestCheckout({ returned }: { returned: boolean }
   const [result, setResult] = useState<Status | null>(null)
   const [showCalendar, setShowCalendar] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [bookingMessage, setBookingMessage] = useState('')
 
   const checkStatus = useCallback(async () => {
     setBusy(true)
@@ -54,6 +55,20 @@ export default function StrategyTestCheckout({ returned }: { returned: boolean }
     } finally { setBusy(false) }
   }
 
+  const checkTestBooking = async () => {
+    setBusy(true); setBookingMessage('')
+    try {
+      const response = await fetch('/api/strategy/match-test-booking', { method: 'POST', credentials: 'same-origin', cache: 'no-store' })
+      const data: Status = await response.json()
+      if (!response.ok || !data.ok) throw new Error('check failed')
+      if (data.status === 'matched') setBookingMessage('A matching test reference was found and saved to this payment record. Confirm the appointment in Google as well.')
+      else if (data.status === 'previously_matched') setBookingMessage('A match was saved earlier. Please check Google for any changes or cancellations.')
+      else if (data.status === 'needs_review') setBookingMessage('The test match needs a private review. Do not assume the appointment is missing.')
+      else setBookingMessage('No match was found yet. This does not mean the appointment was not booked; check Google and the reference.')
+    } catch { setBookingMessage('The test booking could not be checked. Check the test settings and Google connection.') }
+    finally { setBusy(false) }
+  }
+
   return (
     <div className="mx-2 flex-1 overflow-y-auto rounded-[20px] border border-black/[0.06] bg-white p-6 sm:mx-5 sm:p-10">
       <p className="rounded-xl bg-brand-50 p-3 text-sm font-semibold text-ink">Private test only. Do not enter real customer or payment details.</p>
@@ -63,8 +78,10 @@ export default function StrategyTestCheckout({ returned }: { returned: boolean }
           <p className="mt-3 text-sm text-ink-soft">Use this reference in the Google booking form if it has been configured to request one:</p>
           <p className="mt-2 break-all font-mono text-sm text-ink">{result.reference}</p>
           <button type="button" className="mt-3 rounded-full bg-brand px-5 py-2 text-sm font-semibold" onClick={() => { void navigator.clipboard?.writeText(result.reference || '').then(() => setCopied(true)).catch(() => setCopied(false)) }}>{copied ? 'Copied' : 'Copy reference'}</button>
-          <p className="mt-4 text-sm text-ink-soft">Google confirms the appointment in its own form. Booking matching is not enabled yet.</p>
+          <p className="mt-4 text-sm text-ink-soft">Google confirms the appointment in its own form. After booking, you can check the reference match for this test.</p>
           {!showCalendar ? <button type="button" onClick={() => setShowCalendar(true)} className="mt-4 rounded-full bg-brand px-5 py-2 text-sm font-semibold">Open test calendar</button> : <iframe src={result.calendar} title="Test strategy appointment calendar" className="mt-4 h-[500px] w-full rounded-xl border border-black/10" />}
+          <div><button type="button" onClick={() => void checkTestBooking()} disabled={busy} className="mt-4 text-sm font-semibold text-glass underline disabled:opacity-50">Check test booking match</button></div>
+          {bookingMessage && <p aria-live="polite" className="mt-3 text-sm text-ink-soft">{bookingMessage}</p>}
         </div>
       ) : (
         <div className="mt-5">

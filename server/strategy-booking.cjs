@@ -59,7 +59,7 @@ function matchesStoredIntent(intent, record, cfg) {
 }
 
 // Dependency injection lets tests exercise the real HTTP routes without keys.
-function strategyRouter({ config, store, ziina, rateLimited = () => false }) {
+function strategyRouter({ config, store, ziina, matchTestBooking = null, rateLimited = () => false }) {
   const router = express.Router()
   router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); if (!config) return res.status(503).json({ ok: false, error: 'Strategy checkout is not available' }); next() })
   router.post('/checkout', async (req, res) => {
@@ -108,6 +108,31 @@ function strategyRouter({ config, store, ziina, rateLimited = () => false }) {
       return res.status(503).json({ ok: false, error: 'Payment could not be checked. Please contact us before paying again.' })
     }
   })
+  // Team-only test route (the server mounts the team access gate before this
+  // router). Each check is restricted to the caller's paid test session.
+  router.post('/match-test-booking', async (req, res) => {
+    if (!matchTestBooking) return res.status(503).json({ ok: false, error: 'Test matching is not enabled' })
+    if (rateLimited(req.ip)) return res.status(429).json({ ok: false, error: 'Too many requests' })
+    if (req.get('origin') !== config.origin) return res.status(403).json({ ok: false, error: 'Invalid origin' })
+    const token = sessionFrom(req)
+    if (!token) return res.status(401).json({ ok: false, error: 'No booking session' })
+    try {
+      const record = await store.byHash(hashRecoveryToken(token))
+      if (!record || record.payment_environment !== 'test' || record.payment_status !== 'completed' || !record.ziina_intent_id) return res.status(409).json({ ok: false, error: 'Test payment needs review' })
+      const intent = await ziina.get(record.ziina_intent_id)
+      if (!matchesStoredIntent(intent, record, config) || !completedPayment(intent, record, record.ziina_account_id)) return res.status(409).json({ ok: false, error: 'Test payment needs review' })
+      if (record.booking_status === 'matched') return res.json({ ok: true, status: 'previously_matched' })
+      if (record.booking_status !== 'not_booked') return res.json({ ok: true, status: 'needs_review' })
+      const result = await matchTestBooking(record.booking_reference)
+      if (result.errors || result.ambiguous) return res.json({ ok: true, status: 'needs_review' })
+      if (result.matched === 1) return res.json({ ok: true, status: 'matched' })
+      // Missing a match is not evidence that no appointment exists.
+      return res.json({ ok: true, status: 'not_matched' })
+    } catch {
+      console.error('[strategy] Test booking check failed')
+      return res.status(503).json({ ok: false, error: 'Test booking check could not be completed' })
+    }
+  })
   return router
 }
 
@@ -140,7 +165,21 @@ function createProductionStrategy(env, rateLimited) {
   const config = readConfig(env)
   const store = config ? createStore({ url: config.supabaseUrl, key: config.supabaseKey }) : null
   const ziina = config ? createZiina({ key: config.ziinaKey }) : null
-  return { router: strategyRouter({ config, store, ziina, rateLimited }), webhook: webhookHandler({ config, store, ziina }) }
+  let matchTestBooking = null
+  if (config && env.STRATEGY_MATCH_TEST_ONLY === 'true') {
+    try {
+      const { createCalendarReaderFromEnv } = require('./strategy-calendar.cjs')
+      const { matchPaidTestBookings } = require('./strategy-matching.cjs')
+      const reader = createCalendarReaderFromEnv(env)
+      matchTestBooking = (reference) => {
+        const now = Date.now()
+        return matchPaidTestBookings({ reader, store, onlyReference: reference, timeMin: new Date(now - 7 * 86400000).toISOString(), timeMax: new Date(now + 90 * 86400000).toISOString() })
+      }
+    } catch {
+      // Incomplete Calendar settings leave matching disabled without startup failure.
+    }
+  }
+  return { router: strategyRouter({ config, store, ziina, matchTestBooking, rateLimited }), webhook: webhookHandler({ config, store, ziina }) }
 }
 
 module.exports = { readConfig, strategyRouter, webhookHandler, createProductionStrategy }

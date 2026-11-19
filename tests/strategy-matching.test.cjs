@@ -65,6 +65,27 @@ test('reads all pages before any write; errors fail safely', async () => {
   assert.deepEqual(await matchPaidTestBookings({ ...f2, ...window }), { matched: 0, unchanged: 0, ambiguous: 0, errors: 1 })
 })
 
+test('session-targeted matching never updates other paid test references', async () => {
+  const f = fixture([event('event-other', other), event('event-target', ref)])
+  const lookedUp = []
+  const original = f.store.byPaidTestReference
+  f.store.byPaidTestReference = async (reference) => { lookedUp.push(reference); return original(reference) }
+  const result = await matchPaidTestBookings({ ...f, ...window, onlyReference: ref })
+  assert.equal(result.matched, 1)
+  assert.deepEqual(lookedUp, [ref])
+  assert.equal(f.row.google_event_id, 'event-target')
+  await assert.rejects(matchPaidTestBookings({ ...f, ...window, onlyReference: 'bad' }), /Invalid test reference/)
+})
+test('session-targeted matching detects duplicate and multi-reference events without writing', async () => {
+  for (const events of [[event('e1'), event('e2')], [{ ...event('e1'), description: `Booking reference: ${ref}\nBooking reference: ${other}` }, event('e2')]]) {
+    const f = fixture(events)
+    const result = await matchPaidTestBookings({ ...f, ...window, onlyReference: ref })
+    assert.ok(result.ambiguous > 0)
+    assert.equal(f.row.booking_status, 'not_booked')
+  }
+  const unrelated = fixture([{ ...event('e1'), description: `Booking reference: ${other}\nBooking reference: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` }, event('e2')])
+  assert.equal((await matchPaidTestBookings({ ...unrelated, ...window, onlyReference: ref })).matched, 1)
+})
 test('database update includes test-only, paid, unmatched compare-and-set conditions', async () => {
   let req
   const store = createStore({ url: 'https://test.supabase.co', key: 'secret', fetchImpl: async (url, opts) => { req = { url: new URL(url), opts }; return { ok: true, json: async () => [{ id: 'row-1' }] } } })

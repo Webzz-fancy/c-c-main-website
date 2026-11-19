@@ -1,7 +1,7 @@
 'use strict'
 
-// Read-only Google Calendar adapter. This is deliberately not exposed through
-// an HTTP endpoint or scheduler until authorization and event format are tested.
+// Read-only Google Calendar adapter. Raw events are never returned by HTTP;
+// an explicitly enabled, protected test-only route may request a match.
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const CALENDAR_BASE = 'https://www.googleapis.com/calendar/v3/calendars/'
 
@@ -33,7 +33,7 @@ function createCalendarReader({ clientId, clientSecret, refreshToken, calendarId
   }
 }
 // These are server-only settings prepared in hPanel. Constructing a reader does
-// not make a request, start a scheduler, or enable booking reconciliation.
+// not make a request or start a scheduler.
 function createCalendarReaderFromEnv(env, fetchImpl = fetch) {
   return createCalendarReader({
     clientId: env.GOOGLE_CALENDAR_CLIENT_ID,

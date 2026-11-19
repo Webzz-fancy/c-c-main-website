@@ -12,7 +12,7 @@ const env = { STRATEGY_EXPERIMENTAL: 'true', STRATEGY_MODE: 'test', ZIINA_API_KE
 function fixtures() {
   let records = [], intent = null, payload = null, failStore = false
   const store = {
-    insert: async (data) => { if (failStore) throw Error('private') ; const r = { id: 'record-1', payment_status: 'pending', ...data }; records.push(r); return r },
+    insert: async (data) => { if (failStore) throw Error('private') ; const r = { id: 'record-1', payment_status: 'pending', booking_status: 'not_booked', ...data }; records.push(r); return r },
     byHash: async (hash) => records.find((r) => r.recovery_token_hash === hash) || null,
     byIntent: async (id) => records.find((r) => r.ziina_intent_id === id) || null,
     bindIntent: async (id, pi, account) => { const r = records.find((r) => r.id === id); r.ziina_intent_id = pi; r.ziina_account_id = account; return r },
@@ -158,6 +158,37 @@ test('only an authenticated session and a fresh verified completed payment unloc
     assert.equal(f.records[0].payment_status, 'completed')
     f.records[0].payment_status = 'refunded'
     data = await (await status(base, cookie)).json(); assert.deepEqual(data, { ok: true, status: 'needs_review' })
+  })
+})
+test('test booking match requires a verified paid session and checks only its reference', async () => {
+  const f = fixtures(); let checked = []
+  f.matchTestBooking = async (reference) => { checked.push(reference); return { matched: 1, ambiguous: 0, errors: 0 } }
+  const check = (base, cookie, origin = config.origin) => fetch(`${base}/api/strategy/match-test-booking`, { method: 'POST', headers: { Origin: origin, ...(cookie ? { Cookie: cookie } : {}) } })
+  await withServer(f, async (base) => {
+    assert.equal((await check(base)).status, 401)
+    const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
+    assert.equal((await check(base, cookie, 'https://evil.test')).status, 403)
+    assert.equal((await check(base, cookie)).status, 409)
+    f.intent.status = 'completed'; await status(base, cookie)
+    f.intent.account_id = 'other'; assert.equal((await check(base, cookie)).status, 409)
+    f.intent.account_id = config.account
+    assert.deepEqual(await (await check(base, cookie)).json(), { ok: true, status: 'matched' })
+    assert.deepEqual(checked, [f.records[0].booking_reference])
+    f.records[0].payment_environment = 'live'; assert.equal((await check(base, cookie)).status, 409)
+    f.records[0].payment_environment = 'test'; f.records[0].payment_status = 'refund_review'; assert.equal((await check(base, cookie)).status, 409)
+  })
+})
+test('test matching disabled or ambiguous does not claim a booking', async () => {
+  const f = fixtures()
+  await withServer(f, async (base) => {
+    assert.equal((await fetch(`${base}/api/strategy/match-test-booking`, { method: 'POST' })).status, 503)
+  })
+  const f2 = fixtures(); f2.matchTestBooking = async () => ({ matched: 0, ambiguous: 1, errors: 0 })
+  await withServer(f2, async (base) => {
+    const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
+    f2.intent.status = 'completed'; await status(base, cookie)
+    const r = await fetch(`${base}/api/strategy/match-test-booking`, { method: 'POST', headers: { Origin: config.origin, Cookie: cookie } })
+    assert.deepEqual(await r.json(), { ok: true, status: 'needs_review' })
   })
 })
 test('signed webhooks use raw bytes, independently verify intent and are safe on repeats', async () => {

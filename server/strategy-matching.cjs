@@ -1,7 +1,7 @@
 'use strict'
 
-// Test-only matching prototype. Not connected to a route, scheduler, or live
-// settings. The Google booking form's actual event format is still unverified.
+// Test-only matching prototype. The booking form's actual event format is
+// still unverified. Never use this for live payments or infer non-booking.
 const REFERENCE = /^[a-f0-9]{32}$/
 const EVENT_ID = /^[A-Za-z0-9_-]{1,1024}$/
 
@@ -13,9 +13,11 @@ function bookingReferences(description) {
   return [...new Set(matches.map((match) => match[1].toLowerCase()).filter((ref) => REFERENCE.test(ref)))]
 }
 
-async function matchPaidTestBookings({ reader, store, timeMin, timeMax, maxPages = 10 }) {
+async function matchPaidTestBookings({ reader, store, timeMin, timeMax, maxPages = 10, onlyReference }) {
+  if (onlyReference !== undefined && !REFERENCE.test(onlyReference)) throw new Error('Invalid test reference')
   const start = Date.parse(timeMin), end = Date.parse(timeMax)
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || end - start > 31 * 86400000) throw new Error('Valid test window of up to 31 days required')
+  const maxDays = onlyReference === undefined ? 31 : 120
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || end - start > maxDays * 86400000) throw new Error('Invalid test window')
   if (!Number.isInteger(maxPages) || maxPages < 1 || maxPages > 50) throw new Error('Invalid page limit')
   if (!reader || !store || typeof reader.list !== 'function' || typeof store.byPaidTestReference !== 'function' || typeof store.matchPaidTestBooking !== 'function') throw new Error('Test matching dependencies missing')
 
@@ -36,10 +38,14 @@ async function matchPaidTestBookings({ reader, store, timeMin, timeMax, maxPages
       seenEvents.add(event.id)
       const refs = bookingReferences(event.description)
       if (refs.length !== 1) {
-        if (refs.length > 1) { ambiguous++; for (const ref of refs) ambiguousReferences.add(ref) }
+        if (refs.length > 1) {
+          if (onlyReference === undefined || refs.includes(onlyReference)) ambiguous++
+          for (const ref of refs) ambiguousReferences.add(ref)
+        }
         continue
       }
       const ref = refs[0]
+      if (onlyReference !== undefined && ref !== onlyReference) continue
       const list = candidates.get(ref) || []
       list.push({ eventId: event.id, startsAt: event.start.dateTime })
       candidates.set(ref, list)
