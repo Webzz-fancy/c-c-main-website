@@ -89,9 +89,12 @@ app.use('/api', (_req, res, next) => {
 
 // Disabled unless explicit test-only configuration is present. Never accepts
 // live payments; the public booking UI is not connected to this prototype.
-const { createProductionStrategy } = require('./server/strategy-booking.cjs')
+const { createProductionStrategy, readConfig: readStrategyConfig } = require('./server/strategy-booking.cjs')
+const { createTestAccess } = require('./server/strategy-test-access.cjs')
 const strategy = createProductionStrategy(process.env, rateLimited)
-app.use('/api/strategy', strategy.router)
+const testAccess = createTestAccess({ config: readStrategyConfig(process.env), password: process.env.STRATEGY_TEST_PASSWORD, rateLimited })
+app.use('/api/strategy-test', testAccess.router)
+app.use('/api/strategy', testAccess.requireAccess, strategy.router)
 app.post('/api/ziina/webhook', strategy.webhook)
 
 app.get('/api/health', (_req, res) => {

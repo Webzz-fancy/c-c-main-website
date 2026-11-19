@@ -3,8 +3,9 @@ import { site } from '../config/site'
 import { BOOKING, TOPICS, TOPIC_COPY, topicById, type Consultation, type TopicId } from '../content/booking'
 import StrategyTestCheckout from './StrategyTestCheckout'
 
-// Only a deliberately configured private test build may show checkout.
-const STRATEGY_TEST_UI = import.meta.env.VITE_STRATEGY_TEST_UI === 'true'
+// Test checkout is accessible only from the separate team test page, never
+// from the public consultation popup even when a test build is enabled.
+const STRATEGY_TEST_UI = false
 
 /**
  * Booking in a sheet over the page: the free call opens its calendar, while

@@ -1,6 +1,6 @@
 # Ziina strategy booking — test backend in progress
 
-The checkout is **not live**. The backend accepts only explicitly enabled test-mode requests; live payments are blocked in code. The public booking popup keeps the coming-soon message and free calendar. An optional, clearly labelled checkout UI exists for a separately configured private test build only; never enable it for public visitors. Do not enable the backend on the live site or apply the migrations until the remaining work below is reviewed and tested.
+The checkout is **not live**. The backend accepts only explicitly enabled test-mode requests; live payments are blocked in code. The public booking popup keeps the coming-soon message and free calendar. A separate team-only test page and server-side access gate are available for a controlled test; see the test checklist. Private staging is preferable. The owner has approved a temporary protected live-host test, but the remaining work below is still required before live payments.
 
 ## Work completed
 
@@ -18,6 +18,7 @@ The settings are listed with blank values in `.env.example`. Do not enter `...` 
 
 - `STRATEGY_EXPERIMENTAL`: must be `true` to enable this prototype. Default is `false`.
 - `STRATEGY_MODE`: must be `test`. Any other value, including `live`, disables checkout.
+- `STRATEGY_TEST_PASSWORD`: server-only random team password, at least 32 characters, for the temporary test access gate.
 - `STRATEGY_ORIGIN`: exact HTTPS site origin, without a trailing slash (for example `https://example.com`). Used for redirects and origin checks.
 - `ZI_API`: server-only Ziina API key with the required payment intent permissions. The original name `ZIINA_API_KEY` is also accepted; if both are present they must contain the same key or the prototype stays disabled. Use the existing private setting, not a placeholder.
 - `ZIINA_ACCOUNT_ID`: Ziina account expected to receive the payment.
