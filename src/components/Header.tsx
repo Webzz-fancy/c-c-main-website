@@ -10,8 +10,8 @@ type NavItem = {
   label: string
   href: string
   children?: { label: string; href: string }[]
-  /** the menu's answer to its own label: an italic opener, each way we help, and a nudge toward the links below */
-  pitch?: { opener: string; ways: { lead: string; text: string }[]; nudge: string; topics: TopicId[] }
+  /** the menu's answer to its own label: each way we help, and a nudge toward the links below */
+  pitch?: { ways: { lead: string; text: string }[]; nudge: string; topics: TopicId[] }
   /** a wide menu listing every project; the label itself still opens the page */
   projects?: boolean
 }
@@ -103,7 +103,6 @@ const NAV: NavItem[] = [
     label: 'Ways we help',
     href: '#ways-we-help',
     pitch: {
-      opener: 'Let us count the ways.',
       ways: [
         { lead: 'We advise.', text: 'A consultation to map how your work runs and what will actually help.' },
         { lead: 'We build.', text: 'AI agents set up around what you need. Systems, automations and websites that make work easier. And getting you found on Google and ChatGPT.' },
@@ -311,9 +310,8 @@ export default function Header() {
                     <div className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white p-6 shadow-soft">
                       {item.pitch && (
                         <>
-                          <p className="font-display text-[26px] italic leading-tight text-brand-600">{item.pitch.opener}</p>
                           {item.pitch.ways.map((way) => (
-                            <p key={way.lead} className="mt-3 text-[15px] font-light leading-relaxed text-ink-soft">
+                            <p key={way.lead} className="mt-3 first:mt-0 text-[15px] font-light leading-relaxed text-ink-soft">
                               <span className="font-display text-[17px] italic text-ink">{way.lead}</span> {way.text}
                             </p>
                           ))}
@@ -469,9 +467,8 @@ export default function Header() {
                     <div className="px-3 pb-3 pt-1">
                       {item.pitch && (
                         <>
-                          <p className="font-display text-[22px] italic leading-tight text-brand-600">{item.pitch.opener}</p>
                           {item.pitch.ways.map((way) => (
-                            <p key={way.lead} className="mt-2 text-[14px] font-light leading-relaxed text-ink-soft">
+                            <p key={way.lead} className="mt-2 first:mt-0 text-[14px] font-light leading-relaxed text-ink-soft">
                               <span className="font-display text-[16px] italic text-ink">{way.lead}</span> {way.text}
                             </p>
                           ))}
