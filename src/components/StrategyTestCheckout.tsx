@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 
-type Status = { ok?: boolean; status?: string; reference?: string; calendar?: string; error?: string; emailAvailable?: boolean; inDescription?: boolean; inExtendedProperties?: boolean; hasHtml?: boolean; hasLabel?: boolean }
+type Status = { ok?: boolean; status?: string; reference?: string; calendar?: string; error?: string; emailAvailable?: boolean; inDescription?: boolean; inExtendedProperties?: boolean; hasHtml?: boolean; hasLabel?: boolean; layout?: string }
 
 // This is deliberately opt-in at build time AND the backend is test-only.
 // Never enable this build flag on the public site for real customers.
@@ -64,7 +64,7 @@ export default function StrategyTestCheckout({ returned }: { returned: boolean }
       if (data.status === 'matched') setBookingMessage('A matching test reference was found and saved to this payment record. Confirm the appointment in Google as well.' + (data.emailAvailable ? ' An attendee email is present, but has not been saved or verified as the customer’s.' : ''))
       else if (data.status === 'previously_matched') setBookingMessage('A match was saved earlier. Please check Google for any changes or cancellations.')
       else if (data.status === 'needs_review') setBookingMessage('The test match needs a private review. Do not assume the appointment is missing.')
-      else if (data.status === 'reference_found_unmatched') setBookingMessage(`The reference appeared in Google, but the match could not be saved. Format check: description ${data.inDescription ? 'yes' : 'no'}, extra properties ${data.inExtendedProperties ? 'yes' : 'no'}, HTML ${data.hasHtml ? 'yes' : 'no'}, label ${data.hasLabel ? 'yes' : 'no'}.` + (data.emailAvailable ? ' An attendee email is present, but has not been saved or verified as the customer’s.' : ''))
+      else if (data.status === 'reference_found_unmatched') setBookingMessage(`The reference appeared in Google, but the match could not be saved. Format check: description ${data.inDescription ? 'yes' : 'no'}, extra properties ${data.inExtendedProperties ? 'yes' : 'no'}, HTML ${data.hasHtml ? 'yes' : 'no'}, label ${data.hasLabel ? 'yes' : 'no'}, layout ${data.layout || 'not_visible'}.` + (data.emailAvailable ? ' An attendee email is present, but has not been saved or verified as the customer’s.' : ''))
       else setBookingMessage('No match was found yet. This does not mean the appointment was not booked; check Google and the reference.')
     } catch { setBookingMessage('The test booking could not be checked. Check the test settings and Google connection.') }
     finally { setBusy(false) }

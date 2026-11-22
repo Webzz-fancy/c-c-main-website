@@ -215,7 +215,7 @@ test('integrated paid test session matches a fake Google event to the original r
     if (!row) return false
     Object.assign(row, { google_event_id: eventId, booking_starts_at: startsAt, booking_status: 'matched' }); return true
   }
-  f.matchTestBooking = (reference) => matchPaidTestBookings({ store: f.store, reader: { list: async () => ({ items: [{ id: 'event-123', status: 'confirmed', start: { dateTime: date }, description: `Booking reference: ${reference}` }] }) }, timeMin: '2026-11-15T00:00:00Z', timeMax: '2026-11-16T00:00:00Z', onlyReference: reference })
+  f.matchTestBooking = (reference) => matchPaidTestBookings({ store: f.store, reader: { list: async () => ({ items: [{ id: 'event-123', status: 'confirmed', start: { dateTime: date }, description: `<div><b>Booking reference:</b><br>${reference}</div>` }] }) }, timeMin: '2026-11-15T00:00:00Z', timeMax: '2026-11-16T00:00:00Z', onlyReference: reference })
   await withServer(f, async (base) => {
     const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
     f.intent.status = 'completed'; await status(base, cookie)
@@ -232,7 +232,7 @@ test('test diagnostic reports only reference and attendee-email presence', async
     const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
     f.intent.status = 'completed'; await status(base, cookie)
     const r = await fetch(`${base}/api/strategy/match-test-booking`, { method: 'POST', headers: { Origin: config.origin, Cookie: cookie } })
-    assert.deepEqual(await r.json(), { ok: true, status: 'reference_found_unmatched', emailAvailable: true, inDescription: false, inExtendedProperties: false, hasHtml: false, hasLabel: false })
+    assert.deepEqual(await r.json(), { ok: true, status: 'reference_found_unmatched', emailAvailable: true, inDescription: false, inExtendedProperties: false, hasHtml: false, hasLabel: false, layout: 'not_visible' })
   })
 })
 test('signed webhooks use raw bytes, independently verify intent and are safe on repeats', async () => {

@@ -1,16 +1,20 @@
 'use strict'
 
-// Test-only matching prototype. The booking form's actual event format is
-// still unverified. Never use this for live payments or infer non-booking.
+// Test-only matching prototype. A real test event used HTML; its exact shape
+// remains unverified. Never use this for live payments or infer non-booking.
 const { inspectEvent } = require('../scripts/check-strategy-calendar.cjs')
+const { visibleCalendarText, referenceLayout } = require('./strategy-calendar-html.cjs')
 const REFERENCE = /^[a-f0-9]{32}$/
 const EVENT_ID = /^[A-Za-z0-9_-]{1,1024}$/
 
 function bookingReferences(description) {
   if (typeof description !== 'string' || description.length > 100000) return []
-  // This deliberately accepts only a labelled plain-text answer. If Google
-  // formats the answer differently, we leave the record unmatched for review.
-  const matches = [...description.matchAll(/(?:^|[\r\n])[ \t]*Booking reference[ \t]*:[ \t]*([a-f0-9]{32})[ \t]*(?=$|[\r\n])/gi)]
+  // Accept an exact labelled line. For HTML only, also accept a label and a
+  // standalone answer on the next line; unknown formats remain unmatched.
+  const isHtml = /<\/?[a-z][^>]*>/i.test(description)
+  const text = isHtml ? visibleCalendarText(description) : description
+  const matches = [...text.matchAll(/(?:^|[\r\n])[ \t]*Booking reference[ \t]*:[ \t]*([a-f0-9]{32})[ \t]*(?=$|[\r\n])/gi)]
+  if (isHtml) matches.push(...text.matchAll(/(?:^|[\r\n])[ \t]*Booking reference[ \t]*:?[ \t]*\r?\n(?:[ \t]*\r?\n){0,3}[ \t]*([a-f0-9]{32})[ \t]*(?=$|[\r\n])/gi))
   return [...new Set(matches.map((match) => match[1].toLowerCase()).filter((ref) => REFERENCE.test(ref)))]
 }
 
@@ -27,7 +31,7 @@ async function matchPaidTestBookings({ reader, store, timeMin, timeMax, maxPages
   const seenEvents = new Set()
   // Only aggregate presence for this session's reference; never return raw
   // event content, emails, or other calendar data to the test page.
-  const diagnostic = { referenceEvents: 0, descriptionEvents: 0, extendedEvents: 0, htmlDescriptionEvents: 0, labelledDescriptionEvents: 0, attendeeEmailEvents: 0 }
+  const diagnostic = { referenceEvents: 0, descriptionEvents: 0, extendedEvents: 0, htmlDescriptionEvents: 0, labelledDescriptionEvents: 0, attendeeEmailEvents: 0, layout: 'not_visible' }
   let nextPageToken, pages = 0, ambiguous = 0
   // Read all pages first: a later duplicate must never cause an earlier write.
   do {
@@ -48,6 +52,7 @@ async function matchPaidTestBookings({ reader, store, timeMin, timeMax, maxPages
             diagnostic.descriptionEvents++
             if (/<\/?[a-z][^>]*>/i.test(event.description)) diagnostic.htmlDescriptionEvents++
             if (/booking\s+reference/i.test(event.description)) diagnostic.labelledDescriptionEvents++
+            diagnostic.layout = referenceLayout(event.description, onlyReference)
           }
           if (inspection.fields.some((field) => field.startsWith('extendedProperties.'))) diagnostic.extendedEvents++
           if (inspection.hasAttendeeEmail) diagnostic.attendeeEmailEvents++
