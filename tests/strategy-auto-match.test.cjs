@@ -1,7 +1,7 @@
 'use strict'
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
-const { run } = require('../scripts/auto-match-strategy-test.cjs')
+const { run, configIssue } = require('../scripts/auto-match-strategy-test.cjs')
 const { createStore } = require('../server/strategy-adapters.cjs')
 const reference = '0123456789abcdef0123456789abcdef'
 const now = Date.parse('2026-11-22T12:00:00Z')
@@ -29,6 +29,27 @@ test('scheduled matching is explicitly test-only and never constructs providers 
     await assert.rejects(run({ ...f.options, env: { ...env, ...change }, storeFactory: () => { calls++; return f.store } }))
     assert.equal(calls, 0)
   }
+})
+test('configuration diagnostics return fixed categories without secret values', () => {
+  assert.equal(configIssue({ ...env, STRATEGY_AUTO_MATCH_TEST: '' }), 'auto_flag_not_enabled')
+  assert.equal(configIssue({ ...env, STRATEGY_MODE: '' }), 'test_mode_not_enabled')
+  assert.equal(configIssue({ ...env, Z_A_KEY: '' }), 'ziina_key_missing')
+  assert.equal(configIssue({ ...env, SUPABASE_SERVICE_ROLE_KEY: '' }), 'supabase_settings_missing')
+  assert.equal(configIssue({ ...env, ZIINA_WEBHOOK_SECRET: '' }), 'webhook_secret_missing')
+  assert.equal(configIssue({ ...env, STRATEGY_ORIGIN: '' }), 'site_or_booking_settings_missing')
+  assert.equal(configIssue(env), 'settings_invalid_or_conflicting')
+  const { spawnSync } = require('node:child_process')
+  const result = spawnSync(process.execPath, ['scripts/auto-match-strategy-test.cjs'], { env: { ...env, STRATEGY_AUTO_MATCH_TEST: '', Z_A_KEY: 'private-sensitive-key' }, encoding: 'utf8' })
+  assert.equal(result.status, 1); assert.match(result.stderr, /auto_flag_not_enabled/)
+  assert.equal(result.stderr.includes('private-sensitive-key'), false)
+})
+test('scheduled failures categorize database and calendar steps without returning provider error text', async () => {
+  const f = fixture(); f.store.recentUnmatchedPaidTests = async () => { throw Error('private provider detail') }
+  await assert.rejects(run(f.options), (error) => error.message === 'database_read_failed')
+  const f2 = fixture(); f2.reader.list = async () => { throw Error('Calendar authorization failed') }
+  await assert.rejects(run(f2.options), (error) => error.message === 'calendar_authorization_failed')
+  const f3 = fixture(); f3.reader.list = async () => { throw Error('private provider detail') }
+  await assert.rejects(run(f3.options), (error) => error.message === 'calendar_read_failed')
 })
 test('scheduled job matches the existing paid test row without a browser and is idempotent', async () => {
   const f = fixture()
