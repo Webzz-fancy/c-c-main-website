@@ -20,6 +20,7 @@
     "compression": "^1.8.2",
     "emailjs": "5.0.4",
     "express": "^4.21.2",
+    "htmlparser2": "^9.1.0",
     "postcss": "^8.5.26",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
