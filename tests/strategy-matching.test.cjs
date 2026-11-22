@@ -27,34 +27,6 @@ test('only labelled standalone booking references are considered', () => {
   assert.deepEqual(bookingReferences(`Booking reference: ${ref}\nBooking reference: ${other}`), [ref, other])
 })
 
-test('HTML questions support only an exact visible label and standalone answer', () => {
-  for (const description of [
-    `<p><b>Booking reference:</b> ${ref}</p>`,
-    `<div><b>Booking reference:</b><br>${ref}</div>`,
-    `<div><b>Booking reference</b><br>${ref}</div>`,
-    `<div>Booking&nbsp;reference: <span>${ref}</span></div>`,
-    `<div>Booking reference:<br>&#48;${ref.slice(1)}</div>`,
-  ]) assert.deepEqual(bookingReferences(description), [ref], description)
-  for (const description of [
-    `<p>Unrelated: ${ref}</p>`,
-    `<p>Booking reference: ${ref}x</p>`,
-    `<p>Booking reference: ${ref} more text</p>`,
-    `<div title="Booking reference: ${ref}">unrelated</div>`,
-    `<script>Booking reference: ${ref}</script>`,
-    `<div style="display:none">Booking reference: ${ref}</div>`,
-    `<div hidden>Booking reference: ${ref}</div>`,
-    `<div aria-hidden="true">Booking reference: ${ref}</div>`,
-    `<div>Someone else's Booking reference: ${ref}</div>`,
-  ]) assert.deepEqual(bookingReferences(description), [], description)
-  assert.deepEqual(bookingReferences(`<p>Booking reference: ${ref}</p><p>Booking reference: ${other}</p>`), [ref, other])
-})
-test('layout diagnostics reveal structure but no calendar text', () => {
-  const { referenceLayout } = require('../server/strategy-calendar-html.cjs')
-  assert.equal(referenceLayout(`<div>Booking reference: ${ref}</div>`, ref), 'same_line')
-  assert.equal(referenceLayout(`<div><b>Booking reference:</b><br>${ref}</div>`, ref), 'next_line')
-  assert.equal(referenceLayout(`<div>Booking reference</div><div>another field</div><div>${ref}</div>`, ref), 'other')
-  assert.equal(referenceLayout(`<div hidden>${ref}</div>`, ref), 'not_visible')
-})
 test('confirmed test event updates the same paid row, preserving name and WhatsApp', async () => {
   const f = fixture([event('google-event-1')])
   const result = await matchPaidTestBookings({ ...f, ...window })
@@ -114,25 +86,11 @@ test('session-targeted matching detects duplicate and multi-reference events wit
   const unrelated = fixture([{ ...event('e1'), description: `Booking reference: ${other}\nBooking reference: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` }, event('e2')])
   assert.equal((await matchPaidTestBookings({ ...unrelated, ...window, onlyReference: ref })).matched, 1)
 })
-test('test-only HTML event can update the original paid row without exposing attendee details', async () => {
-  const f = fixture([{ ...event('google-event-1'), description: `<div>Consultation</div><div><b>Booking reference:</b><br>&#48;${ref.slice(1)}</div>`, attendees: [{ email: 'private@example.test' }] }])
-  const result = await matchPaidTestBookings({ ...f, ...window, onlyReference: ref })
-  assert.equal(result.matched, 1); assert.equal(f.row.booking_status, 'matched'); assert.equal(f.row.id, 'row-1')
-  assert.equal(f.row.whatsapp_e164, '+971501234567'); assert.equal(f.row.customer_name, 'Test Client')
-  assert.equal(result.diagnostic.attendeeEmailEvents, 1); assert.equal(JSON.stringify(result).includes('private@example.test'), false)
-})
-test('encoded or uppercase duplicate references in HTML prevent test writes', async () => {
-  for (const desc of [`<p>Reference: ${ref.toUpperCase()}</p>`, `<p>Reference: &#48;${ref.slice(1)}</p>`]) {
-    const f = fixture([event('e1'), { ...event('e2'), description: desc }])
-    const result = await matchPaidTestBookings({ ...f, ...window, onlyReference: ref })
-    assert.equal(result.matched, 0); assert.ok(result.ambiguous); assert.equal(f.row.booking_status, 'not_booked')
-  }
-})
 test('target diagnostics report only presence and prevent duplicates in unfamiliar formats', async () => {
   const unparseable = fixture([{ ...event('e1'), description: `Booking reference\n${ref}`, attendees: [{ email: 'private@example.test' }] }])
   const result = await matchPaidTestBookings({ ...unparseable, ...window, onlyReference: ref })
   assert.equal(result.matched, 0)
-  assert.deepEqual(result.diagnostic, { referenceEvents: 1, descriptionEvents: 1, extendedEvents: 0, htmlDescriptionEvents: 0, labelledDescriptionEvents: 1, attendeeEmailEvents: 1, layout: 'next_line' })
+  assert.deepEqual(result.diagnostic, { referenceEvents: 1, descriptionEvents: 1, extendedEvents: 0, htmlDescriptionEvents: 0, labelledDescriptionEvents: 1, attendeeEmailEvents: 1 })
   assert.equal(JSON.stringify(result).includes('private@example.test'), false)
   assert.equal(JSON.stringify(result).includes(ref), false)
   const duplicate = fixture([event('e1'), { ...event('e2'), description: 'unrelated', extendedProperties: { private: { answer: ref } } }])

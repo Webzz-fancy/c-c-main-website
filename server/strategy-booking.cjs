@@ -135,7 +135,6 @@ function strategyRouter({ config, store, ziina, matchTestBooking = null, rateLim
         inExtendedProperties: result.diagnostic.extendedEvents === 1,
         hasHtml: result.diagnostic.htmlDescriptionEvents === 1,
         hasLabel: result.diagnostic.labelledDescriptionEvents === 1,
-        layout: ['same_line', 'next_line', 'other', 'not_visible'].includes(result.diagnostic.layout) ? result.diagnostic.layout : 'not_visible',
       } : {}
       return res.json({ ok: true, status: found ? 'reference_found_unmatched' : 'not_matched', ...details })
     } catch {
