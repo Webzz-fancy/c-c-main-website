@@ -2,6 +2,7 @@
 
 // Test-only matching prototype. The booking form's actual event format is
 // still unverified. Never use this for live payments or infer non-booking.
+const { inspectEvent } = require('../scripts/check-strategy-calendar.cjs')
 const REFERENCE = /^[a-f0-9]{32}$/
 const EVENT_ID = /^[A-Za-z0-9_-]{1,1024}$/
 
@@ -24,6 +25,9 @@ async function matchPaidTestBookings({ reader, store, timeMin, timeMax, maxPages
   const candidates = new Map()
   const ambiguousReferences = new Set()
   const seenEvents = new Set()
+  // Only aggregate presence for this session's reference; never return raw
+  // event content, emails, or other calendar data to the test page.
+  const diagnostic = { referenceEvents: 0, descriptionEvents: 0, extendedEvents: 0, htmlDescriptionEvents: 0, labelledDescriptionEvents: 0, attendeeEmailEvents: 0 }
   let nextPageToken, pages = 0, ambiguous = 0
   // Read all pages first: a later duplicate must never cause an earlier write.
   do {
@@ -36,6 +40,19 @@ async function matchPaidTestBookings({ reader, store, timeMin, timeMax, maxPages
       if (!Number.isFinite(eventStart) || eventStart < start || eventStart >= end) continue
       if (seenEvents.has(event.id)) throw new Error('Duplicate event returned; no records changed')
       seenEvents.add(event.id)
+      if (onlyReference !== undefined) {
+        const inspection = inspectEvent(event, onlyReference)
+        if (inspection) {
+          diagnostic.referenceEvents++
+          if (inspection.fields.includes('description')) {
+            diagnostic.descriptionEvents++
+            if (/<\/?[a-z][^>]*>/i.test(event.description)) diagnostic.htmlDescriptionEvents++
+            if (/booking\s+reference/i.test(event.description)) diagnostic.labelledDescriptionEvents++
+          }
+          if (inspection.fields.some((field) => field.startsWith('extendedProperties.'))) diagnostic.extendedEvents++
+          if (inspection.hasAttendeeEmail) diagnostic.attendeeEmailEvents++
+        }
+      }
       const refs = bookingReferences(event.description)
       if (refs.length !== 1) {
         if (refs.length > 1) {
@@ -54,6 +71,11 @@ async function matchPaidTestBookings({ reader, store, timeMin, timeMax, maxPages
   } while (nextPageToken)
 
   let matched = 0, unchanged = 0, errors = 0
+  // Count references in all supported fields, not only parseable descriptions:
+  // a duplicate in an unfamiliar format must prevent a potentially false write.
+  if (onlyReference !== undefined && diagnostic.referenceEvents > 1) {
+    return { matched, unchanged, ambiguous: Math.max(ambiguous, 1), errors, diagnostic }
+  }
   for (const [reference, events] of candidates) {
     if (events.length !== 1 || ambiguousReferences.has(reference)) { ambiguous++; continue }
     try {
@@ -66,7 +88,8 @@ async function matchPaidTestBookings({ reader, store, timeMin, timeMax, maxPages
       errors++
     }
   }
-  return { matched, unchanged, ambiguous, errors }
+  const result = { matched, unchanged, ambiguous, errors }
+  return onlyReference === undefined ? result : { ...result, diagnostic }
 }
 
 module.exports = { bookingReferences, matchPaidTestBookings }

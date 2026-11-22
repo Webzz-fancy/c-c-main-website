@@ -125,9 +125,18 @@ function strategyRouter({ config, store, ziina, matchTestBooking = null, rateLim
       if (record.booking_status !== 'not_booked') return res.json({ ok: true, status: 'needs_review' })
       const result = await matchTestBooking(record.booking_reference)
       if (result.errors || result.ambiguous) return res.json({ ok: true, status: 'needs_review' })
-      if (result.matched === 1) return res.json({ ok: true, status: 'matched' })
-      // Missing a match is not evidence that no appointment exists.
-      return res.json({ ok: true, status: 'not_matched' })
+      if (result.matched === 1) return res.json({ ok: true, status: 'matched', ...(result.diagnostic?.referenceEvents === 1 ? { emailAvailable: result.diagnostic.attendeeEmailEvents === 1 } : {}) })
+      // Missing a match is not evidence that no appointment exists. Provide
+      // only aggregate test-reference presence, never event or personal data.
+      const found = result.diagnostic?.referenceEvents === 1
+      const details = found ? {
+        emailAvailable: result.diagnostic.attendeeEmailEvents === 1,
+        inDescription: result.diagnostic.descriptionEvents === 1,
+        inExtendedProperties: result.diagnostic.extendedEvents === 1,
+        hasHtml: result.diagnostic.htmlDescriptionEvents === 1,
+        hasLabel: result.diagnostic.labelledDescriptionEvents === 1,
+      } : {}
+      return res.json({ ok: true, status: found ? 'reference_found_unmatched' : 'not_matched', ...details })
     } catch {
       console.error('[strategy] Test booking check failed')
       return res.status(503).json({ ok: false, error: 'Test booking check could not be completed' })
@@ -161,25 +170,24 @@ function webhookHandler({ config, store, ziina }) {
   }
 }
 
+// The protected team-only match is created without contacting Google and
+// constructs its reader only when requested. No scheduler or extra setting is
+// needed; production/live mode remains disabled by readConfig.
+function createSessionTestMatcher({ env, config, store, readerFactory, match, now = Date.now }) {
+  if (!config || env.STRATEGY_EXPERIMENTAL !== 'true' || env.STRATEGY_MODE !== 'test') return null
+  return (reference) => {
+    const reader = readerFactory(env)
+    const current = now()
+    return match({ reader, store, onlyReference: reference, timeMin: new Date(current - 7 * 86400000).toISOString(), timeMax: new Date(current + 90 * 86400000).toISOString() })
+  }
+}
+
 function createProductionStrategy(env, rateLimited) {
   const config = readConfig(env)
   const store = config ? createStore({ url: config.supabaseUrl, key: config.supabaseKey }) : null
   const ziina = config ? createZiina({ key: config.ziinaKey }) : null
-  let matchTestBooking = null
-  if (config && env.STRATEGY_MATCH_TEST_ONLY === 'true') {
-    try {
-      const { createCalendarReaderFromEnv } = require('./strategy-calendar.cjs')
-      const { matchPaidTestBookings } = require('./strategy-matching.cjs')
-      const reader = createCalendarReaderFromEnv(env)
-      matchTestBooking = (reference) => {
-        const now = Date.now()
-        return matchPaidTestBookings({ reader, store, onlyReference: reference, timeMin: new Date(now - 7 * 86400000).toISOString(), timeMax: new Date(now + 90 * 86400000).toISOString() })
-      }
-    } catch {
-      // Incomplete Calendar settings leave matching disabled without startup failure.
-    }
-  }
+  const matchTestBooking = createSessionTestMatcher({ env, config, store, readerFactory: (settings) => require('./strategy-calendar.cjs').createCalendarReaderFromEnv(settings), match: (options) => require('./strategy-matching.cjs').matchPaidTestBookings(options) })
   return { router: strategyRouter({ config, store, ziina, matchTestBooking, rateLimited }), webhook: webhookHandler({ config, store, ziina }) }
 }
 
-module.exports = { readConfig, strategyRouter, webhookHandler, createProductionStrategy }
+module.exports = { readConfig, strategyRouter, webhookHandler, createProductionStrategy, createSessionTestMatcher }

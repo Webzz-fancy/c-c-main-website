@@ -86,6 +86,19 @@ test('session-targeted matching detects duplicate and multi-reference events wit
   const unrelated = fixture([{ ...event('e1'), description: `Booking reference: ${other}\nBooking reference: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa` }, event('e2')])
   assert.equal((await matchPaidTestBookings({ ...unrelated, ...window, onlyReference: ref })).matched, 1)
 })
+test('target diagnostics report only presence and prevent duplicates in unfamiliar formats', async () => {
+  const unparseable = fixture([{ ...event('e1'), description: `Booking reference\n${ref}`, attendees: [{ email: 'private@example.test' }] }])
+  const result = await matchPaidTestBookings({ ...unparseable, ...window, onlyReference: ref })
+  assert.equal(result.matched, 0)
+  assert.deepEqual(result.diagnostic, { referenceEvents: 1, descriptionEvents: 1, extendedEvents: 0, htmlDescriptionEvents: 0, labelledDescriptionEvents: 1, attendeeEmailEvents: 1 })
+  assert.equal(JSON.stringify(result).includes('private@example.test'), false)
+  assert.equal(JSON.stringify(result).includes(ref), false)
+  const duplicate = fixture([event('e1'), { ...event('e2'), description: 'unrelated', extendedProperties: { private: { answer: ref } } }])
+  const duplicateResult = await matchPaidTestBookings({ ...duplicate, ...window, onlyReference: ref })
+  assert.equal(duplicateResult.matched, 0)
+  assert.ok(duplicateResult.ambiguous)
+  assert.equal(duplicate.row.booking_status, 'not_booked')
+})
 test('database update includes test-only, paid, unmatched compare-and-set conditions', async () => {
   let req
   const store = createStore({ url: 'https://test.supabase.co', key: 'secret', fetchImpl: async (url, opts) => { req = { url: new URL(url), opts }; return { ok: true, json: async () => [{ id: 'row-1' }] } } })

@@ -3,7 +3,7 @@ const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const crypto = require('node:crypto')
 const express = require('express')
-const { readConfig, strategyRouter, webhookHandler } = require('../server/strategy-booking.cjs')
+const { readConfig, strategyRouter, webhookHandler, createSessionTestMatcher } = require('../server/strategy-booking.cjs')
 const { createZiina, createStore } = require('../server/strategy-adapters.cjs')
 
 const secret = 'test-secret-'.repeat(4)
@@ -160,6 +160,21 @@ test('only an authenticated session and a fresh verified completed payment unloc
     data = await (await status(base, cookie)).json(); assert.deepEqual(data, { ok: true, status: 'needs_review' })
   })
 })
+test('test matcher initializes calendar lazily, requires test mode and no extra flag', async () => {
+  let readerCalls = 0, parameters
+  const options = { env: { STRATEGY_EXPERIMENTAL: 'true', STRATEGY_MODE: 'test' }, config, store: {}, readerFactory: () => { readerCalls++; return {} }, match: async (args) => { parameters = args; return { matched: 0 } }, now: () => Date.parse('2026-11-15T00:00:00Z') }
+  const matcher = createSessionTestMatcher(options)
+  assert.equal(readerCalls, 0)
+  await matcher('0123456789abcdef0123456789abcdef')
+  assert.equal(readerCalls, 1)
+  assert.equal(parameters.onlyReference, '0123456789abcdef0123456789abcdef')
+  assert.equal(parameters.timeMin, '2026-11-08T00:00:00.000Z')
+  assert.equal(parameters.timeMax, '2027-02-13T00:00:00.000Z')
+  assert.equal(createSessionTestMatcher({ ...options, env: { ...options.env, STRATEGY_MODE: 'live' } }), null)
+  assert.equal(createSessionTestMatcher({ ...options, config: null }), null)
+  const broken = createSessionTestMatcher({ ...options, readerFactory: () => { throw Error('missing config') } })
+  assert.throws(() => broken('0123456789abcdef0123456789abcdef'), /missing config/)
+})
 test('test booking match requires a verified paid session and checks only its reference', async () => {
   const f = fixtures(); let checked = []
   f.matchTestBooking = async (reference) => { checked.push(reference); return { matched: 1, ambiguous: 0, errors: 0 } }
@@ -189,6 +204,35 @@ test('test matching disabled or ambiguous does not claim a booking', async () =>
     f2.intent.status = 'completed'; await status(base, cookie)
     const r = await fetch(`${base}/api/strategy/match-test-booking`, { method: 'POST', headers: { Origin: config.origin, Cookie: cookie } })
     assert.deepEqual(await r.json(), { ok: true, status: 'needs_review' })
+  })
+})
+test('integrated paid test session matches a fake Google event to the original row', async () => {
+  const { matchPaidTestBookings } = require('../server/strategy-matching.cjs')
+  const f = fixtures(); const date = '2026-11-15T10:00:00Z'
+  f.store.byPaidTestReference = async (ref) => f.records.find((r) => r.booking_reference === ref && r.payment_environment === 'test' && r.payment_status === 'completed') || null
+  f.store.matchPaidTestBooking = async ({ id, reference, eventId, startsAt }) => {
+    const row = f.records.find((r) => r.id === id && r.booking_reference === reference && r.payment_status === 'completed' && r.payment_environment === 'test' && r.booking_status === 'not_booked')
+    if (!row) return false
+    Object.assign(row, { google_event_id: eventId, booking_starts_at: startsAt, booking_status: 'matched' }); return true
+  }
+  f.matchTestBooking = (reference) => matchPaidTestBookings({ store: f.store, reader: { list: async () => ({ items: [{ id: 'event-123', status: 'confirmed', start: { dateTime: date }, description: `Booking reference: ${reference}` }] }) }, timeMin: '2026-11-15T00:00:00Z', timeMax: '2026-11-16T00:00:00Z', onlyReference: reference })
+  await withServer(f, async (base) => {
+    const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
+    f.intent.status = 'completed'; await status(base, cookie)
+    const matched = await fetch(`${base}/api/strategy/match-test-booking`, { method: 'POST', headers: { Origin: config.origin, Cookie: cookie } })
+    assert.equal((await matched.json()).status, 'matched')
+    assert.equal(f.records.length, 1); assert.equal(f.records[0].id, 'record-1'); assert.equal(f.records[0].booking_status, 'matched')
+    assert.equal(f.records[0].customer_name, 'Sample Client'); assert.equal(f.records[0].whatsapp_e164, '+971501234567')
+  })
+})
+test('test diagnostic reports only reference and attendee-email presence', async () => {
+  const f = fixtures()
+  f.matchTestBooking = async () => ({ matched: 0, ambiguous: 0, errors: 0, diagnostic: { referenceEvents: 1, attendeeEmailEvents: 1 } })
+  await withServer(f, async (base) => {
+    const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
+    f.intent.status = 'completed'; await status(base, cookie)
+    const r = await fetch(`${base}/api/strategy/match-test-booking`, { method: 'POST', headers: { Origin: config.origin, Cookie: cookie } })
+    assert.deepEqual(await r.json(), { ok: true, status: 'reference_found_unmatched', emailAvailable: true, inDescription: false, inExtendedProperties: false, hasHtml: false, hasLabel: false })
   })
 })
 test('signed webhooks use raw bytes, independently verify intent and are safe on repeats', async () => {
