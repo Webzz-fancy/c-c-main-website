@@ -34,6 +34,15 @@ function createStore({ url, key, fetchImpl = fetch }) {
     byHash: (hash) => one(`recovery_token_hash=eq.${encodeURIComponent(hash)}&payment_environment=eq.test`),
     byIntent: (id) => one(`ziina_intent_id=eq.${encodeURIComponent(id)}&payment_environment=eq.test`),
     byPaidTestReference: (reference) => one(`booking_reference=eq.${encodeURIComponent(reference)}&payment_environment=eq.test&payment_status=eq.completed`),
+    // The scheduled test job is deliberately bounded and refuses to write if
+    // the batch overflows, rather than silently starving older attempts.
+    recentUnmatchedPaidTests: async (since, limit = 25) => {
+      if (!Number.isInteger(limit) || limit < 1 || limit > 25 || !Number.isFinite(Date.parse(since))) throw new Error('Invalid test batch')
+      const query = new URLSearchParams({ select: 'id,booking_reference,payment_environment,payment_status,booking_status,google_event_id,ziina_intent_id,ziina_account_id', payment_environment: 'eq.test', payment_status: 'eq.completed', booking_status: 'eq.not_booked', google_event_id: 'is.null', created_at: `gte.${since}`, order: 'created_at.asc', limit: String(limit + 1) })
+      const rows = await requestJson(fetchImpl, `${base}?${query}`, { headers })
+      if (!Array.isArray(rows) || rows.length > limit) throw new Error('Test batch limit exceeded')
+      return rows
+    },
     // Compare-and-set protects existing matches, refunds and non-test records.
     matchPaidTestBooking: async ({ id, reference, eventId, startsAt }) => {
       const query = new URLSearchParams({ id: `eq.${id}`, booking_reference: `eq.${reference}`, payment_environment: 'eq.test', payment_status: 'eq.completed', booking_status: 'eq.not_booked', google_event_id: 'is.null' })

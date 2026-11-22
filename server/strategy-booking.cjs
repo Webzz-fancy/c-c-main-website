@@ -192,4 +192,4 @@ function createProductionStrategy(env, rateLimited) {
   return { router: strategyRouter({ config, store, ziina, matchTestBooking, rateLimited }), webhook: webhookHandler({ config, store, ziina }) }
 }
 
-module.exports = { readConfig, strategyRouter, webhookHandler, createProductionStrategy, createSessionTestMatcher }
+module.exports = { readConfig, strategyRouter, webhookHandler, createProductionStrategy, createSessionTestMatcher, matchesStoredIntent }
