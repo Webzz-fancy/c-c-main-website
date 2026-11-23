@@ -99,9 +99,12 @@ function strategyRouter({ config, store, ziina, matchTestBooking = null, rateLim
     }
   })
   router.get('/status', async (req, res) => {
-    if (rateLimited(req.ip)) return res.status(429).json({ ok: false, error: 'Too many requests' })
     const token = sessionFrom(req, cookieName)
+    // Opening the checkout now checks for an existing session automatically.
+    // Requests with no session cannot reach providers and should not exhaust
+    // the shared limit for real attempts behind a hosting proxy.
     if (!token) return res.status(401).json({ ok: false, error: 'No booking session. Please contact us for help.' })
+    if (rateLimited(req.ip)) return res.status(429).json({ ok: false, error: 'Too many requests' })
     try {
       const record = await store.byHash(hashRecoveryToken(token))
       if (!record || record.payment_environment !== mode) return res.status(404).json({ ok: false, error: 'Booking not found. Please contact us.' })

@@ -38,6 +38,14 @@ test('live requires explicit live mode and live flag; test config stays test-onl
   assert.ok(readLiveConfig(env)); assert.equal(readConfig(env), null)
   for (const change of [{ STRATEGY_MODE: 'test' }, { STRATEGY_LIVE_ENABLED: '' }, { STRATEGY_EXPERIMENTAL: '' }, { Z_A_KEY: '' }, { BOOKING_STRATEGY_EMBED: 'https://invalid.example' }]) assert.equal(readLiveConfig({ ...env, ...change }), null)
 })
+test('sessionless status requests do not consume provider or checkout rate limit', async () => {
+  const f = fixture(); let limitedCalls = 0
+  f.rateLimited = () => { limitedCalls++; return true }
+  await withServer(f, async (base) => {
+    assert.equal((await status(base, '')).status, 401); assert.equal(limitedCalls, 0)
+    assert.equal((await status(base, '__Host-strategy_live_session=' + 'a'.repeat(43))).status, 429); assert.equal(limitedCalls, 1)
+  })
+})
 test('live checkout creates a real intent with separate session and verifies before showing calendar', async () => {
   const f = fixture()
   await withServer(f, async (base) => {
