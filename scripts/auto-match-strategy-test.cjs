@@ -33,15 +33,21 @@ async function run({ env, now = Date.now, storeFactory = createStore, ziinaFacto
   const timeMin = since
   const timeMax = new Date(current + 90 * 86400000).toISOString()
   let store, pending
+  let paymentBatchOverflow = false
   try {
     store = storeFactory({ url: config.supabaseUrl, key: config.supabaseKey })
     pending = await store.recentPendingTestPayments(since)
   } catch (error) {
-    throw new JobFailure(error?.message === 'Test batch limit exceeded' ? 'test_batch_limit' : 'database_read_failed')
+    if (error?.message !== 'Test batch limit exceeded') throw new JobFailure('database_read_failed')
+    // Pending test attempts must not stop already-paid bookings from matching.
+    paymentBatchOverflow = true
+    pending = []
   }
-  if (!Array.isArray(pending) || pending.length > 10) throw new JobFailure('test_batch_limit')
+  if (!Array.isArray(pending)) throw new JobFailure('database_read_failed')
+  if (pending.length > 10) { paymentBatchOverflow = true; pending = [] }
   const ziina = ziinaFactory({ key: config.ziinaKey })
-  const result = { checked: 0, matched: 0, review: 0, errors: 0, paymentChecked: 0, paymentRecovered: 0 }
+  const result = { checked: 0, matched: 0, review: 0, errors: paymentBatchOverflow ? 1 : 0, paymentChecked: 0, paymentRecovered: 0 }
+  if (paymentBatchOverflow) result.paymentBatchOverflow = true
   // A payment may complete after the customer leaves the site. Recheck only
   // bound test intents and write only with a compare-and-set on the same row.
   for (const record of pending) {
@@ -100,6 +106,7 @@ async function run({ env, now = Date.now, storeFactory = createStore, ziinaFacto
 if (require.main === module) {
   run({ env: process.env }).then((result) => {
     console.log(`Test job: payments checked ${result.paymentChecked}, payments recovered ${result.paymentRecovered}, bookings checked ${result.checked}, matched ${result.matched}, review ${result.review}, errors ${result.errors}.`)
+    if (result.paymentBatchOverflow) console.error('Test payment recovery skipped: test_batch_limit. Booking matching was still attempted; private review is needed.')
     if (result.review || result.errors) process.exitCode = 1
   }).catch((error) => {
     const safeCodes = new Set(['auto_flag_not_enabled', 'test_mode_not_enabled', 'ziina_key_missing', 'supabase_settings_missing', 'webhook_secret_missing', 'site_or_booking_settings_missing', 'settings_invalid_or_conflicting', 'clock_invalid', 'database_read_failed', 'test_batch_limit', 'calendar_settings_missing', 'calendar_page_limit', 'calendar_authorization_failed', 'calendar_read_failed', 'calendar_invalid_response'])

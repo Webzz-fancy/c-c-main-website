@@ -83,6 +83,17 @@ test('payment recovery rejects wrong account, amount, unpaid, live and refunded 
     assert.notEqual(f.row.payment_status, 'completed')
   }
 })
+test('too many pending test payments skip recovery but do not block existing paid booking matches', async () => {
+  for (const overflow of [async () => { throw Error('Test batch limit exceeded') }, async () => Array(11).fill({})]) {
+    const f = fixture(); let recoveryWrites = 0
+    f.store.recentPendingTestPayments = overflow
+    f.store.markCompletedTestIntent = async () => { recoveryWrites++; return true }
+    const result = await run(f.options)
+    assert.equal(result.paymentBatchOverflow, true); assert.equal(result.errors, 1)
+    assert.equal(result.paymentChecked, 0); assert.equal(recoveryWrites, 0)
+    assert.equal(result.matched, 1); assert.equal(f.row.booking_status, 'matched')
+  }
+})
 test('payment recovery cannot undo a concurrent refund or a changed bound intent', async () => {
   for (const change of [{ payment_status: 'refunded' }, { ziina_intent_id: 'new-intent' }]) {
     const f = fixture(); f.row.payment_status = 'pending'; f.store.recentPendingTestPayments = async () => [{ ...f.row }]

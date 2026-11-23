@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { site } from '../config/site'
 
 type Status = { ok?: boolean; status?: string; providerStatus?: string; reference?: string; calendar?: string; error?: string; emailAvailable?: boolean; inDescription?: boolean; inExtendedProperties?: boolean; hasHtml?: boolean; hasLabel?: boolean; layout?: string; reason?: string }
 
@@ -97,6 +98,7 @@ export default function StrategyTestCheckout({ returned }: { returned: boolean }
         </div>
       )}
       {message && <p role="alert" className="mt-4 text-sm text-red-700">{message}</p>}
+      <p className="mt-5 text-sm text-ink-soft">Need help with a test payment or booking? <a href={site.contact.whatsapp} target="_blank" rel="noopener noreferrer" className="font-semibold text-glass underline">Message us on WhatsApp</a> or <a href={`mailto:${site.contact.email}`} className="font-semibold text-glass underline">email us</a>. Please don’t send card details. If you have a booking reference, you can share it privately with the team.</p>
       {busy && <p aria-live="polite" className="mt-4 text-sm text-ink-soft">Checking…</p>}
     </div>
   )
