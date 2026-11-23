@@ -16,7 +16,7 @@ function fixtures() {
     byHash: async (hash) => records.find((r) => r.recovery_token_hash === hash) || null,
     byIntent: async (id) => records.find((r) => r.ziina_intent_id === id) || null,
     bindIntent: async (id, pi, account) => { const r = records.find((r) => r.id === id); r.ziina_intent_id = pi; r.ziina_account_id = account; return r },
-    markCompleted: async (id) => { const r = records.find((r) => r.id === id); if (!['pending', 'completed'].includes(r.payment_status)) throw Error('needs review'); r.payment_status = 'completed'; return r },
+    markCompleted: async ({ id, intentId, accountId }) => { const r = records.find((r) => r.id === id); if (!r || r.payment_environment !== 'test' || !['pending', 'completed'].includes(r.payment_status) || r.ziina_intent_id !== intentId || r.ziina_account_id !== accountId) throw Error('needs review'); r.payment_status = 'completed'; return r },
   }
   const ziina = {
     create: async (body) => { payload = body; intent = { id: 'intent-1', account_id: config.account, amount: 120000, currency_code: 'AED', status: 'pending', redirect_url: 'https://pay.ziina.com/pay' }; return intent },
@@ -276,6 +276,24 @@ test('signed webhooks use raw bytes, independently verify intent and are safe on
     const refund = JSON.stringify({ event: 'refund.status.updated', data: { id: 'intent-1' } })
     assert.equal((await send(refund, signed(refund))).status, 503)
   })
+})
+test('stale status verification cannot mark a changed intent, account, environment or refunded row paid', async () => {
+  for (const change of [{ ziina_intent_id: 'intent-2' }, { ziina_account_id: 'other-account' }, { payment_environment: 'live' }, { payment_status: 'refunded' }]) {
+    const f = fixtures(), update = f.store.markCompleted
+    f.store.markCompleted = async (args) => { Object.assign(f.records[0], change); return update(args) }
+    await withServer(f, async (base) => {
+      const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
+      f.intent.status = 'completed'
+      assert.equal((await status(base, cookie)).status, 503)
+      assert.notEqual(f.records[0].payment_status, 'completed')
+    })
+  }
+})
+test('completion adapter guards test environment and the verified intent and account', async () => {
+  let request
+  const store = createStore({ url: 'https://myproject.supabase.co', key: 'service-key', fetchImpl: async (url) => { request = new URL(url); return { ok: true, json: async () => [{ id: 'row' }] } } })
+  await store.markCompleted({ id: 'row', intentId: 'intent-1', accountId: 'account-123' })
+  for (const [key, value] of Object.entries({ id: 'eq.row', payment_environment: 'eq.test', payment_status: 'in.(pending,completed)', ziina_intent_id: 'eq.intent-1', ziina_account_id: 'eq.account-123' })) assert.equal(request.searchParams.get(key), value)
 })
 test('provider adapters use fixed URLs and server credentials, without exposing raw errors', async () => {
   let calls = []

@@ -70,9 +70,11 @@ function createStore({ url, key, fetchImpl = fetch }) {
       if (!Array.isArray(rows) || rows.length !== 1) throw new Error('could not persist payment intent')
       return rows[0]
     },
-    markCompleted: async (id) => {
-      // A duplicate/out-of-order notification may never undo a refund state.
-      const rows = await requestJson(fetchImpl, `${base}?id=eq.${encodeURIComponent(id)}&payment_status=in.(pending,completed)`, { method: 'PATCH', headers, body: JSON.stringify({ payment_status: 'completed', updated_at: new Date().toISOString() }) })
+    markCompleted: async ({ id, intentId, accountId }) => {
+      // Bind the write to the same verified test intent and account: a stale
+      // status check must not complete a changed, refunded, or non-test row.
+      const query = new URLSearchParams({ id: `eq.${id}`, payment_environment: 'eq.test', payment_status: 'in.(pending,completed)', ziina_intent_id: `eq.${intentId}`, ziina_account_id: `eq.${accountId}` })
+      const rows = await requestJson(fetchImpl, `${base}?${query}`, { method: 'PATCH', headers, body: JSON.stringify({ payment_status: 'completed', updated_at: new Date().toISOString() }) })
       if (!Array.isArray(rows) || rows.length !== 1) throw new Error('payment needs review')
       return rows[0]
     },

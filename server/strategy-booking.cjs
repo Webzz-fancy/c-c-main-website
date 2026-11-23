@@ -107,7 +107,7 @@ function strategyRouter({ config, store, ziina, matchTestBooking = null, rateLim
         const providerStatus = knownStatuses.includes(intent.status) ? intent.status : 'other'
         return res.json({ ok: true, status: 'pending', providerStatus })
       }
-      await store.markCompleted(record.id)
+      await store.markCompleted({ id: record.id, intentId: record.ziina_intent_id, accountId: record.ziina_account_id })
       return res.json({ ok: true, status: 'paid', reference: record.booking_reference, calendar: config.calendar })
     } catch {
       console.error('[strategy] Could not check payment; review saved attempt')
@@ -169,7 +169,7 @@ function webhookHandler({ config, store, ziina }) {
       if (!record) return res.status(503).end() // Could arrive before intent binding.
       const intent = await ziina.get(id)
       if (!matchesStoredIntent(intent, record, config)) throw new Error('payment needs review')
-      if (completedPayment(intent, record, record.ziina_account_id)) await store.markCompleted(record.id)
+      if (completedPayment(intent, record, record.ziina_account_id)) await store.markCompleted({ id: record.id, intentId: record.ziina_intent_id, accountId: record.ziina_account_id })
       return res.status(200).end()
     } catch {
       console.error('[strategy] Webhook could not be reconciled')
