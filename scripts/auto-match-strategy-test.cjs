@@ -32,15 +32,36 @@ async function run({ env, now = Date.now, storeFactory = createStore, ziinaFacto
   const since = new Date(current - 7 * 86400000).toISOString()
   const timeMin = since
   const timeMax = new Date(current + 90 * 86400000).toISOString()
-  let store, rows
+  let store, pending
   try {
     store = storeFactory({ url: config.supabaseUrl, key: config.supabaseKey })
-    rows = await store.recentUnmatchedPaidTests(since)
+    pending = await store.recentPendingTestPayments(since)
   } catch (error) {
     throw new JobFailure(error?.message === 'Test batch limit exceeded' ? 'test_batch_limit' : 'database_read_failed')
   }
-  if (!Array.isArray(rows) || rows.length > 25) throw new JobFailure('test_batch_limit')
-  if (!rows.length) return { checked: 0, matched: 0, review: 0, errors: 0 }
+  if (!Array.isArray(pending) || pending.length > 10) throw new JobFailure('test_batch_limit')
+  const ziina = ziinaFactory({ key: config.ziinaKey })
+  const result = { checked: 0, matched: 0, review: 0, errors: 0, paymentChecked: 0, paymentRecovered: 0 }
+  // A payment may complete after the customer leaves the site. Recheck only
+  // bound test intents and write only with a compare-and-set on the same row.
+  for (const record of pending) {
+    result.paymentChecked++
+    if (!record || record.payment_environment !== 'test' || record.payment_status !== 'pending' || !record.id || !/^[A-Za-z0-9-]{1,100}$/.test(record.ziina_intent_id || '') || !/^[A-Za-z0-9-]{1,100}$/.test(record.ziina_account_id || '')) { result.review++; continue }
+    try {
+      const intent = await ziina.get(record.ziina_intent_id)
+      if (!matchesStoredIntent(intent, record, config)) { result.review++; continue }
+      if (!completedPayment(intent, record, record.ziina_account_id)) continue
+      const saved = await store.markCompletedTestIntent({ id: record.id, intentId: record.ziina_intent_id, accountId: record.ziina_account_id })
+      if (saved) result.paymentRecovered++
+      // A concurrent status check or refund may have changed the row.
+    } catch { result.errors++ }
+  }
+  let rows
+  try { rows = await store.recentUnmatchedPaidTests(since) } catch (error) {
+    throw new JobFailure(error?.message === 'Test batch limit exceeded' ? 'test_batch_limit' : 'database_read_failed')
+  }
+  if (!Array.isArray(rows) || rows.length > 10) throw new JobFailure('test_batch_limit')
+  if (!rows.length) return result
 
   // Read every page before writing anything. Reuse the bounded snapshot for
   // each reference, retaining the target-specific duplicate safeguards.
@@ -59,8 +80,6 @@ async function run({ env, now = Date.now, storeFactory = createStore, ziinaFacto
     token = page.nextPageToken
   } while (token)
   const snapshot = { list: async () => ({ items: events }) }
-  const ziina = ziinaFactory({ key: config.ziinaKey })
-  const result = { checked: 0, matched: 0, review: 0, errors: 0 }
   for (const record of rows) {
     result.checked++
     // Do not rely solely on the database selection; and recheck the provider
@@ -80,7 +99,7 @@ async function run({ env, now = Date.now, storeFactory = createStore, ziinaFacto
 
 if (require.main === module) {
   run({ env: process.env }).then((result) => {
-    console.log(`Test matching: checked ${result.checked}, matched ${result.matched}, review ${result.review}, errors ${result.errors}.`)
+    console.log(`Test job: payments checked ${result.paymentChecked}, payments recovered ${result.paymentRecovered}, bookings checked ${result.checked}, matched ${result.matched}, review ${result.review}, errors ${result.errors}.`)
     if (result.review || result.errors) process.exitCode = 1
   }).catch((error) => {
     const safeCodes = new Set(['auto_flag_not_enabled', 'test_mode_not_enabled', 'ziina_key_missing', 'supabase_settings_missing', 'webhook_secret_missing', 'site_or_booking_settings_missing', 'settings_invalid_or_conflicting', 'clock_invalid', 'database_read_failed', 'test_batch_limit', 'calendar_settings_missing', 'calendar_page_limit', 'calendar_authorization_failed', 'calendar_read_failed', 'calendar_invalid_response'])
