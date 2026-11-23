@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 
-type Status = { ok?: boolean; status?: string; reference?: string; calendar?: string; error?: string; emailAvailable?: boolean; inDescription?: boolean; inExtendedProperties?: boolean; hasHtml?: boolean; hasLabel?: boolean; layout?: string; reason?: string }
+type Status = { ok?: boolean; status?: string; providerStatus?: string; reference?: string; calendar?: string; error?: string; emailAvailable?: boolean; inDescription?: boolean; inExtendedProperties?: boolean; hasHtml?: boolean; hasLabel?: boolean; layout?: string; reason?: string }
 
 // This is deliberately opt-in at build time AND the backend is test-only.
 // Never enable this build flag on the public site for real customers.
@@ -86,7 +86,7 @@ export default function StrategyTestCheckout({ returned }: { returned: boolean }
         </div>
       ) : (
         <div className="mt-5">
-          {result?.status === 'pending' && <p className="text-sm text-ink-soft">The payment is not confirmed yet. Check again or contact the team; do not start a second payment.</p>}
+          {result?.status === 'pending' && <p className="text-sm text-ink-soft">{result.providerStatus === 'requires_payment_instrument' ? 'Ziina reports that the payment method is still required.' : result.providerStatus === 'requires_user_action' ? 'Ziina reports that another action is required on its payment page.' : result.providerStatus === 'failed' ? 'Ziina reports that this test payment failed.' : result.providerStatus === 'pending' ? 'Ziina reports that the test payment is processing.' : 'Ziina has not confirmed this test payment.'} Do not start a second payment; check again or contact the team.</p>}
           {result?.status === 'needs_review' && <p className="text-sm text-ink-soft">This attempt needs review. Contact the team before paying again.</p>}
           {!returned && !result && <form onSubmit={checkout} className="grid max-w-lg gap-4">
             <label className="grid gap-1 text-sm font-semibold">Name<input required maxLength={120} autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className="rounded-xl border border-black/20 px-3 py-2 font-normal" /></label>

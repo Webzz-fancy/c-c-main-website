@@ -146,7 +146,15 @@ test('only an authenticated session and a fresh verified completed payment unloc
   await withServer(f, async (base) => {
     const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
     assert.equal((await status(base)).status, 401)
-    let data = await (await status(base, cookie)).json(); assert.deepEqual(data, { ok: true, status: 'pending' })
+    let data = await (await status(base, cookie)).json(); assert.deepEqual(data, { ok: true, status: 'pending', providerStatus: 'pending' })
+    for (const providerStatus of ['requires_payment_instrument', 'requires_user_action', 'failed']) {
+      f.intent.status = providerStatus; f.intent.latest_error = { message: 'private provider error' }
+      data = await (await status(base, cookie)).json()
+      assert.deepEqual(data, { ok: true, status: 'pending', providerStatus })
+      assert.equal(JSON.stringify(data).includes('private provider error'), false)
+    }
+    f.intent.status = 'private-provider-value'
+    data = await (await status(base, cookie)).json(); assert.deepEqual(data, { ok: true, status: 'pending', providerStatus: 'other' })
     f.intent.status = 'completed'; f.intent.amount = 1
     let mismatch = await status(base, cookie); data = await mismatch.json(); assert.equal(mismatch.status, 503); assert.equal(data.calendar, undefined)
     f.intent.amount = 120000; f.intent.account_id = 'other'

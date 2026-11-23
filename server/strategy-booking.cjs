@@ -100,7 +100,13 @@ function strategyRouter({ config, store, ziina, matchTestBooking = null, rateLim
       if (!record.ziina_intent_id) return res.json({ ok: true, status: 'needs_review' })
       const intent = await ziina.get(record.ziina_intent_id)
       if (!matchesStoredIntent(intent, record, config)) throw new Error('payment needs review')
-      if (!completedPayment(intent, record, record.ziina_account_id)) return res.json({ ok: true, status: 'pending' })
+      if (!completedPayment(intent, record, record.ziina_account_id)) {
+        // The private test UI may show only a fixed provider-state category;
+        // never expose raw provider responses, errors, IDs or payment data.
+        const knownStatuses = ['requires_payment_instrument', 'requires_user_action', 'pending', 'failed']
+        const providerStatus = knownStatuses.includes(intent.status) ? intent.status : 'other'
+        return res.json({ ok: true, status: 'pending', providerStatus })
+      }
       await store.markCompleted(record.id)
       return res.json({ ok: true, status: 'paid', reference: record.booking_reference, calendar: config.calendar })
     } catch {
