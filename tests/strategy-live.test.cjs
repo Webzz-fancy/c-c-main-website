@@ -64,6 +64,52 @@ test('live checkout creates a real intent with separate session and verifies bef
     f.records[0].payment_status = 'refunded'; assert.equal((await (await status(base, cookie)).json()).status, 'needs_review')
   })
 })
+test('a session with an unattempted live payment shows saved details and resumes the same Ziina intent', async () => {
+  const f = fixture()
+  await withServer(f, async (base) => {
+    const created = await checkout(base), cookie = created.headers.get('set-cookie').split(';')[0]
+    f.intent.status = 'requires_payment_instrument'
+    const before = await status(base, cookie), data = await before.json()
+    assert.equal(before.headers.get('cache-control'), 'no-store')
+    assert.deepEqual(data, { ok: true, status: 'resumable', name: 'Test', phone })
+    const resume = (headers = {}) => fetch(`${base}/api/strategy-live/resume`, { method: 'POST', headers: { Origin: env.STRATEGY_ORIGIN, Cookie: cookie, ...headers } })
+    assert.equal((await resume({ Origin: 'https://attacker.test' })).status, 403)
+    assert.equal((await resume({ Cookie: '' })).status, 401)
+    f.ziina.create = async () => { throw Error('resume must not create a new intent') }
+    const result = await resume()
+    assert.equal(result.status, 200); assert.deepEqual(await result.json(), { ok: true, redirectUrl: 'https://pay.ziina.com/pay' })
+    assert.equal(f.records.length, 1); assert.equal(f.records[0].ziina_intent_id, 'intent-1')
+  })
+})
+test('resume fails closed on processing, completed, refunded, wrong-account and unsafe redirects', async () => {
+  for (const change of [{ status: 'pending' }, { status: 'requires_user_action' }, { status: 'failed' }, { status: 'completed' }, { status: 'requires_payment_instrument', account_id: 'wrong' }, { status: 'requires_payment_instrument', amount: 1 }, { status: 'requires_payment_instrument', redirect_url: 'https://evil.example/' }]) {
+    const f = fixture()
+    await withServer(f, async (base) => {
+      const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
+      Object.assign(f.intent, change)
+      const r = await fetch(`${base}/api/strategy-live/resume`, { method: 'POST', headers: { Origin: env.STRATEGY_ORIGIN, Cookie: cookie } })
+      assert.equal(r.status, 409); assert.equal(f.records.length, 1)
+    })
+  }
+  const f = fixture()
+  await withServer(f, async (base) => {
+    const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
+    f.intent.status = 'requires_payment_instrument'; f.records[0].payment_status = 'refunded'
+    assert.equal((await fetch(`${base}/api/strategy-live/resume`, { method: 'POST', headers: { Origin: env.STRATEGY_ORIGIN, Cookie: cookie } })).status, 409)
+    assert.equal((await (await status(base, cookie)).json()).status, 'needs_review')
+  })
+})
+test('resume rejects a row changed during Ziina verification', async () => {
+  const f = fixture()
+  await withServer(f, async (base) => {
+    const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
+    f.intent.status = 'requires_payment_instrument'
+    let reads = 0; const original = f.store.byHash
+    f.store.byHash = async (hash) => { const row = await original(hash); if (++reads === 2) row.payment_status = 'refund_review'; return { ...row } }
+    const r = await fetch(`${base}/api/strategy-live/resume`, { method: 'POST', headers: { Origin: env.STRATEGY_ORIGIN, Cookie: cookie } })
+    assert.equal(r.status, 409); assert.equal(f.records[0].payment_status, 'refund_review')
+  })
+})
 test('live scheduler rechecks a paid bound intent then matches its reference, without touching test records', async () => {
   const f = fixture()
   await f.store.insert({ booking_reference: reference, payment_environment: 'live', customer_name: 'Test', whatsapp_e164: phone })

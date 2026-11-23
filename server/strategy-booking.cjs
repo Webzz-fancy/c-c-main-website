@@ -113,6 +113,13 @@ function strategyRouter({ config, store, ziina, matchTestBooking = null, rateLim
       const intent = await ziina.get(record.ziina_intent_id)
       if (!matchesStoredIntent(intent, record, config)) throw new Error('payment needs review')
       if (!completedPayment(intent, record, record.ziina_account_id)) {
+        // Only an independently verified, bound intent which Ziina says has
+        // not been attempted is eligible to resume. Processing, failed, or
+        // changed/refunded records must never invite another payment.
+        if (mode === 'live' && record.payment_status === 'pending' && intent.status === 'requires_payment_instrument' && validIntentCreation(intent, config) && typeof record.customer_name === 'string' && record.customer_name.length > 0 && record.customer_name.length <= 120 && validPhone(record.whatsapp_e164)) {
+          return res.json({ ok: true, status: 'resumable', name: record.customer_name, phone: record.whatsapp_e164 })
+        }
+        if (mode === 'live' && record.payment_status !== 'pending') return res.json({ ok: true, status: 'needs_review' })
         // The private test UI may show only a fixed provider-state category;
         // never expose raw provider responses, errors, IDs or payment data.
         const knownStatuses = ['requires_payment_instrument', 'requires_user_action', 'pending', 'failed']
@@ -124,6 +131,29 @@ function strategyRouter({ config, store, ziina, matchTestBooking = null, rateLim
     } catch {
       console.error('[strategy] Could not check payment; review saved attempt')
       return res.status(503).json({ ok: false, error: 'Payment could not be checked. Please contact us before paying again.' })
+    }
+  })
+  // Resume only the existing live intent. Never create a second intent here.
+  // Re-read both the row and Ziina on every click, since a payment may have
+  // started, completed, or been refunded since the status page was shown.
+  router.post('/resume', async (req, res) => {
+    if (mode !== 'live') return res.status(404).json({ ok: false })
+    if (rateLimited(req.ip)) return res.status(429).json({ ok: false, error: 'Too many requests' })
+    if (req.get('origin') !== config.origin) return res.status(403).json({ ok: false, error: 'Invalid origin' })
+    const token = sessionFrom(req, cookieName)
+    if (!token) return res.status(401).json({ ok: false, error: 'No booking session' })
+    try {
+      const record = await store.byHash(hashRecoveryToken(token))
+      if (!record || record.payment_environment !== 'live' || record.payment_status !== 'pending' || !record.ziina_intent_id) return res.status(409).json({ ok: false, error: 'Payment status changed' })
+      const intent = await ziina.get(record.ziina_intent_id)
+      if (!matchesStoredIntent(intent, record, config) || intent.status !== 'requires_payment_instrument' || !validIntentCreation(intent, config)) return res.status(409).json({ ok: false, error: 'Payment status changed' })
+      // Guard against a row changed during the provider lookup as well.
+      const current = await store.byHash(hashRecoveryToken(token))
+      if (!current || current.id !== record.id || current.payment_environment !== 'live' || current.payment_status !== 'pending' || current.ziina_intent_id !== record.ziina_intent_id || current.ziina_account_id !== record.ziina_account_id) return res.status(409).json({ ok: false, error: 'Payment status changed' })
+      return res.json({ ok: true, redirectUrl: intent.redirect_url })
+    } catch {
+      console.error('[strategy] Could not resume payment; review saved attempt')
+      return res.status(503).json({ ok: false, error: 'Payment could not be resumed. Please contact us.' })
     }
   })
   // Team-only test route (the server mounts the team access gate before this

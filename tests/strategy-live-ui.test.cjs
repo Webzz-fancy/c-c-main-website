@@ -47,6 +47,47 @@ test('reopening in the same browser restores verified payment and reference with
     assert.equal(view.tree.root.findByType('iframe').props.src, paid.calendar)
   } finally { view.cleanup() }
 })
+test('unattempted payment shows the saved details and resumes the same attempt without creating checkout', async () => {
+  const requests = [], oldWindow = global.window
+  global.window = { location: { assign: (url) => requests.push(`redirect:${url}`) } }
+  const view = await renderWith(async (url) => {
+    requests.push(url)
+    return url.endsWith('/status') ? response(200, { ok: true, status: 'resumable', name: 'Sample', phone: '+971501234567' }) : response(200, { ok: true, redirectUrl: 'https://pay.ziina.com/pay' })
+  })
+  try {
+    const inputs = view.tree.root.findAllByType('input')
+    assert.equal(inputs.length, 2); assert.equal(inputs[0].props.value, 'Sample'); assert.equal(inputs[1].props.value, '+971501234567')
+    assert.equal(inputs[0].props.readOnly, true); assert.equal(inputs[1].props.readOnly, true)
+    const button = view.tree.root.findAllByType('button').find((b) => b.children.includes('Continue to secure payment'))
+    await act(async () => { await button.props.onClick() })
+    assert.deepEqual(requests, ['/api/strategy-live/status', '/api/strategy-live/resume', 'redirect:https://pay.ziina.com/pay'])
+    assert.equal(view.tree.root.findByType('button').props.disabled, true)
+  } finally { view.cleanup(); global.window = oldWindow }
+})
+test('a changed payment is rechecked and a newly paid session shows the booking reference', async () => {
+  let calls = 0
+  const view = await renderWith(async (url) => {
+    if (url.endsWith('/resume')) return response(409, {})
+    return ++calls === 1 ? response(200, { ok: true, status: 'resumable', name: 'Sample', phone: '+971501234567' }) : response(200, paid)
+  })
+  try {
+    const button = view.tree.root.findAllByType('button').find((b) => b.children.includes('Continue to secure payment'))
+    await act(async () => { await button.props.onClick(); await Promise.resolve() })
+    assert.match(text(view.tree), /Your payment is confirmed/); assert.equal(view.tree.root.findAllByType('form').length, 0)
+  } finally { view.cleanup() }
+})
+test('a lost session during resume does not offer a new checkout', async () => {
+  let calls = 0
+  const view = await renderWith(async (url) => {
+    if (url.endsWith('/resume')) return response(409, {})
+    return ++calls === 1 ? response(200, { ok: true, status: 'resumable', name: 'Sample', phone: '+971501234567' }) : response(401, absent)
+  })
+  try {
+    const button = view.tree.root.findAllByType('button').find((b) => b.children.includes('Continue to secure payment'))
+    await act(async () => { await button.props.onClick(); await Promise.resolve() })
+    assert.equal(view.tree.root.findAllByType('form').length, 0); assert.match(text(view.tree), /before trying to pay again/)
+  } finally { view.cleanup() }
+})
 test('return without cookie, pending, and failed verification never invite another payment', async () => {
   for (const [result, returned] of [[response(401, absent), true], [response(200, { ok: true, status: 'pending' }), false], [response(503, {}), false], [response(200, { ...paid, calendar: 'https://bad.example/' }), false], [response(401, { ok: false, error: 'other' }), false]]) {
     const view = await renderWith(async () => result, returned)

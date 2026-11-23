@@ -2,6 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { site } from '../config/site'
 import { loadStrategyLiveSession, type StrategyLiveSession } from '../lib/strategyLiveSession'
 
+function ziinaUrl(value: unknown): URL {
+  if (typeof value !== 'string') throw new Error('invalid redirect')
+  const url = new URL(value)
+  if (url.protocol !== 'https:' || url.username || url.password || url.port || !(url.hostname === 'ziina.com' || url.hostname.endsWith('.ziina.com'))) throw new Error('invalid redirect')
+  return url
+}
+
 export default function StrategyLiveCheckout({ returned }: { returned: boolean }) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -39,11 +46,31 @@ export default function StrategyLiveCheckout({ returned }: { returned: boolean }
         setMessage(response.status === 400 && typeof data.error === 'string' ? data.error : 'Could not start checkout. Please contact us before trying again.')
         return
       }
-      const url = new URL(data.redirectUrl)
-      if (url.protocol !== 'https:' || url.username || url.password || url.port || !(url.hostname === 'ziina.com' || url.hostname.endsWith('.ziina.com'))) throw new Error('invalid redirect')
-      window.location.assign(url.href)
+      window.location.assign(ziinaUrl(data.redirectUrl).href)
       handedOff = true
     } catch { setSession({ kind: 'error' }); setMessage('Could not start checkout. Please contact us before trying again.') }
+    finally { if (!handedOff) { checkoutInFlight.current = false; setBusy(false) } }
+  }
+
+  const resume = async () => {
+    if (checkoutInFlight.current || session?.kind !== 'resumable') return
+    checkoutInFlight.current = true; setBusy(true); setMessage('')
+    let handedOff = false
+    try {
+      const response = await fetch('/api/strategy-live/resume', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      if (response.status === 409) {
+        const updated = await loadStrategyLiveSession()
+        if (updated.kind === 'error' || updated.kind === 'new') {
+          setSession({ kind: 'error' })
+          setMessage('We couldn’t verify your payment. Please contact us before trying to pay again.')
+        } else setSession(updated)
+        return
+      }
+      const data = await response.json()
+      if (!response.ok || !data.ok) throw new Error('resume unavailable')
+      window.location.assign(ziinaUrl(data.redirectUrl).href)
+      handedOff = true
+    } catch { setSession({ kind: 'error' }); setMessage('Could not reopen your payment. Please contact us before trying again.') }
     finally { if (!handedOff) { checkoutInFlight.current = false; setBusy(false) } }
   }
 
@@ -56,6 +83,13 @@ export default function StrategyLiveCheckout({ returned }: { returned: boolean }
       <p className="mt-4 text-sm text-ink-soft">Choose a time and complete the Google form to confirm your appointment.</p>
       {!showCalendar ? <button type="button" onClick={() => setShowCalendar(true)} className="mt-4 rounded-full bg-brand px-5 py-2 text-sm font-semibold">Choose a time</button> : <iframe src={session.calendar} title="Book your strategic consultation" className="mt-4 h-[500px] w-full rounded-xl border border-black/10" />}
     </div> : <div>
+      {session?.kind === 'resumable' && <div className="grid max-w-lg gap-4">
+        <p className="text-sm text-ink-soft">Your details are saved. Continue to Ziina to finish this payment.</p>
+        <label className="grid gap-1 text-sm font-semibold">Name<input readOnly value={session.name} className="rounded-xl border border-black/20 bg-brand-50 px-3 py-2 font-normal" /></label>
+        <label className="grid gap-1 text-sm font-semibold">WhatsApp number<input readOnly value={session.phone} className="rounded-xl border border-black/20 bg-brand-50 px-3 py-2 font-normal" /></label>
+        <button type="button" onClick={() => void resume()} disabled={busy} className="w-fit rounded-full bg-brand px-5 py-3 text-sm font-semibold disabled:opacity-50">Continue to secure payment</button>
+        <p className="text-sm text-ink-soft">Need to change your details? Contact us on WhatsApp.</p>
+      </div>}
       {session?.kind === 'pending' && <p className="text-sm text-ink-soft">Your payment hasn’t been confirmed yet. You can reopen this page in the same browser to check again, or contact us before paying again.</p>}
       {session?.kind === 'needs_review' && <p className="text-sm text-ink-soft">This payment needs a review. Please contact us before paying again.</p>}
       {!returned && session?.kind === 'new' && <form onSubmit={checkout} className="grid max-w-lg gap-4">

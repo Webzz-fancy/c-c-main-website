@@ -1,6 +1,7 @@
 export type StrategyLiveSession =
   | { kind: 'new' }
   | { kind: 'paid'; reference: string; calendar: string }
+  | { kind: 'resumable'; name: string; phone: string }
   | { kind: 'pending' }
   | { kind: 'needs_review' }
   | { kind: 'error' }
@@ -13,6 +14,10 @@ export async function loadStrategyLiveSession(fetchImpl: typeof fetch = fetch): 
     const data = await response.json()
     if (response.status === 401 && data?.ok === false && data?.error === 'No booking session. Please contact us for help.') return { kind: 'new' }
     if (!response.ok || data?.ok !== true) return { kind: 'error' }
+    if (data.status === 'resumable') {
+      if (typeof data.name !== 'string' || !data.name.trim() || data.name.length > 120 || /[\p{Cc}]/u.test(data.name) || typeof data.phone !== 'string' || !/^\+[1-9]\d{6,14}$/.test(data.phone)) return { kind: 'error' }
+      return { kind: 'resumable', name: data.name, phone: data.phone }
+    }
     if (data.status === 'pending' || data.status === 'needs_review') return { kind: data.status }
     if (data.status !== 'paid' || typeof data.reference !== 'string' || !/^[a-f0-9]{32}$/.test(data.reference) || typeof data.calendar !== 'string') return { kind: 'error' }
     const calendar = new URL(data.calendar)
