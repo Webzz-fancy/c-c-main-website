@@ -1,7 +1,7 @@
 'use strict'
 
-// Test-only matching prototype. A real test event used HTML; its exact shape
-// remains unverified. Never use this for live payments or infer non-booking.
+// Matching links a reference, not identity or proof of non-booking. Google can
+// change event formats, so unfamiliar or ambiguous entries need human review.
 const { inspectEvent } = require('../scripts/check-strategy-calendar.cjs')
 const { visibleCalendarText, referenceLayout } = require('./strategy-calendar-html.cjs')
 const REFERENCE = /^[a-f0-9]{32}$/
@@ -18,7 +18,8 @@ function bookingReferences(description) {
   return [...new Set(matches.map((match) => match[1].toLowerCase()).filter((ref) => REFERENCE.test(ref)))]
 }
 
-async function matchPaidTestBookings({ reader, store, timeMin, timeMax, maxPages = 10, onlyReference }) {
+async function matchPaidTestBookings({ reader, store, timeMin, timeMax, maxPages = 10, onlyReference, paymentEnvironment = 'test' }) {
+  if (!['test', 'live'].includes(paymentEnvironment)) throw new Error('Invalid payment environment')
   if (onlyReference !== undefined && !REFERENCE.test(onlyReference)) throw new Error('Invalid test reference')
   const start = Date.parse(timeMin), end = Date.parse(timeMax)
   const maxDays = onlyReference === undefined ? 31 : 120
@@ -85,7 +86,7 @@ async function matchPaidTestBookings({ reader, store, timeMin, timeMax, maxPages
     if (events.length !== 1 || ambiguousReferences.has(reference)) { ambiguous++; continue }
     try {
       const record = await store.byPaidTestReference(reference)
-      if (!record || !record.id || record.payment_environment !== 'test' || record.payment_status !== 'completed' || record.booking_reference !== reference || record.booking_status !== 'not_booked' || record.google_event_id) { unchanged++; continue }
+      if (!record || !record.id || record.payment_environment !== paymentEnvironment || record.payment_status !== 'completed' || record.booking_reference !== reference || record.booking_status !== 'not_booked' || record.google_event_id) { unchanged++; continue }
       const saved = await store.matchPaidTestBooking({ id: record.id, reference, ...events[0] })
       if (saved) matched++; else unchanged++
     } catch {

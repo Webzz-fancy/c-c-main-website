@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { site } from '../config/site'
 import { BOOKING, TOPICS, TOPIC_COPY, topicById, type Consultation, type TopicId } from '../content/booking'
 import StrategyTestCheckout from './StrategyTestCheckout'
+import StrategyLiveCheckout from './StrategyLiveCheckout'
 
 // Test checkout is accessible only from the separate team test page, never
 // from the public consultation popup even when a test build is enabled.
@@ -19,9 +20,22 @@ export default function BookingPopup() {
   const [picked, setPicked] = useState<Consultation | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [testReturn, setTestReturn] = useState(false)
+  const [liveReturn, setLiveReturn] = useState(false)
+  const [liveAvailable, setLiveAvailable] = useState(false)
   const [topic, setTopic] = useState<TopicId | null>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const lastFocus = useRef<Element | null>(null)
+
+  useEffect(() => {
+    void fetch('/api/strategy-live/availability', { cache: 'no-store' }).then((response) => response.ok ? response.json() : null).then((data) => setLiveAvailable(data?.available === true)).catch(() => setLiveAvailable(false))
+    const url = new URL(window.location.href)
+    if (!['live-paid', 'live-cancelled'].includes(url.searchParams.get('booking') || '')) return
+    url.searchParams.delete('booking')
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
+    setLiveReturn(true)
+    setPicked(BOOKING.consultations[1])
+    setWanted(true)
+  }, [])
 
   useEffect(() => {
     if (!STRATEGY_TEST_UI) return
@@ -64,6 +78,7 @@ export default function BookingPopup() {
       setPicked(null)
       setLoaded(false)
       setTestReturn(false)
+      setLiveReturn(false)
       setTopic(null)
       ;(lastFocus.current as HTMLElement | null)?.focus?.({ preventScroll: true })
     }, 300)
@@ -150,7 +165,14 @@ export default function BookingPopup() {
           </button>
         </div>
 
-        {picked?.id === 'strategy' && STRATEGY_TEST_UI ? (
+        {picked?.id === 'strategy' && (liveAvailable || liveReturn) ? (
+          <>
+            <StrategyLiveCheckout returned={liveReturn} />
+            <div className="px-5 py-3 text-[13px] text-ink-muted sm:px-7">
+              <button type="button" onClick={() => pick(null)} className="font-medium text-glass underline underline-offset-4">← {BOOKING.back}</button>
+            </div>
+          </>
+        ) : picked?.id === 'strategy' && STRATEGY_TEST_UI ? (
           <>
             <StrategyTestCheckout returned={testReturn} />
             <div className="px-5 py-3 text-[13px] text-ink-muted sm:px-7">

@@ -89,12 +89,18 @@ app.use('/api', (_req, res, next) => {
 
 // Disabled unless explicit test-only configuration is present. Never accepts
 // live payments; the public booking UI is not connected to this prototype.
-const { createProductionStrategy, readConfig: readStrategyConfig } = require('./server/strategy-booking.cjs')
+const { createProductionStrategy, readConfig: readStrategyConfig, readLiveConfig, strategyRouter } = require('./server/strategy-booking.cjs')
+const { createStore: createStrategyStore, createZiina: createStrategyZiina } = require('./server/strategy-adapters.cjs')
 const { createTestAccess } = require('./server/strategy-test-access.cjs')
 const strategy = createProductionStrategy(process.env, rateLimited)
 const testAccess = createTestAccess({ config: readStrategyConfig(process.env), password: process.env.STRATEGY_TEST_PASSWORD, rateLimited })
 app.use('/api/strategy-test', testAccess.router)
 app.use('/api/strategy', testAccess.requireAccess, strategy.router)
+const liveConfig = readLiveConfig(process.env)
+app.get('/api/strategy-live/availability', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ available: !!liveConfig }) })
+const liveStore = liveConfig ? createStrategyStore({ url: liveConfig.supabaseUrl, key: liveConfig.supabaseKey, environment: 'live' }) : null
+const liveZiina = liveConfig ? createStrategyZiina({ key: liveConfig.ziinaKey }) : null
+app.use('/api/strategy-live', strategyRouter({ config: liveConfig, store: liveStore, ziina: liveZiina, rateLimited }))
 app.post('/api/ziina/webhook', strategy.webhook)
 
 app.get('/api/health', (_req, res) => {
