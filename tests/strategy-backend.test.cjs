@@ -3,7 +3,7 @@ const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const crypto = require('node:crypto')
 const express = require('express')
-const { readConfig, strategyRouter, webhookHandler } = require('../server/strategy-booking.cjs')
+const { readConfig, strategyRouter, webhookHandler, createSessionTestMatcher } = require('../server/strategy-booking.cjs')
 const { createZiina, createStore } = require('../server/strategy-adapters.cjs')
 
 const secret = 'test-secret-'.repeat(4)
@@ -16,7 +16,7 @@ function fixtures() {
     byHash: async (hash) => records.find((r) => r.recovery_token_hash === hash) || null,
     byIntent: async (id) => records.find((r) => r.ziina_intent_id === id) || null,
     bindIntent: async (id, pi, account) => { const r = records.find((r) => r.id === id); r.ziina_intent_id = pi; r.ziina_account_id = account; return r },
-    markCompleted: async (id) => { const r = records.find((r) => r.id === id); if (!['pending', 'completed'].includes(r.payment_status)) throw Error('needs review'); r.payment_status = 'completed'; return r },
+    markCompleted: async ({ id, intentId, accountId }) => { const r = records.find((r) => r.id === id); if (!r || r.payment_environment !== 'test' || !['pending', 'completed'].includes(r.payment_status) || r.ziina_intent_id !== intentId || r.ziina_account_id !== accountId) throw Error('needs review'); r.payment_status = 'completed'; return r },
   }
   const ziina = {
     create: async (body) => { payload = body; intent = { id: 'intent-1', account_id: config.account, amount: 120000, currency_code: 'AED', status: 'pending', redirect_url: 'https://pay.ziina.com/pay' }; return intent },
@@ -146,7 +146,15 @@ test('only an authenticated session and a fresh verified completed payment unloc
   await withServer(f, async (base) => {
     const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
     assert.equal((await status(base)).status, 401)
-    let data = await (await status(base, cookie)).json(); assert.deepEqual(data, { ok: true, status: 'pending' })
+    let data = await (await status(base, cookie)).json(); assert.deepEqual(data, { ok: true, status: 'pending', providerStatus: 'pending' })
+    for (const providerStatus of ['requires_payment_instrument', 'requires_user_action', 'failed']) {
+      f.intent.status = providerStatus; f.intent.latest_error = { message: 'private provider error' }
+      data = await (await status(base, cookie)).json()
+      assert.deepEqual(data, { ok: true, status: 'pending', providerStatus })
+      assert.equal(JSON.stringify(data).includes('private provider error'), false)
+    }
+    f.intent.status = 'private-provider-value'
+    data = await (await status(base, cookie)).json(); assert.deepEqual(data, { ok: true, status: 'pending', providerStatus: 'other' })
     f.intent.status = 'completed'; f.intent.amount = 1
     let mismatch = await status(base, cookie); data = await mismatch.json(); assert.equal(mismatch.status, 503); assert.equal(data.calendar, undefined)
     f.intent.amount = 120000; f.intent.account_id = 'other'
@@ -159,6 +167,21 @@ test('only an authenticated session and a fresh verified completed payment unloc
     f.records[0].payment_status = 'refunded'
     data = await (await status(base, cookie)).json(); assert.deepEqual(data, { ok: true, status: 'needs_review' })
   })
+})
+test('test matcher initializes calendar lazily, requires test mode and no extra flag', async () => {
+  let readerCalls = 0, parameters
+  const options = { env: { STRATEGY_EXPERIMENTAL: 'true', STRATEGY_MODE: 'test' }, config, store: {}, readerFactory: () => { readerCalls++; return {} }, match: async (args) => { parameters = args; return { matched: 0 } }, now: () => Date.parse('2026-11-15T00:00:00Z') }
+  const matcher = createSessionTestMatcher(options)
+  assert.equal(readerCalls, 0)
+  await matcher('0123456789abcdef0123456789abcdef')
+  assert.equal(readerCalls, 1)
+  assert.equal(parameters.onlyReference, '0123456789abcdef0123456789abcdef')
+  assert.equal(parameters.timeMin, '2026-11-08T00:00:00.000Z')
+  assert.equal(parameters.timeMax, '2027-02-13T00:00:00.000Z')
+  assert.equal(createSessionTestMatcher({ ...options, env: { ...options.env, STRATEGY_MODE: 'live' } }), null)
+  assert.equal(createSessionTestMatcher({ ...options, config: null }), null)
+  const broken = createSessionTestMatcher({ ...options, readerFactory: () => { throw Error('missing config') } })
+  assert.throws(() => broken('0123456789abcdef0123456789abcdef'), /missing config/)
 })
 test('test booking match requires a verified paid session and checks only its reference', async () => {
   const f = fixtures(); let checked = []
@@ -191,6 +214,47 @@ test('test matching disabled or ambiguous does not claim a booking', async () =>
     assert.deepEqual(await r.json(), { ok: true, status: 'needs_review' })
   })
 })
+test('integrated paid test session matches a fake Google event to the original row', async () => {
+  const { matchPaidTestBookings } = require('../server/strategy-matching.cjs')
+  const f = fixtures(); const date = '2026-11-15T10:00:00Z'
+  f.store.byPaidTestReference = async (ref) => f.records.find((r) => r.booking_reference === ref && r.payment_environment === 'test' && r.payment_status === 'completed') || null
+  f.store.matchPaidTestBooking = async ({ id, reference, eventId, startsAt }) => {
+    const row = f.records.find((r) => r.id === id && r.booking_reference === reference && r.payment_status === 'completed' && r.payment_environment === 'test' && r.booking_status === 'not_booked')
+    if (!row) return false
+    Object.assign(row, { google_event_id: eventId, booking_starts_at: startsAt, booking_status: 'matched' }); return true
+  }
+  f.matchTestBooking = (reference) => matchPaidTestBookings({ store: f.store, reader: { list: async () => ({ items: [{ id: 'event-123', status: 'confirmed', start: { dateTime: date }, description: `<div><b>Booking reference:</b><br>${reference}</div>` }] }) }, timeMin: '2026-11-15T00:00:00Z', timeMax: '2026-11-16T00:00:00Z', onlyReference: reference })
+  await withServer(f, async (base) => {
+    const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
+    f.intent.status = 'completed'; await status(base, cookie)
+    const matched = await fetch(`${base}/api/strategy/match-test-booking`, { method: 'POST', headers: { Origin: config.origin, Cookie: cookie } })
+    assert.equal((await matched.json()).status, 'matched')
+    assert.equal(f.records.length, 1); assert.equal(f.records[0].id, 'record-1'); assert.equal(f.records[0].booking_status, 'matched')
+    assert.equal(f.records[0].customer_name, 'Sample Client'); assert.equal(f.records[0].whatsapp_e164, '+971501234567')
+  })
+})
+test('test diagnostic reports only reference and attendee-email presence', async () => {
+  const f = fixtures()
+  f.matchTestBooking = async () => ({ matched: 0, ambiguous: 0, errors: 0, diagnostic: { referenceEvents: 1, attendeeEmailEvents: 1 } })
+  await withServer(f, async (base) => {
+    const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
+    f.intent.status = 'completed'; await status(base, cookie)
+    const r = await fetch(`${base}/api/strategy/match-test-booking`, { method: 'POST', headers: { Origin: config.origin, Cookie: cookie } })
+    assert.deepEqual(await r.json(), { ok: true, status: 'reference_found_unmatched', emailAvailable: true, inDescription: false, inExtendedProperties: false, hasHtml: false, hasLabel: false, layout: 'not_visible', reason: 'format_not_recognized' })
+  })
+})
+test('test diagnostic distinguishes a guarded row conflict from an unrecognized format', async () => {
+  const f = fixtures()
+  f.matchTestBooking = async () => ({ matched: 0, unchanged: 1, ambiguous: 0, errors: 0, diagnostic: { referenceEvents: 1, attendeeEmailEvents: 0 } })
+  await withServer(f, async (base) => {
+    const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
+    f.intent.status = 'completed'; await status(base, cookie)
+    const r = await fetch(`${base}/api/strategy/match-test-booking`, { method: 'POST', headers: { Origin: config.origin, Cookie: cookie } })
+    const result = await r.json()
+    assert.equal(result.status, 'reference_found_unmatched')
+    assert.equal(result.reason, 'record_changed')
+  })
+})
 test('signed webhooks use raw bytes, independently verify intent and are safe on repeats', async () => {
   const f = fixtures()
   await withServer(f, async (base) => {
@@ -212,6 +276,24 @@ test('signed webhooks use raw bytes, independently verify intent and are safe on
     const refund = JSON.stringify({ event: 'refund.status.updated', data: { id: 'intent-1' } })
     assert.equal((await send(refund, signed(refund))).status, 503)
   })
+})
+test('stale status verification cannot mark a changed intent, account, environment or refunded row paid', async () => {
+  for (const change of [{ ziina_intent_id: 'intent-2' }, { ziina_account_id: 'other-account' }, { payment_environment: 'live' }, { payment_status: 'refunded' }]) {
+    const f = fixtures(), update = f.store.markCompleted
+    f.store.markCompleted = async (args) => { Object.assign(f.records[0], change); return update(args) }
+    await withServer(f, async (base) => {
+      const response = await checkout(base), cookie = response.headers.get('set-cookie').split(';')[0]
+      f.intent.status = 'completed'
+      assert.equal((await status(base, cookie)).status, 503)
+      assert.notEqual(f.records[0].payment_status, 'completed')
+    })
+  }
+})
+test('completion adapter guards test environment and the verified intent and account', async () => {
+  let request
+  const store = createStore({ url: 'https://myproject.supabase.co', key: 'service-key', fetchImpl: async (url) => { request = new URL(url); return { ok: true, json: async () => [{ id: 'row' }] } } })
+  await store.markCompleted({ id: 'row', intentId: 'intent-1', accountId: 'account-123' })
+  for (const [key, value] of Object.entries({ id: 'eq.row', payment_environment: 'eq.test', payment_status: 'in.(pending,completed)', ziina_intent_id: 'eq.intent-1', ziina_account_id: 'eq.account-123' })) assert.equal(request.searchParams.get(key), value)
 })
 test('provider adapters use fixed URLs and server credentials, without exposing raw errors', async () => {
   let calls = []

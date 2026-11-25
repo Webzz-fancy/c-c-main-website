@@ -37,11 +37,18 @@ function readConfig(env) {
   return { ziinaKey: ziinaKeys[0], account, webhookSecret: env.ZIINA_WEBHOOK_SECRET, supabaseUrl: env.SUPABASE_URL.replace(/\/$/, ''), supabaseKey: env.SUPABASE_SERVICE_ROLE_KEY, origin: env.STRATEGY_ORIGIN, calendar: env.BOOKING_STRATEGY_EMBED }
 }
 
-function sessionFrom(req) {
+// Live is a separate, explicitly enabled configuration and store namespace.
+function readLiveConfig(env) {
+  if (env.STRATEGY_MODE !== 'live' || env.STRATEGY_LIVE_ENABLED !== 'true') return null
+  const config = readConfig({ ...env, STRATEGY_MODE: 'test' })
+  return config ? { ...config, mode: 'live' } : null
+}
+
+function sessionFrom(req, cookieName = COOKIE) {
   const cookie = req.get('cookie') || ''
-  const items = cookie.split(';').map((x) => x.trim()).filter((x) => x.startsWith(`${COOKIE}=`))
+  const items = cookie.split(';').map((x) => x.trim()).filter((x) => x.startsWith(`${cookieName}=`))
   if (items.length !== 1) return null
-  const token = items[0].slice(COOKIE.length + 1)
+  const token = items[0].slice(cookieName.length + 1)
   return TOKEN.test(token) ? token : null
 }
 function validIntentCreation(intent, cfg) {
@@ -61,6 +68,8 @@ function matchesStoredIntent(intent, record, cfg) {
 // Dependency injection lets tests exercise the real HTTP routes without keys.
 function strategyRouter({ config, store, ziina, matchTestBooking = null, rateLimited = () => false }) {
   const router = express.Router()
+  const mode = config?.mode === 'live' ? 'live' : 'test'
+  const cookieName = mode === 'live' ? '__Host-strategy_live_session' : COOKIE
   router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); if (!config) return res.status(503).json({ ok: false, error: 'Strategy checkout is not available' }); next() })
   router.post('/checkout', async (req, res) => {
     if (rateLimited(req.ip)) return res.status(429).json({ ok: false, error: 'Too many requests' })
@@ -71,15 +80,15 @@ function strategyRouter({ config, store, ziina, matchTestBooking = null, rateLim
     if (!validPhone(phone)) return res.status(400).json({ ok: false, error: 'Enter a WhatsApp number with country code' })
     // Do not silently replace an existing session: a previous payment may
     // still be completing. Support must help if a visitor lost access.
-    if (sessionFrom(req)) return res.status(409).json({ ok: false, error: 'An existing checkout is in progress. Check its status or contact us.' })
+    if (sessionFrom(req, cookieName)) return res.status(409).json({ ok: false, error: 'An existing checkout is in progress. Check its status or contact us.' })
     const token = newRecoveryToken()
     try {
-      const record = await store.insert({ booking_reference: newReference(), recovery_token_hash: hashRecoveryToken(token), customer_name: name, whatsapp_e164: phone, payment_environment: 'test' })
-      if (!record || !record.id) throw new Error('database insert failed')
+      const record = await store.insert({ booking_reference: newReference(), recovery_token_hash: hashRecoveryToken(token), customer_name: name, whatsapp_e164: phone, payment_environment: mode })
+      if (!record || !record.id || record.payment_environment !== mode) throw new Error('database insert failed')
       // Set cookie as soon as the attempt is saved, so an interrupted response
       // cannot silently erase the visitor's only session.
-      res.cookie(COOKIE, token, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 7 * 24 * 60 * 60 * 1000 })
-      const intent = await ziina.create({ amount: AMOUNT, currency_code: CURRENCY, message: 'Strategic Consultation', success_url: `${config.origin}/?booking=paid`, cancel_url: `${config.origin}/?booking=cancelled`, failure_url: `${config.origin}/?booking=cancelled`, test: true, allow_tips: false })
+      res.cookie(cookieName, token, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 7 * 24 * 60 * 60 * 1000 })
+      const intent = await ziina.create({ amount: AMOUNT, currency_code: CURRENCY, message: 'Strategic Consultation', success_url: `${config.origin}/?booking=${mode === 'live' ? 'live-paid' : 'paid'}`, cancel_url: `${config.origin}/?booking=${mode === 'live' ? 'live-cancelled' : 'cancelled'}`, failure_url: `${config.origin}/?booking=${mode === 'live' ? 'live-cancelled' : 'cancelled'}`, test: mode === 'test', allow_tips: false })
       if (!validIntentCreation(intent, config)) throw new Error('invalid payment intent')
       await store.bindIntent(record.id, intent.id, intent.account_id)
       return res.json({ ok: true, redirectUrl: intent.redirect_url })
@@ -90,31 +99,70 @@ function strategyRouter({ config, store, ziina, matchTestBooking = null, rateLim
     }
   })
   router.get('/status', async (req, res) => {
-    if (rateLimited(req.ip)) return res.status(429).json({ ok: false, error: 'Too many requests' })
-    const token = sessionFrom(req)
+    const token = sessionFrom(req, cookieName)
+    // Opening the checkout now checks for an existing session automatically.
+    // Requests with no session cannot reach providers and should not exhaust
+    // the shared limit for real attempts behind a hosting proxy.
     if (!token) return res.status(401).json({ ok: false, error: 'No booking session. Please contact us for help.' })
+    if (rateLimited(req.ip)) return res.status(429).json({ ok: false, error: 'Too many requests' })
     try {
       const record = await store.byHash(hashRecoveryToken(token))
-      if (!record) return res.status(404).json({ ok: false, error: 'Booking not found. Please contact us.' })
+      if (!record || record.payment_environment !== mode) return res.status(404).json({ ok: false, error: 'Booking not found. Please contact us.' })
       if (record.payment_status === 'refunded' || record.payment_status === 'refund_review') return res.json({ ok: true, status: 'needs_review' })
       if (!record.ziina_intent_id) return res.json({ ok: true, status: 'needs_review' })
       const intent = await ziina.get(record.ziina_intent_id)
       if (!matchesStoredIntent(intent, record, config)) throw new Error('payment needs review')
-      if (!completedPayment(intent, record, record.ziina_account_id)) return res.json({ ok: true, status: 'pending' })
-      await store.markCompleted(record.id)
+      if (!completedPayment(intent, record, record.ziina_account_id)) {
+        // Only an independently verified, bound intent which Ziina says has
+        // not been attempted is eligible to resume. Processing, failed, or
+        // changed/refunded records must never invite another payment.
+        if (mode === 'live' && record.payment_status === 'pending' && intent.status === 'requires_payment_instrument' && validIntentCreation(intent, config) && typeof record.customer_name === 'string' && record.customer_name.length > 0 && record.customer_name.length <= 120 && validPhone(record.whatsapp_e164)) {
+          return res.json({ ok: true, status: 'resumable', name: record.customer_name, phone: record.whatsapp_e164 })
+        }
+        if (mode === 'live' && record.payment_status !== 'pending') return res.json({ ok: true, status: 'needs_review' })
+        // The private test UI may show only a fixed provider-state category;
+        // never expose raw provider responses, errors, IDs or payment data.
+        const knownStatuses = ['requires_payment_instrument', 'requires_user_action', 'pending', 'failed']
+        const providerStatus = knownStatuses.includes(intent.status) ? intent.status : 'other'
+        return res.json({ ok: true, status: 'pending', providerStatus })
+      }
+      await store.markCompleted({ id: record.id, intentId: record.ziina_intent_id, accountId: record.ziina_account_id })
       return res.json({ ok: true, status: 'paid', reference: record.booking_reference, calendar: config.calendar })
     } catch {
       console.error('[strategy] Could not check payment; review saved attempt')
       return res.status(503).json({ ok: false, error: 'Payment could not be checked. Please contact us before paying again.' })
     }
   })
+  // Resume only the existing live intent. Never create a second intent here.
+  // Re-read both the row and Ziina on every click, since a payment may have
+  // started, completed, or been refunded since the status page was shown.
+  router.post('/resume', async (req, res) => {
+    if (mode !== 'live') return res.status(404).json({ ok: false })
+    if (rateLimited(req.ip)) return res.status(429).json({ ok: false, error: 'Too many requests' })
+    if (req.get('origin') !== config.origin) return res.status(403).json({ ok: false, error: 'Invalid origin' })
+    const token = sessionFrom(req, cookieName)
+    if (!token) return res.status(401).json({ ok: false, error: 'No booking session' })
+    try {
+      const record = await store.byHash(hashRecoveryToken(token))
+      if (!record || record.payment_environment !== 'live' || record.payment_status !== 'pending' || !record.ziina_intent_id) return res.status(409).json({ ok: false, error: 'Payment status changed' })
+      const intent = await ziina.get(record.ziina_intent_id)
+      if (!matchesStoredIntent(intent, record, config) || intent.status !== 'requires_payment_instrument' || !validIntentCreation(intent, config)) return res.status(409).json({ ok: false, error: 'Payment status changed' })
+      // Guard against a row changed during the provider lookup as well.
+      const current = await store.byHash(hashRecoveryToken(token))
+      if (!current || current.id !== record.id || current.payment_environment !== 'live' || current.payment_status !== 'pending' || current.ziina_intent_id !== record.ziina_intent_id || current.ziina_account_id !== record.ziina_account_id) return res.status(409).json({ ok: false, error: 'Payment status changed' })
+      return res.json({ ok: true, redirectUrl: intent.redirect_url })
+    } catch {
+      console.error('[strategy] Could not resume payment; review saved attempt')
+      return res.status(503).json({ ok: false, error: 'Payment could not be resumed. Please contact us.' })
+    }
+  })
   // Team-only test route (the server mounts the team access gate before this
   // router). Each check is restricted to the caller's paid test session.
   router.post('/match-test-booking', async (req, res) => {
-    if (!matchTestBooking) return res.status(503).json({ ok: false, error: 'Test matching is not enabled' })
+    if (mode !== 'test' || !matchTestBooking) return res.status(503).json({ ok: false, error: 'Test matching is not enabled' })
     if (rateLimited(req.ip)) return res.status(429).json({ ok: false, error: 'Too many requests' })
     if (req.get('origin') !== config.origin) return res.status(403).json({ ok: false, error: 'Invalid origin' })
-    const token = sessionFrom(req)
+    const token = sessionFrom(req, cookieName)
     if (!token) return res.status(401).json({ ok: false, error: 'No booking session' })
     try {
       const record = await store.byHash(hashRecoveryToken(token))
@@ -125,9 +173,20 @@ function strategyRouter({ config, store, ziina, matchTestBooking = null, rateLim
       if (record.booking_status !== 'not_booked') return res.json({ ok: true, status: 'needs_review' })
       const result = await matchTestBooking(record.booking_reference)
       if (result.errors || result.ambiguous) return res.json({ ok: true, status: 'needs_review' })
-      if (result.matched === 1) return res.json({ ok: true, status: 'matched' })
-      // Missing a match is not evidence that no appointment exists.
-      return res.json({ ok: true, status: 'not_matched' })
+      if (result.matched === 1) return res.json({ ok: true, status: 'matched', ...(result.diagnostic?.referenceEvents === 1 ? { emailAvailable: result.diagnostic.attendeeEmailEvents === 1 } : {}) })
+      // Missing a match is not evidence that no appointment exists. Provide
+      // only aggregate test-reference presence, never event or personal data.
+      const found = result.diagnostic?.referenceEvents === 1
+      const details = found ? {
+        emailAvailable: result.diagnostic.attendeeEmailEvents === 1,
+        inDescription: result.diagnostic.descriptionEvents === 1,
+        inExtendedProperties: result.diagnostic.extendedEvents === 1,
+        hasHtml: result.diagnostic.htmlDescriptionEvents === 1,
+        hasLabel: result.diagnostic.labelledDescriptionEvents === 1,
+        layout: ['same_line', 'next_line', 'other', 'not_visible'].includes(result.diagnostic.layout) ? result.diagnostic.layout : 'not_visible',
+        reason: result.unchanged ? 'record_changed' : 'format_not_recognized',
+      } : {}
+      return res.json({ ok: true, status: found ? 'reference_found_unmatched' : 'not_matched', ...details })
     } catch {
       console.error('[strategy] Test booking check failed')
       return res.status(503).json({ ok: false, error: 'Test booking check could not be completed' })
@@ -152,7 +211,7 @@ function webhookHandler({ config, store, ziina }) {
       if (!record) return res.status(503).end() // Could arrive before intent binding.
       const intent = await ziina.get(id)
       if (!matchesStoredIntent(intent, record, config)) throw new Error('payment needs review')
-      if (completedPayment(intent, record, record.ziina_account_id)) await store.markCompleted(record.id)
+      if (completedPayment(intent, record, record.ziina_account_id)) await store.markCompleted({ id: record.id, intentId: record.ziina_intent_id, accountId: record.ziina_account_id })
       return res.status(200).end()
     } catch {
       console.error('[strategy] Webhook could not be reconciled')
@@ -161,25 +220,24 @@ function webhookHandler({ config, store, ziina }) {
   }
 }
 
+// The protected team-only match is created without contacting Google and
+// constructs its reader only when requested. No scheduler or extra setting is
+// needed; production/live mode remains disabled by readConfig.
+function createSessionTestMatcher({ env, config, store, readerFactory, match, now = Date.now }) {
+  if (!config || env.STRATEGY_EXPERIMENTAL !== 'true' || env.STRATEGY_MODE !== 'test') return null
+  return (reference) => {
+    const reader = readerFactory(env)
+    const current = now()
+    return match({ reader, store, onlyReference: reference, timeMin: new Date(current - 7 * 86400000).toISOString(), timeMax: new Date(current + 90 * 86400000).toISOString() })
+  }
+}
+
 function createProductionStrategy(env, rateLimited) {
   const config = readConfig(env)
   const store = config ? createStore({ url: config.supabaseUrl, key: config.supabaseKey }) : null
   const ziina = config ? createZiina({ key: config.ziinaKey }) : null
-  let matchTestBooking = null
-  if (config && env.STRATEGY_MATCH_TEST_ONLY === 'true') {
-    try {
-      const { createCalendarReaderFromEnv } = require('./strategy-calendar.cjs')
-      const { matchPaidTestBookings } = require('./strategy-matching.cjs')
-      const reader = createCalendarReaderFromEnv(env)
-      matchTestBooking = (reference) => {
-        const now = Date.now()
-        return matchPaidTestBookings({ reader, store, onlyReference: reference, timeMin: new Date(now - 7 * 86400000).toISOString(), timeMax: new Date(now + 90 * 86400000).toISOString() })
-      }
-    } catch {
-      // Incomplete Calendar settings leave matching disabled without startup failure.
-    }
-  }
+  const matchTestBooking = createSessionTestMatcher({ env, config, store, readerFactory: (settings) => require('./strategy-calendar.cjs').createCalendarReaderFromEnv(settings), match: (options) => require('./strategy-matching.cjs').matchPaidTestBookings(options) })
   return { router: strategyRouter({ config, store, ziina, matchTestBooking, rateLimited }), webhook: webhookHandler({ config, store, ziina }) }
 }
 
-module.exports = { readConfig, strategyRouter, webhookHandler, createProductionStrategy }
+module.exports = { readConfig, readLiveConfig, strategyRouter, webhookHandler, createProductionStrategy, createSessionTestMatcher, matchesStoredIntent }

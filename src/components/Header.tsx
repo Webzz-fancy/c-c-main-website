@@ -10,8 +10,8 @@ type NavItem = {
   label: string
   href: string
   children?: { label: string; href: string }[]
-  /** the menu's answer to its own label: an italic opener, each way we help, and a nudge toward the links below */
-  pitch?: { opener: string; ways: { lead: string; text: string }[]; nudge: string; topics: TopicId[] }
+  /** the menu's answer to its own label: each way we help, then a plain label over the topic links */
+  pitch?: { ways: { lead: string; text: string }[]; topicsLabel: string; topics: TopicId[] }
   /** a wide menu listing every project; the label itself still opens the page */
   projects?: boolean
 }
@@ -103,13 +103,12 @@ const NAV: NavItem[] = [
     label: 'Ways we help',
     href: '#ways-we-help',
     pitch: {
-      opener: 'Let us count the ways.',
       ways: [
-        { lead: 'We advise.', text: 'A consultation to map how your work runs and what will actually help.' },
-        { lead: 'We build.', text: 'AI agents set up around what you need. Systems, automations and websites that make work easier. And getting you found on Google and ChatGPT.' },
-        { lead: 'We train.', text: 'Your team, so they know how to use what we set up.' },
+        { lead: 'We advise.', text: 'A consultation to understand how your business works and what would help most.' },
+        { lead: 'We build.', text: 'AI agents set up around your needs, along with systems, automations and websites that make work easier. We can also help you get found on Google and ChatGPT.' },
+        { lead: 'We train.', text: 'Your team, so they feel confident using everything we set up.' },
       ],
-      nudge: 'Whatever it is, book a consultation about it.',
+      topicsLabel: 'Book a consultation about:',
       topics: ['agents', 'process', 'automation', 'systems', 'websites', 'training'],
     },
     children: [{ label: 'Book a consultation', href: site.links.booking }],
@@ -311,13 +310,12 @@ export default function Header() {
                     <div className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white p-6 shadow-soft">
                       {item.pitch && (
                         <>
-                          <p className="font-display text-[26px] italic leading-tight text-brand-600">{item.pitch.opener}</p>
                           {item.pitch.ways.map((way) => (
-                            <p key={way.lead} className="mt-3 text-[15px] font-light leading-relaxed text-ink-soft">
+                            <p key={way.lead} className="mt-3 first:mt-0 text-[15px] font-light leading-relaxed text-ink-soft">
                               <span className="font-display text-[17px] italic text-ink">{way.lead}</span> {way.text}
                             </p>
                           ))}
-                          <p className="mt-4 font-display text-[18px] italic leading-snug text-ink">{item.pitch.nudge}</p>
+                          <p className="mt-5 text-[13px] font-medium text-ink-muted">{item.pitch.topicsLabel}</p>
                           <TopicLinks topics={item.pitch.topics} href={link(site.links.booking)} />
                         </>
                       )}
@@ -469,13 +467,12 @@ export default function Header() {
                     <div className="px-3 pb-3 pt-1">
                       {item.pitch && (
                         <>
-                          <p className="font-display text-[22px] italic leading-tight text-brand-600">{item.pitch.opener}</p>
                           {item.pitch.ways.map((way) => (
-                            <p key={way.lead} className="mt-2 text-[14px] font-light leading-relaxed text-ink-soft">
+                            <p key={way.lead} className="mt-2 first:mt-0 text-[14px] font-light leading-relaxed text-ink-soft">
                               <span className="font-display text-[16px] italic text-ink">{way.lead}</span> {way.text}
                             </p>
                           ))}
-                          <p className="mt-3 font-display text-[16px] italic leading-snug text-ink">{item.pitch.nudge}</p>
+                          <p className="mt-4 text-[13px] font-medium text-ink-muted">{item.pitch.topicsLabel}</p>
                           <TopicLinks topics={item.pitch.topics} href={link(site.links.booking)} onPick={() => setMobileOpen(false)} />
                         </>
                       )}

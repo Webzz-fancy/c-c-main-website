@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
+import { site } from '../config/site'
 
-type Status = { ok?: boolean; status?: string; reference?: string; calendar?: string; error?: string }
+type Status = { ok?: boolean; status?: string; providerStatus?: string; reference?: string; calendar?: string; error?: string; emailAvailable?: boolean; inDescription?: boolean; inExtendedProperties?: boolean; hasHtml?: boolean; hasLabel?: boolean; layout?: string; reason?: string }
 
 // This is deliberately opt-in at build time AND the backend is test-only.
 // Never enable this build flag on the public site for real customers.
@@ -61,9 +62,10 @@ export default function StrategyTestCheckout({ returned }: { returned: boolean }
       const response = await fetch('/api/strategy/match-test-booking', { method: 'POST', credentials: 'same-origin', cache: 'no-store' })
       const data: Status = await response.json()
       if (!response.ok || !data.ok) throw new Error('check failed')
-      if (data.status === 'matched') setBookingMessage('A matching test reference was found and saved to this payment record. Confirm the appointment in Google as well.')
+      if (data.status === 'matched') setBookingMessage('A matching test reference was found and saved to this payment record. Confirm the appointment in Google as well.' + (data.emailAvailable ? ' An attendee email is present, but has not been saved or verified as the customer’s.' : ''))
       else if (data.status === 'previously_matched') setBookingMessage('A match was saved earlier. Please check Google for any changes or cancellations.')
       else if (data.status === 'needs_review') setBookingMessage('The test match needs a private review. Do not assume the appointment is missing.')
+      else if (data.status === 'reference_found_unmatched') setBookingMessage(`The reference appeared in Google, but no match was saved. ${data.reason === 'record_changed' ? 'The payment record changed or could not be matched safely.' : 'The answer format was not recognized for a safe match.'} Format check: description ${data.inDescription ? 'yes' : 'no'}, extra properties ${data.inExtendedProperties ? 'yes' : 'no'}, HTML ${data.hasHtml ? 'yes' : 'no'}, label ${data.hasLabel ? 'yes' : 'no'}, layout ${data.layout || 'not_visible'}.` + (data.emailAvailable ? ' An attendee email is present, but has not been saved or verified as the customer’s.' : ''))
       else setBookingMessage('No match was found yet. This does not mean the appointment was not booked; check Google and the reference.')
     } catch { setBookingMessage('The test booking could not be checked. Check the test settings and Google connection.') }
     finally { setBusy(false) }
@@ -85,7 +87,7 @@ export default function StrategyTestCheckout({ returned }: { returned: boolean }
         </div>
       ) : (
         <div className="mt-5">
-          {result?.status === 'pending' && <p className="text-sm text-ink-soft">The payment is not confirmed yet. Check again or contact the team; do not start a second payment.</p>}
+          {result?.status === 'pending' && <p className="text-sm text-ink-soft">{result.providerStatus === 'requires_payment_instrument' ? 'Ziina reports that the payment method is still required.' : result.providerStatus === 'requires_user_action' ? 'Ziina reports that another action is required on its payment page.' : result.providerStatus === 'failed' ? 'Ziina reports that this test payment failed.' : result.providerStatus === 'pending' ? 'Ziina reports that the test payment is processing.' : 'Ziina has not confirmed this test payment.'} Do not start a second payment; check again or contact the team.</p>}
           {result?.status === 'needs_review' && <p className="text-sm text-ink-soft">This attempt needs review. Contact the team before paying again.</p>}
           {!returned && !result && <form onSubmit={checkout} className="grid max-w-lg gap-4">
             <label className="grid gap-1 text-sm font-semibold">Name<input required maxLength={120} autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className="rounded-xl border border-black/20 px-3 py-2 font-normal" /></label>
@@ -96,6 +98,7 @@ export default function StrategyTestCheckout({ returned }: { returned: boolean }
         </div>
       )}
       {message && <p role="alert" className="mt-4 text-sm text-red-700">{message}</p>}
+      <p className="mt-5 text-sm text-ink-soft">Need help with a test payment or booking? <a href={site.contact.whatsapp} target="_blank" rel="noopener noreferrer" className="font-semibold text-glass underline">Message us on WhatsApp</a> or <a href={`mailto:${site.contact.email}`} className="font-semibold text-glass underline">email us</a>. Please don’t send card details. If you have a booking reference, you can share it privately with the team.</p>
       {busy && <p aria-live="polite" className="mt-4 text-sm text-ink-soft">Checking…</p>}
     </div>
   )

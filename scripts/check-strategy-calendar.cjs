@@ -3,11 +3,16 @@
 // Private, manual diagnostic. It never changes bookings or prints event data.
 // It is not mounted as an HTTP route or run by the website automatically.
 const { createCalendarReaderFromEnv } = require('../server/strategy-calendar.cjs')
+const { visibleCalendarText } = require('../server/strategy-calendar-html.cjs')
 
 function inspectEvent(event, reference) {
   if (!event || typeof event !== 'object' || !/^[a-f0-9]{32}$/.test(reference)) return null
   const fields = []
-  if (typeof event.description === 'string') fields.push(['description', event.description])
+  if (typeof event.description === 'string') {
+    fields.push(['description', event.description])
+    const decoded = visibleCalendarText(event.description)
+    if (decoded && decoded !== event.description) fields.push(['description', decoded])
+  }
   for (const part of ['private', 'shared']) {
     const properties = event.extendedProperties?.[part]
     if (properties && typeof properties === 'object' && !Array.isArray(properties)) {
@@ -16,9 +21,10 @@ function inspectEvent(event, reference) {
   }
   // A test reference must appear as a distinct value, not part of another ID.
   const found = fields.filter(([, text]) => {
+    const normalized = text.toLowerCase()
     let offset = 0
-    while ((offset = text.indexOf(reference, offset)) !== -1) {
-      const before = text[offset - 1] || '', after = text[offset + reference.length] || ''
+    while ((offset = normalized.indexOf(reference, offset)) !== -1) {
+      const before = normalized[offset - 1] || '', after = normalized[offset + reference.length] || ''
       if (!/[a-z0-9]/i.test(before) && !/[a-z0-9]/i.test(after)) return true
       offset += reference.length
     }
